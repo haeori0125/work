@@ -8,6 +8,27 @@
       "when": 1795431150449,
       "tag": "0000_rapid_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795437974096,
+      "tag": "0001_segments_notes_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795437974663,
+      "tag": "0002_move_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795437996343,
+      "tag": "0003_drop_old_tables",
+      "breakpoints": true
     }
   ]
 }

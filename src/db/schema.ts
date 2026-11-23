@@ -1,5 +1,5 @@
 import {
-  integer, pgTable, primaryKey, serial, text, timestamp, unique,
+  boolean, index, integer, pgTable, primaryKey, serial, text, timestamp, unique,
 } from 'drizzle-orm/pg-core';
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: 'date' });
@@ -32,22 +32,7 @@ export const loginFailures = pgTable('login_failures', {
   at: ts('at').notNull(),
 });
 
-export const attendance = pgTable('attendance', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  date: text('date').notNull(),
-  clockIn: ts('clock_in').notNull(),
-  clockOut: ts('clock_out'),
-}, (t) => [unique().on(t.userId, t.date)]);
 
-export const attendanceEdits = pgTable('attendance_edits', {
-  id: serial('id').primaryKey(),
-  attendanceId: integer('attendance_id').notNull().references(() => attendance.id, { onDelete: 'cascade' }),
-  editedBy: integer('edited_by').notNull().references(() => users.id),
-  at: ts('at').notNull(),
-  oldClockIn: ts('old_clock_in').notNull(),
-  oldClockOut: ts('old_clock_out'),
-});
 
 export const tasks = pgTable('tasks', {
   id: serial('id').primaryKey(),
@@ -108,8 +93,41 @@ export const boardPosts = pgTable('board_posts', {
   updatedAt: ts('updated_at').notNull(),
 });
 
-export const personalMemos = pgTable('personal_memos', {
-  userId: integer('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
-  body: text('body').notNull(),
+
+export const workSegments = pgTable('work_segments', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(),
+  clockIn: ts('clock_in').notNull(),
+  clockOut: ts('clock_out'),
+}, (t) => [index('work_segments_user_date').on(t.userId, t.date)]);
+
+export const segmentEdits = pgTable('segment_edits', {
+  id: serial('id').primaryKey(),
+  segmentId: integer('segment_id').notNull().references(() => workSegments.id, { onDelete: 'cascade' }),
+  editedBy: integer('edited_by').notNull().references(() => users.id),
+  at: ts('at').notNull(),
+  oldClockIn: ts('old_clock_in').notNull(),
+  oldClockOut: ts('old_clock_out'),
+});
+
+export const notes = pgTable('notes', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  body: text('body').notNull().default(''),
+  pinned: boolean('pinned').notNull().default(false),
+  createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
+}, (t) => [index('notes_user').on(t.userId)]);
+
+export const userPrefs = pgTable('user_prefs', {
+  userId: integer('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  themeH: integer('theme_h').notNull().default(232),
+  themeS: integer('theme_s').notNull().default(55),
+  themeL: integer('theme_l').notNull().default(76),
+  themeHex: text('theme_hex'),
+  weekStart: text('week_start', { enum: ['mon', 'sun'] }).notNull().default('mon'),
+  doingHex: text('doing_hex'),
+  doneHex: text('done_hex'),
+  updatedAt: ts('updated_at').notNull().defaultNow(),
 });
