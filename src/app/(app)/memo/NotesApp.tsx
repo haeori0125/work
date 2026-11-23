@@ -7,6 +7,7 @@ import {
 import { notePreview, noteTitle } from '@/lib/note-text';
 
 const SAVE_DELAY = 800;
+const RETRY_DELAY = 3000;
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' });
 const fullFmt = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -28,21 +29,49 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
 
   const current = notes.find((n) => n.id === currentId) ?? null;
 
-  const flush = useCallback(async () => {
+  const saving = useRef(false);
+
+  /** 저장 안 된 글을 저장한다. 실패하면 글을 되돌려 놓고 잠시 뒤 다시 시도한다. 성공하면 true. */
+  const flush = useCallback(async (): Promise<boolean> => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
     const p = pending.current;
-    if (!p) return;
+    if (!p) return true;
     pending.current = null;
+    saving.current = true;
     setSaveState('saving');
-    const res = await updateNoteAction(p.id, p.body);
-    if (res?.error) { setSaveState('error'); setError(res.error); return; }
+    let failed: string | null = null;
+    try {
+      const res = await updateNoteAction(p.id, p.body);
+      if (res?.error) failed = res.error;
+    } catch {
+      failed = '저장하지 못했습니다. 인터넷 연결을 확인하세요. 잠시 뒤 다시 저장합니다.';
+    }
+    saving.current = false;
+    if (failed) {
+      pending.current ??= p; // 그사이 새로 입력한 글이 없으면 이 글을 다시 저장 대상으로
+      setSaveState('error');
+      setError(failed);
+      timer.current = setTimeout(() => { void flush(); }, RETRY_DELAY);
+      return false;
+    }
+    setError(null);
     setSaveState(pending.current ? 'dirty' : 'saved');
+    return true;
   }, []);
 
   useEffect(() => {
     const onHide = () => { void flush(); };
+    // 저장 안 된 글이 있으면 창을 닫기 전에 묻는다.
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (pending.current || saving.current) { e.preventDefault(); e.returnValue = ''; }
+    };
     window.addEventListener('pagehide', onHide);
-    return () => { window.removeEventListener('pagehide', onHide); void flush(); };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      window.removeEventListener('pagehide', onHide);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+      void flush();
+    };
   }, [flush]);
 
   const edit = (body: string) => {
@@ -56,17 +85,17 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
   };
 
   const select = async (id: number) => {
-    await flush();
+    if (!(await flush())) return; // 저장 못 한 글이 있으면 다른 메모로 넘어가지 않는다
     setNotes((list) => sortNotes(list));
     setCurrentId(id); setArmed(false); setMobileOpen(true); setError(null);
   };
 
   const create = async () => {
     if (creating) return;
-    await flush();
+    if (!(await flush())) return;
     // 새 메모가 만들어지기 전에 입력한 글자가 이전 메모에 들어가지 않도록 편집 칸을 닫아 둔다.
     setCreating(true); setCurrentId(null); setMobileOpen(true);
-    const res = await createNoteAction();
+    const res = await createNoteAction().catch(() => ({ error: '새 메모를 만들지 못했습니다. 인터넷 연결을 확인하세요.' }));
     setCreating(false);
     if ('error' in res) { setError(res.error); return; }
     setNotes((list) => sortNotes([res, ...list]));
@@ -76,7 +105,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
 
   const togglePin = async () => {
     if (!current) return;
-    await flush();
+    if (!(await flush())) return;
     const pinned = !current.pinned;
     const res = await setNotePinnedAction(current.id, pinned);
     if (res?.error) { setError(res.error); return; }
@@ -132,7 +161,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
       </section>
       <section className="panel note-editor" aria-label="메모 편집">
         <div className="ne-top">
-          <button className="ne-back" type="button" onClick={async () => { await flush(); setMobileOpen(false); }}>‹ 메모</button>
+          <button className="ne-back" type="button" onClick={async () => { if (await flush()) setMobileOpen(false); }}>‹ 메모</button>
           <span className="muted">{current ? fullFmt.format(new Date(current.updatedAt)) : ''}</span>
           <span className="spacer" />
           {current && <>
@@ -146,7 +175,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
         ) : <p className="nl-empty">{creating ? '새 메모를 만드는 중…' : '왼쪽에서 메모를 고르거나 새 메모를 만드세요.'}</p>}
         <div className="ne-foot">
           <span className="muted" role="status">
-            {saveState === 'saving' ? '저장 중…' : saveState === 'dirty' ? '입력 중…' : saveState === 'error' ? (error ?? '저장하지 못했습니다') : '자동 저장됨'}
+            {saveState === 'saving' ? '저장 중…' : saveState === 'dirty' ? '입력 중…' : saveState === 'error' ? `저장하지 못했습니다 · ${error ?? ''}` : '자동 저장됨'}
           </span>
           {current && <span className="muted">{current.body.length.toLocaleString()}자</span>}
           {error && saveState !== 'error' && <span className="err">{error}</span>}
