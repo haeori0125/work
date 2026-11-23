@@ -605,3 +605,15 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
   .goal { display: grid; grid-template-columns: 17px minmax(0, 1fr); column-gap: 8px; row-gap: 4px; padding: 8px 10px; align-items: center; }
   .goal .tags.mini { grid-column: 2; flex-wrap: wrap; white-space: normal; }
 }
+
+/* 크리스마스 시즌 장식 (src/lib/season.ts 기간에만) */
+.snow { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.snow i {
+  position: absolute; top: -12px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 1px hsl(var(--h) 25% 70% / .25), 0 1px 3px hsl(var(--h) 30% 40% / .12);
+  animation: snowfall linear infinite; opacity: .9;
+}
+@keyframes snowfall { to { transform: translate(var(--drift), 105vh); } }
+[data-season="xmas"] .shell, [data-season="xmas"] .auth-page { position: relative; z-index: 1; }
+.xmas-note { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .snow { display: none; } }

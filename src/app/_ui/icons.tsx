@@ -83,3 +83,12 @@ export function NoteIcon({ size = 20 }: P) {
 export function ShieldIcon({ size = 20 }: P) {
   return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...line}><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
 }
+
+/** 시즌 장식용 작은 트리 */
+export function TreeIcon({ size = 14 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 14 14" aria-hidden="true">
+      <path d="M7 1.2 10 5.4H8.6L11.2 9H8V12H6V9H2.8L5.4 5.4H4Z" fill="currentColor" />
+    </svg>
+  );
+}
