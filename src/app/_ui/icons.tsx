@@ -44,7 +44,7 @@ export function StatusMark({ status }: { status: 'todo' | 'doing' | 'done' }) {
     return (
       <svg width={10} height={10} viewBox="0 0 10 10" aria-hidden="true">
         <circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M5 1a4 4 0 0 1 0 8Z" fill="currentColor" />
+        <path d="M5 1a4 4 0 0 0 0 8Z" fill="currentColor" /> {/* 체크 원처럼 왼쪽 반을 칠한다 */}
       </svg>
     );
   }
