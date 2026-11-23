@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
+import { RichText } from '@/app/_ui/RichText';
 import type { OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { TaskDialog } from './TaskDialog';
@@ -25,7 +26,7 @@ export function TaskItem({ occ, me, showDate }: Props) {
       <CheckCircle status={occ.status} title={hasParts ? `${occ.title} (파트 보기)` : occ.title} onCycle={cycle} disabled={pending} />
       <div>
         <button type="button" className="task-title as-link" onClick={() => setOpen(true)}>{occ.title}</button>
-        {occ.description && <p className="task-desc">{occ.description}</p>}
+        {occ.description && <RichText className="task-desc" text={occ.description} />}
         <div className="meta tags">
           {showDate && <span className="tag date">{occ.dateLabel}</span>}
           {occ.overdue && <span className="tag date">마감 지남</span>}

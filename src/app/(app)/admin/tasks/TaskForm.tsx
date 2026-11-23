@@ -22,7 +22,7 @@ export function TaskForm({ task, members, today }: Props) {
     <form action={action} className="stack" key={task?.id ?? 'new'}>
       <input type="hidden" name="id" value={task?.id ?? ''} />
       <label className="field">제목<input name="title" required maxLength={100} defaultValue={task?.title} /></label>
-      <label className="field">설명 (선택)<textarea name="description" rows={2} defaultValue={task?.description ?? ''} /></label>
+      <label className="field">설명 (선택)<textarea name="description" rows={2} defaultValue={task?.description ?? ''} placeholder="링크를 붙여 넣으면 눌러서 열 수 있어요. 슬랙 링크는 카드로 보여요." /></label>
 
       <div className="field">업무 종류
         <div className="checks">

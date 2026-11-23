@@ -6,6 +6,7 @@ import { formatKstTime, kstDate } from '@/lib/time';
 import { requireUser } from '@/server/session';
 import { RefreshOnFocus } from './_components/RefreshOnFocus';
 import { ShiftBar } from './_components/ShiftBar';
+import { IndexTabs } from './_components/IndexTabs';
 import { TopBar } from './_components/TopBar';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -26,9 +27,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         firstIn={today ? formatKstTime(today.firstIn) : null}
         working={today?.state === 'working'}
       />
-      <div className="frame">
-        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} />
-        <div className="content">{children}</div>
+      <div className="frame-wrap">
+        <div className="frame">
+          <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} />
+          <div className="content">{children}</div>
+        </div>
+        <IndexTabs isAdmin={user.role === 'admin'} />
       </div>
       <RefreshOnFocus />
     </div>

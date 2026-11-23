@@ -68,3 +68,18 @@ export function FilterIcon({ size = 16 }: P) {
     </svg>
   );
 }
+
+const line = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+
+export function HomeIcon({ size = 20 }: P) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...line}><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /><path d="M10 21v-6h4v6" /></svg>;
+}
+export function ClockIcon({ size = 20 }: P) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...line}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>;
+}
+export function NoteIcon({ size = 20 }: P) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...line}><path d="M6 3h9l4 4v14H6Z" /><path d="M14 3v5h5" /><path d="M9 13h7M9 17h5" /></svg>;
+}
+export function ShieldIcon({ size = 20 }: P) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...line}><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
+}

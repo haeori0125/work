@@ -5,6 +5,7 @@ import {
   addCommentAction, deleteCommentAction, editCommentAction, loadTaskDetails, setStatusAction, type TaskDetails,
 } from '@/app/actions/tasks';
 import { Person } from '@/app/_ui/AvatarContext';
+import { RichText } from '@/app/_ui/RichText';
 import { STATUS_LABEL, type OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { NoteList } from './NoteList';
@@ -59,7 +60,7 @@ export function TaskDialog({ occ, me, onClose }: Props) {
         {details?.origin && (
           <p className="dlg-origin">요청 <Person name={details.origin.by} /> · {details.origin.date} 등록</p>
         )}
-        {occ.description && <p className="dlg-desc">{occ.description}</p>}
+        {occ.description && <RichText className="dlg-desc" text={occ.description} />}
         {error && <p className="msg error">{error}</p>}
 
         {hasParts && (

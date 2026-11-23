@@ -541,3 +541,49 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .wf-opt { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 13px; display: inline-flex; align-items: center; }
 .wf-opt[aria-pressed="true"] { background: var(--soft); border-color: var(--accent); color: var(--ink); font-weight: 700; }
 .wf-foot { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+
+/* 설명 속 링크 */
+.ext-link { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+.slack-card {
+  display: inline-flex; align-items: center; gap: 8px; margin: 4px 2px; padding: 6px 12px 6px 8px; vertical-align: middle;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--line)); border-radius: 8px; background: var(--surface);
+  color: var(--text); text-decoration: none; max-width: 100%;
+}
+.slack-card:hover { background: var(--soft); }
+.slack-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--soft); color: var(--ink); flex: none; }
+.slack-txt { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.slack-txt b { font-size: 13px; }
+.slack-txt small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 작성자 줄: 사진·이름·시각을 한 줄 가운데로 */
+.meta-who { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
+.note-meta { align-items: center; line-height: 1.2; }
+.note-meta .btn.link { line-height: 1.2; }
+
+/* 다이어리 인덱스 탭 */
+.frame-wrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.index-tabs { display: flex; flex-direction: column; gap: 6px; padding-top: 64px; }
+.itab {
+  position: relative; width: 44px; height: 52px; margin-left: -1px; display: grid; place-items: center;
+  border-radius: 0 10px 10px 0; border: 1px solid var(--line); border-left: 0; text-decoration: none;
+  color: var(--ink); transition: width .15s;
+}
+/* 다이어리처럼 탭마다 테마 색의 조금씩 다른 농도 */
+.itab-0 { background: color-mix(in srgb, var(--accent) 70%, var(--surface)); }
+.itab-1 { background: color-mix(in srgb, var(--accent) 52%, var(--surface)); }
+.itab-2 { background: color-mix(in srgb, var(--accent) 36%, var(--surface)); }
+.itab-3 { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+.itab:hover { width: 50px; }
+.itab[aria-current="page"] { width: 54px; background: var(--bg); color: var(--ink); box-shadow: 4px 2px 10px hsl(var(--h) 30% 20% / .08); }
+.itab[aria-current="page"]::before { content: ""; position: absolute; left: -2px; top: 0; bottom: 0; width: 3px; background: var(--bg); }
+.itab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .itab { transition: none; } }
+@media (max-width: 760px) {
+  .frame-wrap { grid-template-columns: minmax(0, 1fr); }
+  .index-tabs { order: -1; flex-direction: row; padding: 0 0 0 14px; gap: 4px; }
+  .itab { width: 52px; height: 38px; margin: 0 0 -1px; border-radius: 10px 10px 0 0; border: 1px solid var(--line); border-bottom: 0; }
+  .itab:hover { width: 52px; }
+  .itab[aria-current="page"] { width: 60px; height: 42px; margin-top: -4px; box-shadow: none; }
+  .itab[aria-current="page"]::before { left: 0; right: 0; top: auto; bottom: -2px; width: auto; height: 3px; }
+  .index-tabs .itab:not([aria-current="page"]) { margin-top: 4px; }
+}

@@ -46,7 +46,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
                 <>
                   <div className="note-body">{n.body}</div>
                   <div className="note-meta">
-                    <span><Person name={n.authorName} size={16} /> · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
+                    <span className="meta-who"><Person name={n.authorName} size={16} /><span>· {n.when}{n.edited ? ' (수정됨)' : ''}</span></span>
                     {n.authorId === me.id && (
                       <button className="btn link small" onClick={() => setEditing({ id: n.id, body: n.body })}>수정</button>
                     )}

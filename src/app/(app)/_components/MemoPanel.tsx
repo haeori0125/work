@@ -39,7 +39,7 @@ export function MemoPanel({ posts, me }: Props) {
                   <>
                     <p>{n.body}</p>
                     <div className="note-meta">
-                      <span><Person name={n.authorName} size={18} /> · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
+                      <span className="meta-who"><Person name={n.authorName} size={18} /><span>· {n.when}{n.edited ? ' (수정됨)' : ''}</span></span>
                       {n.authorId === me.id && <button className="btn link small" onClick={() => setEditing({ id: n.id, body: n.body })}>수정</button>}
                       {(n.authorId === me.id || me.role === 'admin') && (
                         <button className="btn link small" disabled={pending} style={{ color: armed === n.id ? 'var(--red)' : undefined }}
