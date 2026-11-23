@@ -109,8 +109,10 @@ h1, h2, h3 { margin: 0; line-height: 1.3; }
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px; box-shadow: var(--shadow);
 }
-.section-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-.section-head h2 { font-size: 17px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-bottom: 10px; }
+.section-head h2 { font-size: 17px; white-space: nowrap; }
+.section-head .section-sub { order: 3; flex-basis: 100%; }
+.section-head > .muted:not(.section-sub) { white-space: nowrap; }
 .section.past { border-color: var(--doing); }
 .empty { color: var(--muted); font-size: 14px; padding: 6px 0; }
 

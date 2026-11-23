@@ -1,0 +1,63 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { getDb } from '@/db';
+import { AppError } from '@/lib/errors';
+import { addTaskComment, deleteTaskComment, editTaskComment, listTaskComments } from '@/lib/memos';
+import { getStatusHistory, setStatus, type TaskStatus } from '@/lib/tasks';
+import { kstDate } from '@/lib/time';
+import { STATUS_LABEL, STATUSES, formatWhen, toNoteView, type NoteView } from '@/lib/view';
+import { requireActionUser } from '@/server/session';
+import { runAction, type ActionResult } from './result';
+
+export async function setStatusAction(taskId: number, occurrenceKey: string, status: TaskStatus): Promise<ActionResult> {
+  return runAction(async () => {
+    const user = await requireActionUser();
+    if (!STATUSES.includes(status)) throw new AppError('invalid', '잘못된 상태입니다');
+    await setStatus(await getDb(), user.id, taskId, occurrenceKey, status, new Date());
+    revalidatePath('/');
+  });
+}
+
+export type TaskDetails = { comments: NoteView[]; history: { text: string; when: string }[] };
+
+export async function loadTaskDetails(taskId: number, occurrenceKey: string): Promise<TaskDetails> {
+  await requireActionUser();
+  const db = await getDb();
+  const today = kstDate(new Date());
+  const [comments, history] = await Promise.all([
+    listTaskComments(db, taskId, occurrenceKey),
+    getStatusHistory(db, taskId, occurrenceKey),
+  ]);
+  return {
+    comments: comments.map((c) => toNoteView(c, today)),
+    history: history.map((h) => ({
+      text: `${h.userName}: ${STATUS_LABEL[h.from]} → ${STATUS_LABEL[h.to]}`,
+      when: formatWhen(h.at, today),
+    })),
+  };
+}
+
+export async function addCommentAction(taskId: number, occurrenceKey: string, body: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const user = await requireActionUser();
+    await addTaskComment(await getDb(), user, taskId, occurrenceKey, body, new Date());
+    revalidatePath('/');
+  });
+}
+
+export async function editCommentAction(id: number, body: string): Promise<ActionResult> {
+  return runAction(async () => {
+    const user = await requireActionUser();
+    await editTaskComment(await getDb(), user, id, body, new Date());
+    revalidatePath('/');
+  });
+}
+
+export async function deleteCommentAction(id: number): Promise<ActionResult> {
+  return runAction(async () => {
+    const user = await requireActionUser();
+    await deleteTaskComment(await getDb(), user, id);
+    revalidatePath('/');
+  });
+}
