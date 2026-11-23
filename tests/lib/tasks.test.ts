@@ -147,3 +147,17 @@ describe('update and delete', () => {
     expect(await db.select().from(taskStatus)).toHaveLength(1);
   });
 });
+
+describe('getTaskOrigin', () => {
+  it('returns who registered the task and when, even after another admin edits it', async () => {
+    const { getTaskOrigin } = await import('@/lib/tasks');
+    const other = await makeUser(db, '부관리자', { role: 'admin' });
+    const id = await createTask(db, admin, input({ title: '요청 업무' }));
+    await updateTask(db, id, input({ title: '수정된 업무' }));
+    const origin = await getTaskOrigin(db, id);
+    expect(origin?.creatorName).toBe('운영자');
+    expect(origin?.createdAt).toBeInstanceOf(Date);
+    expect(other).toBeGreaterThan(0);
+    expect(await getTaskOrigin(db, 99999)).toBeNull();
+  });
+});

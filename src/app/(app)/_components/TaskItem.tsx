@@ -30,11 +30,11 @@ export function TaskItem({ occ, me, showDate }: Props) {
       <div>
         <div className="task-title">{occ.title}</div>
         {occ.description && <p className="task-desc">{occ.description}</p>}
-        <div className="meta">
-          {showDate && <span>{occ.dateLabel}</span>}
-          {occ.assignees.length > 0 && <span>담당 {occ.assignees.join(', ')}</span>}
-          {occ.repeatLabel && <span>↻ {occ.repeatLabel}</span>}
-          {occ.lastChange && <span className={`by ${occ.status} last-change`}>{occ.lastChange}</span>}
+        <div className="meta tags">
+          {showDate && <span className="tag date">{occ.dateLabel}</span>}
+          {occ.assignees.length > 0 && <span className="tag">담당 {occ.assignees.join(', ')}</span>}
+          {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
+          {occ.lastChange && <span className={`tag ${occ.status} last-change`}>{occ.lastChange}</span>}
           <button className="btn link small memo-n" onClick={toggle} aria-expanded={open}>
             {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모·기록'}{open ? ' ▴' : ''}
           </button>
@@ -45,6 +45,12 @@ export function TaskItem({ occ, me, showDate }: Props) {
         <div className="details">
           {!details ? <span className="muted">불러오는 중…</span> : (
             <>
+              {details.origin && (
+                <div className="tags" aria-label="요청 정보">
+                  <span className="tag">요청 {details.origin.by}</span>
+                  <span className="tag line">{details.origin.date} 등록</span>
+                </div>
+              )}
               <NoteList
                 notes={details.comments}
                 me={me}

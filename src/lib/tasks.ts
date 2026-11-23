@@ -217,3 +217,10 @@ export async function getStatusHistory(
     .where(and(eq(taskStatusHistory.taskId, taskId), eq(taskStatusHistory.occurrenceKey, occurrenceKey)))
     .orderBy(desc(taskStatusHistory.at), desc(taskStatusHistory.id));
 }
+
+/** 업무를 등록한 사람(요청자)과 등록 시각. 수정해도 바뀌지 않는다. */
+export async function getTaskOrigin(db: Db, taskId: number): Promise<{ creatorName: string; createdAt: Date } | null> {
+  const [row] = await db.select({ creatorName: users.name, createdAt: tasks.createdAt })
+    .from(tasks).innerJoin(users, eq(users.id, tasks.createdBy)).where(eq(tasks.id, taskId));
+  return row ?? null;
+}

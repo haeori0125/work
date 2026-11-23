@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
 import { AppError } from '@/lib/errors';
 import { addTaskComment, deleteTaskComment, editTaskComment, listTaskComments } from '@/lib/memos';
-import { getStatusHistory, setStatus, type TaskStatus } from '@/lib/tasks';
-import { kstDate } from '@/lib/time';
+import { getStatusHistory, getTaskOrigin, setStatus, type TaskStatus } from '@/lib/tasks';
+import { formatDateLabel, kstDate } from '@/lib/time';
 import { STATUS_LABEL, STATUSES, formatWhen, toNoteView, type NoteView } from '@/lib/view';
 import { requireActionUser } from '@/server/session';
 import { runAction, type ActionResult } from './result';
@@ -19,17 +19,23 @@ export async function setStatusAction(taskId: number, occurrenceKey: string, sta
   });
 }
 
-export type TaskDetails = { comments: NoteView[]; history: { text: string; when: string }[] };
+export type TaskDetails = {
+  origin: { by: string; date: string } | null;
+  comments: NoteView[];
+  history: { text: string; when: string }[];
+};
 
 export async function loadTaskDetails(taskId: number, occurrenceKey: string): Promise<TaskDetails> {
   await requireActionUser();
   const db = await getDb();
   const today = kstDate(new Date());
-  const [comments, history] = await Promise.all([
+  const [comments, history, origin] = await Promise.all([
     listTaskComments(db, taskId, occurrenceKey),
     getStatusHistory(db, taskId, occurrenceKey),
+    getTaskOrigin(db, taskId),
   ]);
   return {
+    origin: origin ? { by: origin.creatorName, date: formatDateLabel(kstDate(origin.createdAt)) } : null,
     comments: comments.map((c) => toNoteView(c, today)),
     history: history.map((h) => ({
       text: `${h.userName}: ${STATUS_LABEL[h.from]} → ${STATUS_LABEL[h.to]}`,

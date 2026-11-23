@@ -398,3 +398,16 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
 .list-card .task-title { font-weight: 700; flex: 1; min-width: 140px; }
 .task-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13px; color: var(--muted); }
 .subnav .btn.primary { color: var(--on-accent); }
+
+/* 태그: 모두 테마 색에서 계산 */
+.tags { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.tag {
+  display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; line-height: 1.6; white-space: nowrap;
+  background: var(--soft); color: var(--ink); border: 1px solid transparent;
+}
+.tag.line { background: transparent; border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); color: var(--ink); font-weight: 500; }
+.tag.date { background: var(--red-soft); color: var(--red); }
+.tag.doing { background: color-mix(in srgb, var(--doing) 32%, var(--surface)); color: var(--doing-ink); }
+.tag.done { background: color-mix(in srgb, var(--done) 32%, var(--surface)); color: var(--done-ink); }
+.meta.tags { margin-top: 4px; }
