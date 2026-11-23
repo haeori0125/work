@@ -55,12 +55,12 @@ test('admin creates a task, approves a member, member completes it and admin see
   await expect(check).toHaveAccessibleName('매장 오픈 준비: 진행 중');
   await check.click();
   await expect(check).toHaveAccessibleName('매장 오픈 준비: 완료');
-  await expect(task.locator('.last-change')).toContainText('완료 · 민수');
+  await expect(task.locator('.last-change.done')).toContainText('민수');
   await logout(page);
 
   // 관리자: 같은 업무에 민수가 완료한 것으로 보임
   await login(page, '운영자', 'pw1234');
   await expect(
-    page.locator('section[aria-label="오늘 업무"] li.task-row', { hasText: '매장 오픈 준비' }).locator('.last-change'),
-  ).toContainText('완료 · 민수');
+    page.locator('section[aria-label="오늘 업무"] li.task-row', { hasText: '매장 오픈 준비' }).locator('.last-change.done'),
+  ).toContainText('민수');
 });
