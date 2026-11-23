@@ -22,6 +22,8 @@ export type PartView = {
   status: TaskStatus;
   /** "영희 10:12" — 화면에서 상태 아이콘(✓/◐)을 앞에 붙인다 */
   tag: string | null;
+  by: string | null;
+  at: string | null;
 };
 
 export type OccurrenceView = {
@@ -37,6 +39,8 @@ export type OccurrenceView = {
   lastChange: string | null;
   /** 위클리 칸용 짧은 상태 태그 글자: "민수" */
   lastBy: string | null;
+  /** 시각 없이 "09:14" 같은 시각만 (오늘이 아니면 날짜 포함) */
+  lastAt: string | null;
   commentCount: number;
   repeatLabel: string | null;
   /** 주간 업무 마감: "~목" */
@@ -68,14 +72,17 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     // 파트가 있는 업무는 파트마다 태그가 붙으므로 업무 줄에는 상태 태그를 두지 않는다
     lastChange: o.parts.length ? null : changeTag(o.status, o.lastChange, today),
     lastBy: o.parts.length ? null : changeTag(o.status, o.lastChange, null),
+    lastAt: o.parts.length || o.status === 'todo' || !o.lastChange ? null : formatWhen(o.lastChange.at, today),
     commentCount: o.commentCount,
     repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
-    dueLabel: o.dueDate ? `~${WEEKDAY_SHORT[kstWeekday(o.dueDate)]}` : null,
+    dueLabel: !o.dueDate ? null : o.repeat === 'none' ? `~${formatDateLabel(o.dueDate)}` : `~${WEEKDAY_SHORT[kstWeekday(o.dueDate)]}`,
     overdue: !!o.dueDate && o.dueDate < today && o.status !== 'done',
     dueHere: !!o.dueHere,
     parts: o.parts.map((p) => ({
       id: p.id, title: p.title, assignee: p.assignee?.name ?? null, status: p.status,
       tag: changeTag(p.status, p.lastChange, today),
+      by: p.status === 'todo' || !p.lastChange ? null : p.lastChange.userName,
+      at: p.status === 'todo' || !p.lastChange ? null : formatWhen(p.lastChange.at, today),
     })),
     partsLabel: o.parts.length ? `파트 ${partsDone}/${o.parts.length}` : null,
   };

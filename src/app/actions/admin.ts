@@ -28,7 +28,8 @@ function parseTask(form: FormData): TaskInput {
     startDate: str(form, 'startDate'),
     endDate: str(form, 'endDate') || null,
     assigneeIds: form.getAll('assignees').map(Number).filter(Number.isInteger),
-    dueWeekday: kind === 'weekly' && str(form, 'dueWeekday') !== '' ? Number(str(form, 'dueWeekday')) : null,
+    dueWeekday: kind === 'weekly' && repeat === 'weekly' && str(form, 'dueWeekday') !== '' ? Number(str(form, 'dueWeekday')) : null,
+    dueDate: kind === 'weekly' && repeat === 'none' ? str(form, 'dueDate') || null : null,
     parts: parseParts(str(form, 'parts')),
   };
 }

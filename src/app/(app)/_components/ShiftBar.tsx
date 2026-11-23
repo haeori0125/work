@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { endShiftAction } from '@/app/actions/attendance';
+import { MiniAvatar } from '@/app/_ui/AvatarContext';
 
 type Props = { name: string; dateLabel: string; firstIn: string | null; working: boolean };
 
@@ -15,7 +16,7 @@ export function ShiftBar({ name, dateLabel, firstIn, working }: Props) {
   });
   return (
     <div className="shift">
-      <span className="who">{name}</span>
+      <span className="who"><MiniAvatar name={name} size={26} />{name}</span>
       <span className={working ? 'pill' : 'pill off'}>{working ? '근무 중' : '근무 기록 없음'}</span>
       <span className="st">{dateLabel}{firstIn && <span className="st-in">출근 <b>{firstIn}</b></span>}</span>
       <div className="out-area">

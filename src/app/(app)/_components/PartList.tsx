@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { setPartStatusAction } from '@/app/actions/tasks';
 import type { PartView } from '@/lib/view';
-import { StatusMark } from '@/app/_ui/icons';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
+import { AssigneeTag, StatusTag } from './TaskTags';
 
 /** 업무 아래 파트 목록. 파트마다 체크 원이 따로 있다. */
 export function PartList({ parts, occurrenceKey, compact = false }: { parts: PartView[]; occurrenceKey: string; compact?: boolean }) {
@@ -24,8 +24,8 @@ export function PartList({ parts, occurrenceKey, compact = false }: { parts: Par
               <span className="part-title">{p.title}</span>
               {(p.assignee || p.tag) && (
                 <span className="tags mini">
-                  {p.assignee && <span className="tag line">담당 {p.assignee}</span>}
-                  {p.tag && <span className={`tag ${p.status}`}><StatusMark status={p.status} />{p.tag}</span>}
+                  {p.assignee && <AssigneeTag names={[p.assignee]} />}
+                  <StatusTag status={p.status} by={p.by} at={p.at} />
                 </span>
               )}
             </div>

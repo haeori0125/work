@@ -1,15 +1,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import {
-  addCommentAction, deleteCommentAction, editCommentAction, loadTaskDetails, setStatusAction, type TaskDetails,
-} from '@/app/actions/tasks';
+import { setStatusAction } from '@/app/actions/tasks';
 import type { OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
-import { StatusMark } from '@/app/_ui/icons';
-import { STATUS_LABEL } from '@/lib/view';
-import { NoteList } from './NoteList';
-import { PartList } from './PartList';
+import { TaskDialog } from './TaskDialog';
+import { AssigneeTag, StatusTag } from './TaskTags';
 
 type Props = { occ: OccurrenceView; me: { id: number; role: 'member' | 'admin' }; showDate?: boolean };
 
@@ -17,69 +13,34 @@ export function TaskItem({ occ, me, showDate }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
-  const [details, setDetails] = useState<TaskDetails | null>(null);
-
-  const reload = () => start(async () => setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey)));
-  const toggle = () => { if (!open && !details) reload(); setOpen(!open); };
   const hasParts = occ.parts.length > 0;
-  const cycle = () => hasParts ? toggle() : start(async () => {
+  // 파트가 있으면 원을 눌러도 팝업에서 파트를 체크한다
+  const cycle = () => hasParts ? setOpen(true) : start(async () => {
     const res = await setStatusAction(occ.taskId, occ.occurrenceKey, NEXT_STATUS[occ.status]);
     setError(res?.error ?? null);
-    if (open) setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey));
   });
 
   return (
     <li className={`task-row ${occ.status}`}>
       <CheckCircle status={occ.status} title={hasParts ? `${occ.title} (파트 보기)` : occ.title} onCycle={cycle} disabled={pending} />
       <div>
-        <div className="task-title">{occ.title}</div>
+        <button type="button" className="task-title as-link" onClick={() => setOpen(true)}>{occ.title}</button>
         {occ.description && <p className="task-desc">{occ.description}</p>}
         <div className="meta tags">
           {showDate && <span className="tag date">{occ.dateLabel}</span>}
           {occ.overdue && <span className="tag date">마감 지남</span>}
-          {occ.assignees.length > 0 && <span className="tag line">담당 {occ.assignees.join(', ')}</span>}
+          <AssigneeTag names={occ.assignees} />
           {occ.dueLabel && !occ.overdue && <span className="tag line">{occ.dueLabel}</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
           {occ.partsLabel && <span className={`tag ${occ.status === 'todo' ? 'line' : occ.status}`}>{occ.partsLabel}</span>}
-          {occ.lastChange && <span className={`tag ${occ.status} last-change`} title={STATUS_LABEL[occ.status]}><StatusMark status={occ.status} />{occ.lastChange}</span>}
-          <button className={occ.commentCount > 0 || open ? 'tag line memo-n' : 'tag line memo-n reveal'} onClick={toggle} aria-expanded={open}>
-            {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모 · 기록'}{open ? ' ▴' : ''}
-          </button>
+          <StatusTag status={occ.status} by={occ.lastBy} at={occ.lastAt} className="last-change" />
+          {occ.commentCount > 0 && (
+            <button type="button" className="tag line memo-n" onClick={() => setOpen(true)}>메모 {occ.commentCount}</button>
+          )}
         </div>
         {error && <p className="msg error" style={{ marginTop: 6 }}>{error}</p>}
       </div>
-      {hasParts && open && <div className="details parts-wrap"><PartList parts={occ.parts} occurrenceKey={occ.occurrenceKey} /></div>}
-      {open && (
-        <div className="details">
-          {!details ? <span className="muted">불러오는 중…</span> : (
-            <>
-              {details.origin && (
-                <div className="tags" aria-label="요청 정보">
-                  <span className="tag">요청 {details.origin.by}</span>
-                  <span className="tag line">{details.origin.date} 등록</span>
-                </div>
-              )}
-              <NoteList
-                notes={details.comments}
-                me={me}
-                placeholder="이 업무에 메모 남기기"
-                onAdd={(body) => addCommentAction(occ.taskId, occ.occurrenceKey, body)}
-                onEdit={editCommentAction}
-                onDelete={deleteCommentAction}
-                onChanged={reload}
-              />
-              {details.history.length > 0 && (
-                <div className="muted">
-                  <div>변경 기록</div>
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
-                    {details.history.map((h, i) => <li key={i}>{h.when} {h.text}</li>)}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      {open && <TaskDialog occ={occ} me={me} onClose={() => setOpen(false)} />}
     </li>
   );
 }

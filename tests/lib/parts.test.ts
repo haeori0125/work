@@ -91,3 +91,26 @@ describe('parts', () => {
     expect(await codeOf(createTask(db, admin, input({ parts: [{ title: '  ', assigneeId: null }] })))).toBe('invalid');
   });
 });
+
+describe('one-off weekly task with exact dates', () => {
+  it('runs from its start date to its due date, across weeks, as one task', async () => {
+    const id = await createTask(db, admin, input({ title: '보고서', kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-12-02' }));
+    const [w1] = await getWeeklyOccurrences(db, '2026-11-23');
+    const [w2] = await getWeeklyOccurrences(db, '2026-11-30');
+    expect(w1.occurrenceKey).toBe('2026-11-23');
+    expect(w2.occurrenceKey).toBe('2026-11-23'); // 같은 업무 하나
+    expect(w1.dueDate).toBe('2026-12-02');
+    expect(w1.startDate).toBe('2026-11-25');
+    expect(await getWeeklyOccurrences(db, '2026-12-07')).toEqual([]);
+    const view = await getWeekView(db, '2026-11-30');
+    expect(view['2026-12-02'].map((o) => [o.title, o.dueHere])).toEqual([['보고서', true]]);
+    await setStatus(db, a, id, '2026-11-23', 'done', at('2026-12-01T01:00:00Z'));
+    expect((await getWeeklyOccurrences(db, '2026-11-30'))[0].status).toBe('done');
+  });
+
+  it('validates the exact due date', async () => {
+    expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-11-24' })))).toBe('invalid');
+    expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', repeat: 'weekly', dueDate: '2026-11-27' })))).toBe('invalid');
+    expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', dueWeekday: 3 })))).toBe('invalid'); // 한 번짜리는 날짜로
+  });
+});

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { deleteSegmentAction, editSegmentAction } from '@/app/actions/admin';
+import { Person } from '@/app/_ui/AvatarContext';
 
 type Props = {
   id: number; dateLabel: string; name: string; index: number; count: number;
@@ -20,7 +21,7 @@ export function SegmentRow(p: Props) {
   return (
     <tr>
       <td>{p.index === 0 ? p.dateLabel : ''}</td>
-      <td>{p.index === 0 ? p.name : ''}</td>
+      <td>{p.index === 0 ? <Person name={p.name} size={20} /> : ''}</td>
       <td className="muted">{p.count > 1 ? `${p.index + 1}/${p.count}` : ''}</td>
       <td><input type="time" value={inT} onChange={(e) => setIn(e.target.value)} aria-label={`${label} 출근`} /></td>
       <td>

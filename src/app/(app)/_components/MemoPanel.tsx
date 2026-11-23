@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { addBoardPostAction, deleteBoardPostAction, editBoardPostAction } from '@/app/actions/memos';
 import type { ActionResult } from '@/app/actions/result';
+import { Person } from '@/app/_ui/AvatarContext';
 import type { NoteView } from '@/lib/view';
 
 type Props = { posts: NoteView[]; me: { id: number; role: 'member' | 'admin' } };
@@ -38,7 +39,7 @@ export function MemoPanel({ posts, me }: Props) {
                   <>
                     <p>{n.body}</p>
                     <div className="note-meta">
-                      <span>{n.authorName} · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
+                      <span><Person name={n.authorName} size={18} /> · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
                       {n.authorId === me.id && <button className="btn link small" onClick={() => setEditing({ id: n.id, body: n.body })}>수정</button>}
                       {(n.authorId === me.id || me.role === 'admin') && (
                         <button className="btn link small" disabled={pending} style={{ color: armed === n.id ? 'var(--red)' : undefined }}

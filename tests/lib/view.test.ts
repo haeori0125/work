@@ -16,7 +16,7 @@ describe('toOccurrenceView', () => {
   const base = {
     taskId: 1, occurrenceKey: '2026-11-23', title: '팀 투두 페이지 완성하기', description: null,
     kind: 'dated' as const, repeat: 'none' as const, assignees: [{ id: 1, name: '장은채' }], commentCount: 0,
-    lastChange: { userId: 2, userName: '이현은', at: new Date('2026-11-23T13:40:00Z') }, parts: [], dueDate: null,
+    lastChange: { userId: 2, userName: '이현은', at: new Date('2026-11-23T13:40:00Z') }, parts: [], dueDate: null, startDate: '2026-11-23',
   };
 
   it('shows no last-change tag once a task is back to todo', async () => {
@@ -39,8 +39,9 @@ describe('toOccurrenceView', () => {
 
   it('labels deadlines, overdue weekly tasks and part progress', async () => {
     const { toOccurrenceView } = await import('@/lib/view');
-    const weekly = { ...base, kind: 'weekly' as const, dueDate: '2026-11-26', status: 'todo' as const };
+    const weekly = { ...base, kind: 'weekly' as const, repeat: 'weekly' as const, dueDate: '2026-11-26', status: 'todo' as const };
     expect(toOccurrenceView(weekly, '2026-11-24').dueLabel).toBe('~목');
+    expect(toOccurrenceView({ ...weekly, repeat: 'none' }, '2026-11-24').dueLabel).toBe('~11/26(목)');
     expect(toOccurrenceView(weekly, '2026-11-24').overdue).toBe(false);
     expect(toOccurrenceView(weekly, '2026-11-27').overdue).toBe(true);
     expect(toOccurrenceView({ ...weekly, status: 'done' }, '2026-11-27').overdue).toBe(false);

@@ -3,19 +3,17 @@
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
 import type { OccurrenceView } from '@/lib/view';
-import { StatusMark } from '@/app/_ui/icons';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
-import { PartList } from './PartList';
+import { TaskDialog } from './TaskDialog';
+import { AssigneeTag, StatusTag } from './TaskTags';
 
 export type WeekDay = {
   date: string; dayNum: number; weekday: string; isToday: boolean; isPast: boolean; isSun: boolean; items: OccurrenceView[];
 };
 
-type Props = { rangeLabel: string; days: WeekDay[]; goals: OccurrenceView[] };
+type Props = { rangeLabel: string; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' } };
 
-const keyOf = (o: OccurrenceView, where: string) => `${where}-${o.taskId}-${o.occurrenceKey}`;
-
-/** 담당(테두리) · 마감 · 파트 진행 · 체크한 사람(채움) 태그 */
+/** 마감 · 담당(테두리) · 파트 진행 · 체크한 사람(채움) 태그 */
 function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
   const any = o.assignees.length > 0 || o.lastBy || o.partsLabel || (showDue && (o.dueLabel || o.overdue)) || o.dueHere;
   if (!any) return null;
@@ -24,26 +22,28 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
       {o.dueHere && <span className={o.overdue ? 'tag date' : 'tag line due'}>{o.overdue ? '마감 지남' : '마감'}</span>}
       {showDue && !o.dueHere && o.overdue && <span className="tag date">마감 지남</span>}
       {showDue && !o.dueHere && !o.overdue && o.dueLabel && <span className="tag line due">{o.dueLabel}</span>}
-      {o.assignees.length > 0 && <span className="tag line">담당 {o.assignees.join(', ')}</span>}
+      <AssigneeTag names={o.assignees} compact />
       {o.partsLabel && <span className={`tag ${o.status === 'todo' ? 'line' : o.status}`}>{o.partsLabel}</span>}
-      {o.lastBy && <span className={`tag ${o.status}`} title={o.lastChange ?? undefined}><StatusMark status={o.status} />{o.lastBy}</span>}
+      <StatusTag status={o.status} by={o.lastBy} compact />
     </span>
   );
 }
 
-export function WeekPanel({ rangeLabel, days, goals }: Props) {
+export function WeekPanel({ rangeLabel, days, goals, me }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
-  // 파트가 있는 업무는 원을 누르면 파트 목록이 열리고, 체크는 파트에서 한다
-  const press = (o: OccurrenceView, key: string) => {
-    if (o.parts.length) { setOpen(open === key ? null : key); return; }
+  const [opened, setOpened] = useState<OccurrenceView | null>(null);
+  // 파트가 있는 업무는 원을 누르면 팝업이 열리고, 체크는 팝업의 파트에서 한다
+  const press = (o: OccurrenceView) => {
+    if (o.parts.length) { setOpened(o); return; }
     start(async () => {
       const res = await setStatusAction(o.taskId, o.occurrenceKey, NEXT_STATUS[o.status]);
       setError(res?.error ?? null);
     });
   };
-  const openGoal = goals.find((o) => open === keyOf(o, 'goal'));
+  // 팝업은 서버에서 새로 받은 최신 데이터로 보여 준다
+  const all = [...goals, ...days.flatMap((d) => d.items)];
+  const current = opened && (all.find((o) => o.taskId === opened.taskId && o.occurrenceKey === opened.occurrenceKey) ?? opened);
 
   return (
     <section className="panel p-week" aria-label="위클리">
@@ -55,12 +55,11 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
           {goals.map((o) => (
             <span key={o.taskId} className={`goal ${o.status}`}>
               <CheckCircle status={o.status} title={o.parts.length ? `${o.title} (파트 보기)` : o.title} size="sm"
-                onCycle={() => press(o, keyOf(o, 'goal'))} disabled={pending} />
-              <span className="goal-title">{o.title}</span>
+                onCycle={() => press(o)} disabled={pending} />
+              <button type="button" className="goal-title as-link" onClick={() => setOpened(o)}>{o.title}</button>
               <Tags o={o} showDue />
             </span>
           ))}
-          {openGoal && <div className="goal-parts"><PartList parts={openGoal.parts} occurrenceKey={openGoal.occurrenceKey} compact /></div>}
         </div>
         {error && <p className="msg error" style={{ marginBottom: 10 }}>{error}</p>}
         <div className="week">
@@ -75,20 +74,16 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
                 </div>
                 {d.items.length === 0 ? <div className="empty-day">업무 없음</div> : (
                   <ul className="items">
-                    {d.items.map((o) => {
-                      const key = keyOf(o, d.date);
-                      return (
-                        <li key={key} className={`item ${o.status}${o.dueHere ? ' due-item' : ''}`}>
-                          <CheckCircle status={o.status} title={o.parts.length ? `${o.title} (파트 보기)` : o.title} size="sm"
-                            onCycle={() => press(o, key)} disabled={pending} />
-                          <div>
-                            <span className="t">{o.title}</span>
-                            <Tags o={o} showDue={false} />
-                            {open === key && <PartList parts={o.parts} occurrenceKey={o.occurrenceKey} compact />}
-                          </div>
-                        </li>
-                      );
-                    })}
+                    {d.items.map((o) => (
+                      <li key={`${o.taskId}-${o.occurrenceKey}`} className={`item ${o.status}${o.dueHere ? ' due-item' : ''}`}>
+                        <CheckCircle status={o.status} title={o.parts.length ? `${o.title} (파트 보기)` : o.title} size="sm"
+                          onCycle={() => press(o)} disabled={pending} />
+                        <div>
+                          <button type="button" className="t as-link" onClick={() => setOpened(o)}>{o.title}</button>
+                          <Tags o={o} showDue={false} />
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
@@ -96,6 +91,7 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
           })}
         </div>
       </div>
+      {current && <TaskDialog key={`${current.taskId}-${current.occurrenceKey}`} occ={current} me={me} onClose={() => setOpened(null)} />}
     </section>
   );
 }

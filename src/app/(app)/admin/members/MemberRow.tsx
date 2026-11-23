@@ -6,6 +6,7 @@ import {
 } from '@/app/actions/admin';
 import type { ActionResult } from '@/app/actions/result';
 import type { Member } from '@/lib/members';
+import { Person } from '@/app/_ui/AvatarContext';
 
 export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   const [pending, start] = useTransition();
@@ -20,7 +21,7 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   return (
     <li className="task">
       <div className="task-top">
-        <span className="task-title">{m.name}{isMe && ' (나)'}</span>
+        <span className="task-title"><Person name={m.name} size={24} />{isMe && ' (나)'}</span>
         {m.role === 'admin' && <span className="badge doing">관리자</span>}
         {m.status === 'pending' && <span className="badge todo">승인 대기</span>}
         {m.status === 'disabled' && <span className="badge warn">사용 중지</span>}

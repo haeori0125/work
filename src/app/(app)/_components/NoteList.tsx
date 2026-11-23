@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import type { ActionResult } from '@/app/actions/result';
+import { Person } from '@/app/_ui/AvatarContext';
 import type { NoteView } from '@/lib/view';
 
 type Props = {
@@ -45,7 +46,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
                 <>
                   <div className="note-body">{n.body}</div>
                   <div className="note-meta">
-                    <span>{n.authorName} · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
+                    <span><Person name={n.authorName} size={16} /> · {n.when}{n.edited ? ' (수정됨)' : ''}</span>
                     {n.authorId === me.id && (
                       <button className="btn link small" onClick={() => setEditing({ id: n.id, body: n.body })}>수정</button>
                     )}

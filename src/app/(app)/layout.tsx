@@ -1,6 +1,7 @@
 import { getDb } from '@/db';
 import { getToday } from '@/lib/attendance';
-import { getPrefs } from '@/lib/prefs';
+import { getAvatarMap, getPrefs } from '@/lib/prefs';
+import { AvatarProvider } from '@/app/_ui/AvatarContext';
 import { formatKstTime, kstDate } from '@/lib/time';
 import { requireUser } from '@/server/session';
 import { RefreshOnFocus } from './_components/RefreshOnFocus';
@@ -13,10 +14,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const now = new Date();
   const db = await getDb();
-  const [today, prefs] = await Promise.all([getToday(db, user.id, now), getPrefs(db, user.id)]);
+  const [today, prefs, avatars] = await Promise.all([getToday(db, user.id, now), getPrefs(db, user.id), getAvatarMap(db)]);
   const d = kstDate(now);
   const dateLabel = `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WD[new Date(`${d}T00:00:00Z`).getUTCDay()]})`;
   return (
+    <AvatarProvider map={avatars}>
     <div className="shell">
       <ShiftBar
         name={user.name}
@@ -30,5 +32,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
       <RefreshOnFocus />
     </div>
+    </AvatarProvider>
   );
 }

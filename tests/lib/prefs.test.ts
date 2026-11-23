@@ -39,3 +39,14 @@ describe('prefs', () => {
     expect((await errOf(savePrefs(db, uid, { avatar: 'data:image/png;base64,' + 'A'.repeat(200000) }, NOW)))?.[0]).toBe('invalid');
   });
 });
+
+describe('getAvatarMap', () => {
+  it('maps names to saved profile photos only', async () => {
+    const { getAvatarMap } = await import('@/lib/prefs');
+    const other = await makeUser(db, '영희');
+    const img = 'data:image/webp;base64,' + 'B'.repeat(100);
+    await savePrefs(db, other, { avatar: img }, NOW);
+    await savePrefs(db, uid, { weekStart: 'sun' }, NOW);
+    expect(await getAvatarMap(db)).toEqual({ 영희: img });
+  });
+});

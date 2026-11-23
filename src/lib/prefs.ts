@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
-import { userPrefs } from '@/db/schema';
+import { eq, isNotNull } from 'drizzle-orm';
+import { userPrefs, users } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { parseHex } from './color';
 import { AppError } from './errors';
@@ -58,4 +58,11 @@ export async function savePrefs(db: Db, userId: number, patch: Partial<Prefs>, n
   await db.insert(userPrefs).values({ userId, ...next, updatedAt: now })
     .onConflictDoUpdate({ target: userPrefs.userId, set: { ...next, updatedAt: now } });
   return next;
+}
+
+/** 이름 → 프로필 사진. 사진을 올린 사람만 담긴다(이름은 모임 안에서 유일). */
+export async function getAvatarMap(db: Db): Promise<Record<string, string>> {
+  const rows = await db.select({ name: users.name, avatar: userPrefs.avatar })
+    .from(userPrefs).innerJoin(users, eq(users.id, userPrefs.userId)).where(isNotNull(userPrefs.avatar));
+  return Object.fromEntries(rows.map((r) => [r.name, r.avatar!]));
 }

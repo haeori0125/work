@@ -40,7 +40,7 @@ export default async function Home() {
     <div className="home">
       <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} />
       <div className="home-right">
-        <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} />
+        <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} me={me} />
         <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />
       </div>
     </div>

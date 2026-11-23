@@ -61,15 +61,18 @@ export function TaskForm({ task, members, today }: Props) {
 
       <div className="grid-2">
         <label className="field">
-          {kind === 'weekly' ? '시작 주 (그 주의 아무 날짜)' : repeating ? '시작일' : '날짜'}
+          {kind === 'weekly' && repeating ? '시작 주 (그 주의 아무 날짜)' : repeating || kind === 'weekly' ? '시작일' : '날짜'}
           <input type="date" name="startDate" required defaultValue={task?.startDate ?? today} />
         </label>
         {repeating && (
           <label className="field">종료일 (선택)<input type="date" name="endDate" defaultValue={task?.endDate ?? ''} /></label>
         )}
+        {kind === 'weekly' && !repeating && (
+          <label className="field">마감일 (선택)<input type="date" name="dueDate" defaultValue={task?.dueDate ?? ''} /></label>
+        )}
       </div>
 
-      {kind === 'weekly' && (
+      {kind === 'weekly' && repeating && (
         <label className="field">마감 요일 (선택)
           <select name="dueWeekday" defaultValue={task?.dueWeekday ?? ''}>
             <option value="">마감 없음 (그 주 안에)</option>
