@@ -42,7 +42,11 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
                   <span className="tag line">{period(d)}</span>
                   {d.dueWeekday !== null && <span className="tag line">~{['월', '화', '수', '목', '금', '토', '일'][d.dueWeekday]}</span>}
                   {d.dueDate && <span className="tag line">~{formatDateLabel(d.dueDate)}</span>}
-                  {d.assigneeIds.length > 0 && <span className="tag line">담당 {d.assigneeIds.map(nameOf).join(', ')}</span>}
+                  {(() => {
+                    // 업무 담당자 + 파트 담당자(중복 제외)
+                    const ids = [...new Set([...d.assigneeIds, ...d.parts.map((p) => p.assigneeId).filter((x): x is number => x !== null)])];
+                    return ids.length > 0 && <span className="tag line">담당 {ids.map(nameOf).join(', ')}</span>;
+                  })()}
                   {d.parts.length > 0 && <span className="tag line">파트 {d.parts.length}개</span>}
                 </div>
               </li>

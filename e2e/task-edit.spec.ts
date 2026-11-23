@@ -20,10 +20,14 @@ test('editing a weekly task keeps it weekly and keeps its parts', async ({ page 
 
   await page.getByRole('button', { name: '＋ 파트 추가' }).click();
   await page.getByLabel('파트 1 이름').fill('1~10번');
+  await page.getByLabel('파트 1 담당자').selectOption({ label: '운영자' });
+  // 파트 담당자는 업무 담당자에도 자동으로 들어간다(체크된 채 잠김)
+  await expect(page.getByRole('checkbox', { name: /운영자/ })).toBeChecked();
   await page.getByRole('button', { name: '수정 저장' }).click();
   await page.waitForURL(/saved=1/);
   await expect(row.locator('.tag').first()).toHaveText('주간 · 한 번');
   await expect(row).toContainText('파트 1개');
+  await expect(row.locator('.tag', { hasText: '담당' })).toContainText('운영자');
   // 새 업무 칸은 다시 비어 있어야 한다
   await expect(page.getByLabel('제목')).toHaveValue('');
   await expect(page.locator('.part-edit')).toHaveCount(0);

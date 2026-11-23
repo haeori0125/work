@@ -102,9 +102,17 @@ export function TaskForm({ task, members, today }: Props) {
 
       <div className="field">담당자 (선택{parts.length ? ' · 파트 담당자는 자동으로 포함' : ''})
         <div className="checks">
-          {members.map((m) => (
-            <label key={m.id}><input type="checkbox" name="assignees" value={m.id} defaultChecked={task?.assigneeIds.includes(m.id)} /> {m.name}</label>
-          ))}
+          {members.map((m) => {
+            // 파트 담당자는 업무 담당자에 자동으로 들어가므로 체크된 채로 잠근다
+            const viaPart = parts.some((p) => p.assigneeId === m.id);
+            return viaPart ? (
+              <label key={m.id} title="파트 담당자라서 자동으로 포함돼요">
+                <input type="checkbox" checked disabled readOnly /> {m.name} <span className="muted">(파트)</span>
+              </label>
+            ) : (
+              <label key={m.id}><input type="checkbox" name="assignees" value={m.id} defaultChecked={task?.assigneeIds.includes(m.id)} /> {m.name}</label>
+            );
+          })}
         </div>
       </div>
 
