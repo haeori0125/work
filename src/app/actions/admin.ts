@@ -8,44 +8,14 @@ import { AppError } from '@/lib/errors';
 import {
   approveMember, rejectMember, resetPassword, setDisabled, setRole,
 } from '@/lib/members';
-import type { Kind, Repeat } from '@/lib/recurrence';
-import { createTask, deleteTask, updateTask, type PartInput, type TaskInput } from '@/lib/tasks';
+import { approveRequest, getPendingRequest } from '@/lib/requests';
+import { createTask, deleteTask, updateTask } from '@/lib/tasks';
+import { parseTask } from './task-form';
 import { kstDateTime } from '@/lib/time';
 import { requireActionAdmin } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
-
-function parseTask(form: FormData): TaskInput {
-  const kind = str(form, 'kind') as Kind;
-  const repeat = str(form, kind === 'weekly' ? 'repeatWeekly' : 'repeatDated') as Repeat;
-  return {
-    title: str(form, 'title'),
-    description: str(form, 'description') || null,
-    kind,
-    repeat,
-    weekdays: form.getAll('weekdays').map(Number),
-    startDate: str(form, 'startDate'),
-    endDate: str(form, 'endDate') || null,
-    assigneeIds: form.getAll('assignees').map(Number).filter(Number.isInteger),
-    dueWeekday: kind === 'weekly' && repeat === 'weekly' && str(form, 'dueWeekday') !== '' ? Number(str(form, 'dueWeekday')) : null,
-    dueDate: kind === 'weekly' && repeat === 'none' ? str(form, 'dueDate') || null : null,
-    parts: parseParts(str(form, 'parts')),
-  };
-}
-
-/** 폼의 숨은 칸에 담긴 파트 목록(JSON)을 검사해서 꺼낸다 */
-function parseParts(raw: string): PartInput[] {
-  if (!raw) return [];
-  let data: unknown;
-  try { data = JSON.parse(raw); } catch { throw new AppError('invalid', '파트 정보를 읽지 못했습니다'); }
-  if (!Array.isArray(data)) throw new AppError('invalid', '파트 정보를 읽지 못했습니다');
-  return data.map((p) => ({
-    id: Number.isInteger(p?.id) ? p.id : undefined,
-    title: typeof p?.title === 'string' ? p.title : '',
-    assigneeId: Number.isInteger(p?.assigneeId) ? p.assigneeId : null,
-  }));
-}
 
 export async function saveTaskAction(_prev: ActionResult, form: FormData): Promise<ActionResult> {
   const result = await runAction(async () => {
@@ -53,8 +23,13 @@ export async function saveTaskAction(_prev: ActionResult, form: FormData): Promi
     const db = await getDb();
     const id = Number(str(form, 'id'));
     const input = parseTask(form);
+    const requestId = Number(str(form, 'requestId'));
     if (id) await updateTask(db, id, input);
-    else await createTask(db, admin.id, input);
+    else {
+      if (requestId) await getPendingRequest(db, requestId); // 이미 처리된 요청이면 업무를 만들지 않는다
+      const taskId = await createTask(db, admin.id, input);
+      if (requestId) await approveRequest(db, requestId, admin.id, taskId, new Date());
+    }
     revalidatePath('/', 'layout');
   });
   if (result?.error) return result;

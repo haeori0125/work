@@ -155,3 +155,20 @@ export const userPrefs = pgTable('user_prefs', {
   weekFilter: text('week_filter'),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
+
+/** 멤버가 올린 업무 추가 요청. 관리자가 승인하면 업무가 만들어지고 taskId가 채워진다 */
+export const taskRequests = pgTable('task_requests', {
+  id: serial('id').primaryKey(),
+  requesterId: integer('requester_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  description: text('description'),
+  /** 원하는 날짜 (YYYY-MM-DD), 없으면 null */
+  wantedDate: text('wanted_date'),
+  /** 요청한 업무 설정 전체(TaskInput JSON). 관리자 승인 폼에 그대로 채워진다 */
+  spec: text('spec'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  createdAt: ts('created_at').notNull(),
+  decidedBy: integer('decided_by').references(() => users.id, { onDelete: 'set null' }),
+  decidedAt: ts('decided_at'),
+  taskId: integer('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+}, (t) => [index('task_requests_status').on(t.status), index('task_requests_requester').on(t.requesterId)]);

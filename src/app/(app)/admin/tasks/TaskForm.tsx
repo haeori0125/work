@@ -3,26 +3,46 @@
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { saveTaskAction } from '@/app/actions/admin';
-import type { TaskDefinition } from '@/lib/tasks';
+import { createRequestAction } from '@/app/actions/requests';
+import type { ActionResult } from '@/app/actions/result';
+import type { TaskDefinition, TaskInput } from '@/lib/tasks';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
-type Props = { task: TaskDefinition | null; members: { id: number; name: string }[]; today: string };
+export type FromRequest = { id: number; requesterName: string; spec: TaskInput };
+type Props = {
+  task: TaskDefinition | null;
+  members: { id: number; name: string }[];
+  today: string;
+  /** 관리자: 멤버 요청을 승인할 때 요청 내용으로 미리 채운다 */
+  fromRequest?: FromRequest | null;
+  /** request: 멤버가 같은 폼으로 업무 추가를 요청한다 */
+  mode?: 'admin' | 'request';
+  onSent?: (message: string) => void;
+};
 
-export function TaskForm({ task, members, today }: Props) {
-  const [state, action, pending] = useActionState(saveTaskAction, null);
-  const [kind, setKind] = useState<'dated' | 'weekly'>(task?.kind ?? 'dated');
-  const [repeatDated, setRepeatDated] = useState(task?.kind === 'dated' ? task.repeat : 'none');
-  const [repeatWeekly, setRepeatWeekly] = useState(task?.kind === 'weekly' ? task.repeat : 'none');
+export function TaskForm({ task, members, today, fromRequest = null, mode = 'admin', onSent }: Props) {
+  const req = task ? null : fromRequest;
+  const init: TaskInput | null = task ?? req?.spec ?? null;
+  const [state, action, pending] = useActionState(async (prev: ActionResult, form: FormData) => {
+    const res = await (mode === 'request' ? createRequestAction : saveTaskAction)(prev, form);
+    if (res?.ok) onSent?.(res.ok);
+    return res;
+  }, null);
+  const [kind, setKind] = useState<'dated' | 'weekly'>(init?.kind ?? 'dated');
+  const [repeatDated, setRepeatDated] = useState(init?.kind === 'dated' ? init.repeat : 'none');
+  const [repeatWeekly, setRepeatWeekly] = useState(init?.kind === 'weekly' ? init.repeat : 'none');
   const repeating = kind === 'dated' ? repeatDated !== 'none' : repeatWeekly !== 'none';
-  const [parts, setParts] = useState<{ id?: number; title: string; assigneeId: number | null }[]>(task?.parts ?? []);
+  const [parts, setParts] = useState<{ id?: number; title: string; assigneeId: number | null }[]>(init?.parts ?? []);
   const setPart = (i: number, patch: Partial<(typeof parts)[number]>) => setParts(parts.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
   return (
     <form action={action} className="stack" key={task?.id ?? 'new'}>
       <input type="hidden" name="id" value={task?.id ?? ''} />
-      <label className="field">제목<input name="title" required maxLength={100} defaultValue={task?.title} /></label>
-      <label className="field">설명 (선택)<textarea name="description" rows={2} defaultValue={task?.description ?? ''} placeholder="링크를 붙여 넣으면 눌러서 열 수 있어요. 슬랙 링크는 카드로 보여요." /></label>
+      <input type="hidden" name="requestId" value={req?.id ?? ''} />
+      {req && <p className="msg ok">{req.requesterName} 님의 요청이에요. 내용을 확인하고 저장하면 승인돼요.</p>}
+      <label className="field">제목<input name="title" required maxLength={100} defaultValue={init?.title} /></label>
+      <label className="field">설명 (선택)<textarea name="description" rows={2} defaultValue={init?.description ?? ''} placeholder="링크를 붙여 넣으면 눌러서 열 수 있어요. 슬랙 링크는 카드로 보여요." /></label>
 
       <div className="field">업무 종류
         <div className="checks">
@@ -53,7 +73,7 @@ export function TaskForm({ task, members, today }: Props) {
         <div className="field">반복 요일
           <div className="checks">
             {WEEKDAYS.map((d, i) => (
-              <label key={d}><input type="checkbox" name="weekdays" value={i} defaultChecked={task?.weekdays.includes(i)} /> {d}</label>
+              <label key={d}><input type="checkbox" name="weekdays" value={i} defaultChecked={init?.weekdays.includes(i)} /> {d}</label>
             ))}
           </div>
         </div>
@@ -62,19 +82,19 @@ export function TaskForm({ task, members, today }: Props) {
       <div className="grid-2">
         <label className="field">
           {kind === 'weekly' && repeating ? '시작 주 (그 주의 아무 날짜)' : repeating || kind === 'weekly' ? '시작일' : '날짜'}
-          <input type="date" name="startDate" required defaultValue={task?.startDate ?? today} />
+          <input type="date" name="startDate" required defaultValue={init?.startDate ?? today} />
         </label>
         {repeating && (
-          <label className="field">종료일 (선택)<input type="date" name="endDate" defaultValue={task?.endDate ?? ''} /></label>
+          <label className="field">종료일 (선택)<input type="date" name="endDate" defaultValue={init?.endDate ?? ''} /></label>
         )}
         {kind === 'weekly' && !repeating && (
-          <label className="field">마감일 (선택)<input type="date" name="dueDate" defaultValue={task?.dueDate ?? ''} /></label>
+          <label className="field">마감일 (선택)<input type="date" name="dueDate" defaultValue={init?.dueDate ?? ''} /></label>
         )}
       </div>
 
       {kind === 'weekly' && repeating && (
         <label className="field">마감 요일 (선택)
-          <select name="dueWeekday" defaultValue={task?.dueWeekday ?? ''}>
+          <select name="dueWeekday" defaultValue={init?.dueWeekday ?? ''}>
             <option value="">마감 없음 (그 주 안에)</option>
             {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}요일까지</option>)}
           </select>
@@ -110,7 +130,7 @@ export function TaskForm({ task, members, today }: Props) {
                 <input type="checkbox" checked disabled readOnly /> {m.name} <span className="muted">(파트)</span>
               </label>
             ) : (
-              <label key={m.id}><input type="checkbox" name="assignees" value={m.id} defaultChecked={task?.assigneeIds.includes(m.id)} /> {m.name}</label>
+              <label key={m.id}><input type="checkbox" name="assignees" value={m.id} defaultChecked={init?.assigneeIds.includes(m.id)} /> {m.name}</label>
             );
           })}
         </div>
@@ -118,8 +138,8 @@ export function TaskForm({ task, members, today }: Props) {
 
       {state?.error && <p className="msg error">{state.error}</p>}
       <div className="row">
-        <button className="btn primary" disabled={pending}>{pending ? '저장 중…' : task ? '수정 저장' : '업무 추가'}</button>
-        {task && <Link className="btn" href="/admin/tasks">취소</Link>}
+        <button className="btn primary" disabled={pending}>{pending ? (mode === 'request' ? '보내는 중…' : '저장 중…') : mode === 'request' ? '요청 보내기' : task ? '수정 저장' : req ? '승인하고 업무 추가' : '업무 추가'}</button>
+        {(task || req) && <Link className="btn" href="/admin/tasks">취소</Link>}
       </div>
     </form>
   );

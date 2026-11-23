@@ -2,8 +2,9 @@ import { getDb } from '@/db';
 import { listBoardPosts } from '@/lib/memos';
 import { getPrefs } from '@/lib/prefs';
 import { listActiveMembers } from '@/lib/members';
+import { listMyRequests } from '@/lib/requests';
 import { getDayOccurrences, getPastOccurrences, getWeekView, getWeeklyOccurrences } from '@/lib/tasks';
-import { addDays, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
+import { addDays, formatDateLabel, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
 import { toNoteView, toOccurrenceView } from '@/lib/view';
 import { requireUser } from '@/server/session';
 import { MemoPanel } from './_components/MemoPanel';
@@ -26,13 +27,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const thisStart = weekStartOf(today, prefs.weekStart);
   // 이번 주 업무는 월요일 기준 주로 묶이므로, 보고 있는 칸들 안의 월요일 주를 쓴다
   const goalsWeek = prefs.weekStart === 'sun' ? addDays(start, 1) : start;
-  const [past, day, weekly, week, posts, members] = await Promise.all([
+  const [past, day, weekly, week, posts, members, mine] = await Promise.all([
     getPastOccurrences(db, today),
     getDayOccurrences(db, today),
     getWeeklyOccurrences(db, goalsWeek),
     getWeekView(db, start),
     listBoardPosts(db, today),
     listActiveMembers(db),
+    user.role === 'admin' ? Promise.resolve([]) : listMyRequests(db, user.id),
   ]);
   const v = (list: typeof day) => list.map((o) => toOccurrenceView(o, today));
   const days = Object.entries(week).map(([date, items]) => ({
@@ -46,7 +48,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
 
   return (
     <div className="home">
-      <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} />
+      <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} todayDate={today} members={members.map((m) => ({ id: m.id, name: m.name }))}
+        myRequests={mine.map((r) => ({ id: r.id, title: r.title, status: r.status, wantedLabel: r.wantedDate ? formatDateLabel(r.wantedDate) : null }))} />
       <div className="home-right">
         <WeekPanel rangeLabel={rangeLabel} prevWeek={addDays(start, -7)} nextWeek={addDays(start, 7)} isThisWeek={start === thisStart} days={days} goals={v(weekly)} me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
         <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />

@@ -5,24 +5,27 @@ import { usePathname } from 'next/navigation';
 import { ClockIcon, HomeIcon, NoteIcon, ShieldIcon } from '@/app/_ui/icons';
 
 /** 다이어리 인덱스처럼 페이지 옆에 튀어나온 탭 (폰에서는 위쪽) */
-export function IndexTabs({ isAdmin }: { isAdmin: boolean }) {
+export function IndexTabs({ isAdmin, pendingRequests = 0 }: { isAdmin: boolean; pendingRequests?: number }) {
   const path = usePathname();
   const tabs = [
     { href: '/', label: '홈', Icon: HomeIcon },
     { href: '/attendance', label: '내 기록', Icon: ClockIcon },
     { href: '/memo', label: '개인 메모', Icon: NoteIcon },
-    ...(isAdmin ? [{ href: '/admin/tasks', label: '관리', Icon: ShieldIcon }] : []),
+    ...(isAdmin ? [{ href: '/admin/tasks', label: '관리', Icon: ShieldIcon, badge: pendingRequests }] : []),
   ];
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href.split('/').slice(0, 2).join('/')));
   return (
     <nav className="index-tabs" aria-label="메뉴">
-      {tabs.map(({ href, label, Icon }, i) => (
+      {tabs.map(({ href, label, Icon, ...rest }, i) => {
+        const badge = ('badge' in rest ? rest.badge : 0) ?? 0;
+        return (
         <Link key={href} href={href} className={`itab itab-${i}`} aria-current={active(href) ? 'page' : undefined}
-          aria-label={label} title={label}>
+          aria-label={badge ? `${label} (승인 대기 ${badge})` : label} title={badge ? `${label} · 승인 대기 ${badge}` : label}>
           <Icon />
           <span className="itab-label">{label}</span>
+          {badge > 0 && <span className="itab-dot" aria-hidden />}
         </Link>
-      ))}
+      ); })}
     </nav>
   );
 }

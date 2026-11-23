@@ -1,5 +1,6 @@
 import { getDb } from '@/db';
 import { getToday } from '@/lib/attendance';
+import { listPendingRequests } from '@/lib/requests';
 import { getAvatarMap, getPrefs } from '@/lib/prefs';
 import { AvatarProvider } from '@/app/_ui/AvatarContext';
 import { formatKstTime, kstDate } from '@/lib/time';
@@ -17,7 +18,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const now = new Date();
   const db = await getDb();
-  const [today, prefs, avatars] = await Promise.all([getToday(db, user.id, now), getPrefs(db, user.id), getAvatarMap(db)]);
+  const [today, prefs, avatars, requests] = await Promise.all([
+    getToday(db, user.id, now), getPrefs(db, user.id), getAvatarMap(db),
+    user.role === 'admin' ? listPendingRequests(db) : Promise.resolve([]),
+  ]);
   const d = kstDate(now);
   const dateLabel = `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WD[new Date(`${d}T00:00:00Z`).getUTCDay()]})`;
   return (
@@ -31,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       />
       <div className="frame">
         <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar}
-          tabs={<IndexTabs isAdmin={user.role === 'admin'} />} />
+          tabs={<IndexTabs isAdmin={user.role === 'admin'} pendingRequests={requests.length} />} />
         <div className="content">{children}</div>
       </div>
       <RefreshOnFocus />

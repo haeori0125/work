@@ -61,7 +61,8 @@ const MAX_PARTS = 20;
 
 type TaskRow = typeof tasks.$inferSelect;
 
-function clean(input: TaskInput): TaskInput {
+/** 업무 입력값을 다듬고 검사한다(업무 추가 요청도 같은 규칙) */
+export function cleanTaskInput(input: TaskInput): TaskInput {
   const title = input.title.trim();
   if (!title) throw new AppError('invalid', '제목을 입력하세요');
   if (title.length > 100) throw new AppError('invalid', '제목은 100자 이하로 입력하세요');
@@ -122,7 +123,7 @@ async function setAssignees(db: Db, taskId: number, ids: number[]) {
 }
 
 export async function createTask(db: Db, actorId: number, input: TaskInput): Promise<number> {
-  const spec = clean(input);
+  const spec = cleanTaskInput(input);
   const [row] = await db.insert(tasks).values({ ...columns(spec), createdBy: actorId }).returning({ id: tasks.id });
   await setAssignees(db, row.id, spec.assigneeIds);
   await setParts(db, row.id, spec.parts ?? []);
@@ -130,7 +131,7 @@ export async function createTask(db: Db, actorId: number, input: TaskInput): Pro
 }
 
 export async function updateTask(db: Db, id: number, input: TaskInput): Promise<void> {
-  const spec = clean(input);
+  const spec = cleanTaskInput(input);
   const updated = await db.update(tasks).set(columns(spec))
     .where(and(eq(tasks.id, id), isNull(tasks.deletedAt))).returning({ id: tasks.id });
   if (!updated.length) throw new AppError('not_found', '업무를 찾을 수 없습니다');

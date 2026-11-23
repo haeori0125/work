@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { PlusIcon } from '@/app/_ui/icons';
 import type { OccurrenceView } from '@/lib/view';
+import { RequestTask, type MyRequest } from './RequestTask';
 import { TaskItem } from './TaskItem';
 
 type Props = {
@@ -8,9 +9,12 @@ type Props = {
   past: OccurrenceView[];
   today: OccurrenceView[];
   me: { id: number; role: 'member' | 'admin' };
+  myRequests: MyRequest[];
+  members: { id: number; name: string }[];
+  todayDate: string;
 };
 
-export function TodayPanel({ dateLabel, past, today, me }: Props) {
+export function TodayPanel({ dateLabel, past, today, me, myRequests, members, todayDate }: Props) {
   const left = today.filter((o) => o.status !== 'done').length;
   const doing = today.filter((o) => o.status === 'doing').length;
   return (
@@ -35,7 +39,9 @@ export function TodayPanel({ dateLabel, past, today, me }: Props) {
           <ul className="rows">{today.map((o) => <TaskItem key={`${o.taskId}-${o.occurrenceKey}`} occ={o} me={me} />)}</ul>
         )}
       </section>
-      {me.role === 'admin' && <Link className="add-link" href="/admin/tasks"><span aria-hidden><PlusIcon size={10} /></span>새로운 할 일</Link>}
+      {me.role === 'admin'
+        ? <Link className="add-link" href="/admin/tasks"><span aria-hidden><PlusIcon size={10} /></span>새로운 할 일</Link>
+        : <RequestTask mine={myRequests} today={todayDate} members={members} />}
     </section>
   );
 }
