@@ -248,7 +248,7 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
 }
 @media (max-width: 760px) {
   .content { padding: 12px; }
-  .week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .week { grid-template-columns: minmax(0, 1fr); }
   .day { min-height: 0; }
   .shift { gap: 6px 10px; padding: 10px 10px 10px 14px; }
   .shift .st { order: 3; flex-basis: 100%; font-size: 13px; }
