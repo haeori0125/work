@@ -31,12 +31,11 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
     // 업무 담당자 + 파트 담당자(중복 제외)
     const ids = [...new Set([...d.assigneeIds, ...d.parts.map((p) => p.assigneeId).filter((x): x is number => x !== null)])];
     return {
-      id: d.id, title: d.title, date: d.startDate,
+      id: d.id, title: d.title, date: d.startDate, assignees: ids.map(nameOf),
       status: d.repeat === 'none' ? statuses.get(d.id) ?? 'todo' : ('repeat' as const),
       tags: [
         `${d.repeat === 'none' ? '' : '↻ '}${describeRepeat(d)}`, period(d),
         ...(d.dueDate ? [`~${formatDateLabel(d.dueDate)}`] : []),
-        ...(ids.length ? [`담당 ${ids.map(nameOf).join(', ')}`] : []),
         ...(d.parts.length ? [`파트 ${d.parts.length}개`] : []),
       ],
     };

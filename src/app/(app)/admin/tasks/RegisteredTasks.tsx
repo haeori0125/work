@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { Person } from '@/app/_ui/AvatarContext';
 import { DeleteTaskButton } from './DeleteTaskButton';
 import { DragScroll } from './DragScroll';
 
 export type RegisteredItem = {
-  id: number; title: string; date: string; tags: string[];
+  id: number; title: string; date: string; tags: string[]; assignees: string[];
   /** 한 번짜리는 지금 상태, 반복 업무는 'repeat' */
   status: 'todo' | 'doing' | 'done' | 'repeat';
 };
@@ -68,7 +69,12 @@ export function RegisteredTasks({ items }: { items: RegisteredItem[] }) {
                   <Link className="btn small" href={`/admin/tasks?edit=${d.id}`}>수정</Link>
                   <DeleteTaskButton id={d.id} title={d.title} />
                 </div>
-                <div className="tags">{d.tags.map((t) => <span key={t} className="tag line">{t}</span>)}</div>
+                <div className="tags">
+                  {d.tags.map((t) => <span key={t} className="tag line">{t}</span>)}
+                  {d.assignees.length > 0 && (
+                    <span className="tag line who-tag">담당 {d.assignees.map((n) => <Person key={n} name={n} size={16} />)}</span>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

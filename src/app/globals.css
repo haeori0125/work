@@ -930,3 +930,5 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
   .rt-sort { width: 100%; box-sizing: border-box; flex-wrap: nowrap; }
   .rt-sort button { flex: 1 1 0; min-width: 0; justify-content: center; padding: 4px 6px; }
 }
+.tag.who-tag { display: inline-flex; align-items: center; gap: 6px; }
+.tag.who-tag .person { gap: 4px; }
