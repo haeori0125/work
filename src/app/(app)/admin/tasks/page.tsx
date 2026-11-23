@@ -24,7 +24,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
       <section className="panel admin-card">
         <div className="panel-head"><h2>{editing ? '업무 수정' : '업무 추가'}</h2></div>
         {sp.saved && !editing && <p className="msg ok" style={{ marginBottom: 10 }}>저장했습니다</p>}
-        <TaskForm task={editing} members={members} today={kstDate(new Date())} />
+        <TaskForm key={editing ? `edit-${editing.id}` : `new-${sp.saved ?? ''}-${defs.length}`} task={editing} members={members} today={kstDate(new Date())} />
       </section>
       <section className="panel admin-card">
         <div className="panel-head"><h2>등록된 업무</h2><span className="spacer" /><span className="muted">{defs.length}개</span></div>
