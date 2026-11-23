@@ -1,0 +1,50 @@
+import Link from 'next/link';
+import { getDb } from '@/db';
+import { listActiveMembers } from '@/lib/members';
+import { listTaskDefinitions } from '@/lib/tasks';
+import { formatDateLabel, kstDate } from '@/lib/time';
+import { describeRepeat } from '@/lib/view';
+import { DeleteTaskButton } from './DeleteTaskButton';
+import { TaskForm } from './TaskForm';
+
+export default async function AdminTasksPage({ searchParams }: { searchParams: Promise<{ edit?: string; saved?: string }> }) {
+  const db = await getDb();
+  const sp = await searchParams;
+  const [defs, members] = await Promise.all([listTaskDefinitions(db), listActiveMembers(db)]);
+  const editing = sp.edit ? defs.find((d) => d.id === Number(sp.edit)) ?? null : null;
+  const nameOf = (id: number) => members.find((m) => m.id === id)?.name ?? '(비활성)';
+  const period = (d: (typeof defs)[number]) =>
+    d.repeat === 'none' ? formatDateLabel(d.startDate)
+      : `${formatDateLabel(d.startDate)} ~ ${d.endDate ? formatDateLabel(d.endDate) : ''}`;
+
+  return (
+    <>
+      <section className="section">
+        <div className="section-head"><h2>{editing ? '업무 수정' : '업무 추가'}</h2></div>
+        {sp.saved && !editing && <p className="msg ok" style={{ marginBottom: 10 }}>저장했습니다</p>}
+        <TaskForm task={editing} members={members} today={kstDate(new Date())} />
+      </section>
+      <section className="section">
+        <div className="section-head"><h2>등록된 업무</h2><span className="spacer" /><span className="muted">{defs.length}개</span></div>
+        {defs.length === 0 ? <p className="empty">등록된 업무가 없습니다</p> : (
+          <ul className="task-list">
+            {defs.map((d) => (
+              <li key={d.id} className="task">
+                <div className="task-top">
+                  <span className="task-title">{d.title}</span>
+                  <Link className="btn small" href={`/admin/tasks?edit=${d.id}`}>수정</Link>
+                  <DeleteTaskButton id={d.id} title={d.title} />
+                </div>
+                <div className="task-meta">
+                  <span>{describeRepeat(d)}</span>
+                  <span>{period(d)}</span>
+                  {d.assigneeIds.length > 0 && <span>담당: {d.assigneeIds.map(nameOf).join(', ')}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </>
+  );
+}

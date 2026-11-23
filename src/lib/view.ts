@@ -47,3 +47,15 @@ export function toNoteView(n: Note, today: string): NoteView {
     when: formatWhen(n.createdAt, today), edited: n.updatedAt.getTime() !== n.createdAt.getTime(),
   };
 }
+
+const WEEKDAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
+
+export function describeRepeat(def: { kind: 'dated' | 'weekly'; repeat: string; weekdays: number[] }): string {
+  if (def.kind === 'weekly') return def.repeat === 'weekly' ? '주간 · 매주 반복' : '주간 · 한 번';
+  switch (def.repeat) {
+    case 'daily': return '매일';
+    case 'weekdays': return '평일(월~금)';
+    case 'weekly_days': return `매주 ${def.weekdays.map((d) => WEEKDAY_NAMES[d]).join('·')}`;
+    default: return '한 번';
+  }
+}

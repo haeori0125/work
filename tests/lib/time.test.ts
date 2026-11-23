@@ -50,3 +50,16 @@ describe('formatting', () => {
     expect(formatDateLabel('2026-11-23')).toBe('11/23(월)');
   });
 });
+
+describe('kstDateTime', () => {
+  it('builds an instant from a KST date and HH:MM', async () => {
+    const { kstDateTime } = await import('@/lib/time');
+    expect(kstDateTime('2026-11-23', '09:02')!.toISOString()).toBe('2026-11-23T00:02:00.000Z');
+    expect(kstDateTime('2026-11-24', '00:30')!.toISOString()).toBe('2026-11-23T15:30:00.000Z');
+  });
+  it('returns null for malformed times', async () => {
+    const { kstDateTime } = await import('@/lib/time');
+    expect(kstDateTime('2026-11-23', '25:00')).toBeNull();
+    expect(kstDateTime('2026-11-23', '')).toBeNull();
+  });
+});

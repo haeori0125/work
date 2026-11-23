@@ -1,0 +1,58 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import {
+  approveAction, rejectAction, resetPasswordAction, setDisabledAction, setRoleAction,
+} from '@/app/actions/admin';
+import type { ActionResult } from '@/app/actions/result';
+import type { Member } from '@/lib/members';
+
+export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
+  const [pending, start] = useTransition();
+  const [msg, setMsg] = useState<ActionResult>(null);
+  const [pw, setPw] = useState('');
+  const run = (fn: () => Promise<ActionResult>, okText?: string) => start(async () => {
+    const res = await fn();
+    setMsg(res?.error ? res : okText ? { ok: okText } : null);
+  });
+
+  return (
+    <li className="task">
+      <div className="task-top">
+        <span className="task-title">{m.name}{isMe && ' (나)'}</span>
+        {m.role === 'admin' && <span className="badge doing">관리자</span>}
+        {m.status === 'pending' && <span className="badge todo">승인 대기</span>}
+        {m.status === 'disabled' && <span className="badge warn">사용 중지</span>}
+      </div>
+      <div className="row">
+        {m.status === 'pending' ? (
+          <>
+            <button className="btn small primary" disabled={pending} onClick={() => run(() => approveAction(m.id))}>승인</button>
+            <button className="btn small danger" disabled={pending}
+              onClick={() => { if (confirm(`${m.name}님의 가입 신청을 거절할까요?`)) run(() => rejectAction(m.id)); }}>거절</button>
+          </>
+        ) : (
+          <>
+            <button className="btn small" disabled={pending}
+              onClick={() => run(() => setRoleAction(m.id, m.role === 'admin' ? 'member' : 'admin'))}>
+              {m.role === 'admin' ? '관리자 해제' : '관리자 지정'}
+            </button>
+            {!isMe && (
+              <button className="btn small" disabled={pending}
+                onClick={() => run(() => setDisabledAction(m.id, m.status !== 'disabled'))}>
+                {m.status === 'disabled' ? '사용 재개' : '사용 중지'}
+              </button>
+            )}
+            <form className="row" onSubmit={(e) => { e.preventDefault(); run(() => resetPasswordAction(m.id, pw), '비밀번호를 바꿨습니다'); setPw(''); }}>
+              <input type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="새 비밀번호"
+                aria-label={`${m.name} 새 비밀번호`} style={{ width: 130 }} minLength={4} required />
+              <button className="btn small" disabled={pending}>비밀번호 재설정</button>
+            </form>
+          </>
+        )}
+      </div>
+      {msg?.error && <p className="msg error">{msg.error}</p>}
+      {msg?.ok && <p className="msg ok">{msg.ok}</p>}
+    </li>
+  );
+}

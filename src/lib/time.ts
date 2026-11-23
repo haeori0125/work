@@ -54,3 +54,11 @@ export function formatDateLabel(date: string): string {
 export function weekdayLabel(i: number): string {
   return WEEKDAY_LABELS[i];
 }
+
+/** KST 날짜 + "HH:MM" → 시각. 형식이 틀리면 null */
+export function kstDateTime(date: string, hhmm: string): Date | null {
+  const m = /^(\d{2}):(\d{2})$/.exec(hhmm);
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  const ms = Date.parse(`${date}T${hhmm}:00Z`);
+  return Number.isNaN(ms) ? null : new Date(ms - KST_OFFSET_MS);
+}
