@@ -695,3 +695,43 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .save-bar > span { flex: 1; min-width: 160px; }
 .save-bar.dirty { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); }
 .save-bar.dirty > span { color: var(--ink); font-weight: 600; }
+
+/* 업무 추가 폼 */
+/* 칩 모양 선택지: 진짜 입력칸은 칩 전체를 덮는 투명한 층(누르기·키보드·보조기기 그대로) */
+.vh { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.vh:disabled { cursor: default; }
+.tf { display: flex; flex-direction: column; gap: 16px; container-type: inline-size; }
+.tf-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "what when" "who when"; gap: 16px 20px; align-items: start; }
+.tf-what { grid-area: what; } .tf-when { grid-area: when; } .tf-who { grid-area: who; }
+/* 좁은 곳(폰, 요청 창): 무엇을 → 언제 → 누가 */
+@container (max-width: 680px) { .tf-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "what" "when" "who"; } }
+.fl { display: flex; align-items: baseline; gap: 6px; }
+.tf-sec { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: var(--radius); background: var(--surface-2); min-width: 0; }
+.tf-sec h3 { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .04em; color: var(--muted); }
+.tf-sec input:not([type="checkbox"]):not([type="radio"]), .tf-sec textarea, .tf-sec select { background: var(--surface); }
+.tf .field small { font-weight: 500; font-size: 12px; color: var(--muted); }
+.tf .help { font-weight: 400; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick label, .kind-pick label { position: relative; cursor: pointer; }
+.pick label > span {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--text); font-size: 13.5px; font-weight: 600; transition: background-color .12s, border-color .12s;
+}
+.pick input:checked + span { background: var(--soft); border-color: color-mix(in srgb, var(--accent) 75%, var(--line)); color: var(--ink); }
+.pick input:focus-visible + span, .kind-pick input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: 2px; }
+.pick input:disabled + span { cursor: default; opacity: .85; }
+.pick.days label > span { width: 38px; justify-content: center; padding: 6px 0; }
+.pick-person > span { padding-left: 5px !important; }
+.pick-person em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--muted); }
+@media (hover: hover) { .pick label:hover > span { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); } }
+.kind-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); }
+.kind-pick label > span { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 6px; border-radius: 8px; color: var(--muted); text-align: center; }
+.kind-pick b { font-size: 14px; }
+.kind-pick small { font-size: 12px; font-weight: 500; }
+.kind-pick input:checked + span { background: var(--soft); color: var(--ink); }
+.tf-dates { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.part-x { width: 30px; height: 30px; border: 0; border-radius: 50%; background: none; color: var(--muted); font-size: 13px; cursor: pointer; }
+.part-x:hover { background: var(--surface); color: var(--red); }
+.tf-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+.tf-actions .btn.primary { min-width: 140px; }
+@media (max-width: 560px) { .tf-actions .btn.primary { flex: 1; } }
