@@ -21,15 +21,15 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <section className="section">
-        <div className="section-head"><h2>{editing ? '업무 수정' : '업무 추가'}</h2></div>
+      <section className="panel admin-card">
+        <div className="panel-head"><h2>{editing ? '업무 수정' : '업무 추가'}</h2></div>
         {sp.saved && !editing && <p className="msg ok" style={{ marginBottom: 10 }}>저장했습니다</p>}
         <TaskForm task={editing} members={members} today={kstDate(new Date())} />
       </section>
-      <section className="section">
-        <div className="section-head"><h2>등록된 업무</h2><span className="spacer" /><span className="muted">{defs.length}개</span></div>
+      <section className="panel admin-card">
+        <div className="panel-head"><h2>등록된 업무</h2><span className="spacer" /><span className="muted">{defs.length}개</span></div>
         {defs.length === 0 ? <p className="empty">등록된 업무가 없습니다</p> : (
-          <ul className="task-list">
+          <ul className="list-card">
             {defs.map((d) => (
               <li key={d.id} className="task">
                 <div className="task-top">

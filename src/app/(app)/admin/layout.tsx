@@ -4,7 +4,7 @@ import { AdminNav } from './AdminNav';
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   return (
-    <main className="page">
+    <main className="admin-stack">
       <AdminNav />
       {children}
     </main>

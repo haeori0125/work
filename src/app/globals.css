@@ -388,3 +388,13 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
   .ne-back { display: inline; }
   .note-editor textarea { min-height: 320px; }
 }
+
+/* 관리 화면 */
+.admin-card { padding-bottom: 18px; }
+.admin-card > :not(.panel-head) { margin-left: 18px; margin-right: 18px; }
+.admin-card > .msg { margin-bottom: 10px; }
+.admin-card .empty { padding: 4px 0; }
+.list-card .task-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.list-card .task-title { font-weight: 700; flex: 1; min-width: 140px; }
+.task-meta { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 13px; color: var(--muted); }
+.subnav .btn.primary { color: var(--on-accent); }
