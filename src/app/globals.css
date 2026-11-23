@@ -615,16 +615,4 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 }
 @keyframes snowfall { to { transform: translate(var(--drift), 105vh); } }
 .auth-col { position: relative; z-index: 1; width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
-.auth-page:has(.xmas-title) { grid-template-rows: auto 1fr; padding-top: clamp(20px, 6vh, 64px); }
-.xmas-title { position: relative; z-index: 1; padding: 0 18px; font-family: 'Great Vibes', cursive; font-weight: 400;
-  font-size: clamp(46px, 11vw, 80px); line-height: 1.15; letter-spacing: 0; white-space: nowrap; }
-.xmas-text {
-  background: linear-gradient(105deg, var(--ink) 0 42%, color-mix(in srgb, var(--ink) 25%, #fff) 50%, var(--ink) 58% 100%);
-  background-size: 260% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: shimmer 5s ease-in-out infinite;
-}
-@keyframes shimmer { 0% { background-position: 100% 0; } 55%, 100% { background-position: 0 0; } }
-.xmas-title .spark { position: absolute; color: #e8b84e; opacity: 0; animation: twinkle 3.4s ease-in-out infinite; }
-@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0deg); } 45% { opacity: 1; transform: scale(1) rotate(45deg); } 70% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .xmas-text { animation: none; background-position: 0 0; } .xmas-title .spark { animation: none; opacity: .8; } }
 @media (prefers-reduced-motion: reduce) { .snow { display: none; } }
