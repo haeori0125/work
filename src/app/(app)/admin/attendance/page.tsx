@@ -1,4 +1,5 @@
 import { getDb } from '@/db';
+import { requireAdmin } from '@/server/session';
 import { listAttendance } from '@/lib/attendance';
 import { addDays, formatDateLabel, formatDuration, formatKstTime, kstDate } from '@/lib/time';
 import { EditRow } from './EditRow';
@@ -6,6 +7,7 @@ import { EditRow } from './EditRow';
 const isDate = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 export default async function AdminAttendancePage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
+  await requireAdmin();
   const now = new Date();
   const sp = await searchParams;
   const today = kstDate(now);

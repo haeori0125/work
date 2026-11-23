@@ -4,7 +4,7 @@ import {
   addBoardPost, addTaskComment, deleteBoardPost, deleteTaskComment, editBoardPost, editTaskComment,
   getPersonalMemo, listBoardPosts, listTaskComments, savePersonalMemo, type Actor,
 } from '@/lib/memos';
-import { createTask } from '@/lib/tasks';
+import { createTask, deleteTask } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
 import { at, makeUser } from '../helpers/fixtures';
 
@@ -44,6 +44,14 @@ describe('task comments', () => {
     expect(await codeOf(deleteTaskComment(db, b, id))).toBe('forbidden');
     await deleteTaskComment(db, admin, id);
     expect(await listTaskComments(db, taskId, '2026-11-23')).toEqual([]);
+  });
+
+  it('refuses comments on missing, deleted or non-occurring tasks', async () => {
+    expect(await codeOf(addTaskComment(db, a, 99999, '2026-11-23', '메모', NOW))).toBe('no_occurrence');
+    expect(await codeOf(addTaskComment(db, a, taskId, '2026-10-01', '메모', NOW))).toBe('no_occurrence');
+    expect(await codeOf(addTaskComment(db, a, taskId, 'abc', '메모', NOW))).toBe('no_occurrence');
+    await deleteTask(db, taskId, NOW);
+    expect(await codeOf(addTaskComment(db, a, taskId, '2026-11-23', '메모', NOW))).toBe('no_occurrence');
   });
 
   it('rejects empty and overly long bodies', async () => {

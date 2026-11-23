@@ -4,7 +4,11 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 async function main() {
-  const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!url && process.env.VERCEL) {
+    console.error('[migrate] DATABASE_URL is not set on Vercel — connect a Neon database in Storage, then redeploy.');
+    process.exit(1);
+  }
   if (!url) {
     console.log('[migrate] DATABASE_URL/POSTGRES_URL not set — skipping (local PGlite migrates at runtime)');
     return;

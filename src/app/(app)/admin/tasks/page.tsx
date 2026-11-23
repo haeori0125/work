@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getDb } from '@/db';
+import { requireAdmin } from '@/server/session';
 import { listActiveMembers } from '@/lib/members';
 import { listTaskDefinitions } from '@/lib/tasks';
 import { formatDateLabel, kstDate } from '@/lib/time';
@@ -8,6 +9,7 @@ import { DeleteTaskButton } from './DeleteTaskButton';
 import { TaskForm } from './TaskForm';
 
 export default async function AdminTasksPage({ searchParams }: { searchParams: Promise<{ edit?: string; saved?: string }> }) {
+  await requireAdmin();
   const db = await getDb();
   const sp = await searchParams;
   const [defs, members] = await Promise.all([listTaskDefinitions(db), listActiveMembers(db)]);

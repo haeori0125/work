@@ -178,11 +178,18 @@ function occursAt(task: TaskRow, key: string): boolean {
   return task.kind === 'dated' ? occursOn(task, key) : weekStartOf(key) === key && occursInWeek(task, key);
 }
 
+/** 삭제되지 않은 업무가 그 날짜(주간 업무는 그 주 월요일)에 실제로 있는지 확인한다. */
+export async function assertOccurrence(db: Db, taskId: number, occurrenceKey: string): Promise<void> {
+  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)));
+  if (!task || !/^\d{4}-\d{2}-\d{2}$/.test(occurrenceKey) || !occursAt(task, occurrenceKey)) {
+    throw new AppError('no_occurrence', '해당 날짜의 업무가 없습니다');
+  }
+}
+
 export async function setStatus(
   db: Db, actorId: number, taskId: number, occurrenceKey: string, status: TaskStatus, now: Date,
 ): Promise<void> {
-  const [task] = await db.select().from(tasks).where(and(eq(tasks.id, taskId), isNull(tasks.deletedAt)));
-  if (!task || !occursAt(task, occurrenceKey)) throw new AppError('no_occurrence', '해당 날짜의 업무가 없습니다');
+  await assertOccurrence(db, taskId, occurrenceKey);
   await db.transaction(async (tx) => {
     const [cur] = await tx.select({ status: taskStatus.status }).from(taskStatus)
       .where(and(eq(taskStatus.taskId, taskId), eq(taskStatus.occurrenceKey, occurrenceKey)))

@@ -3,6 +3,7 @@ import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { boardPosts, personalMemos, taskComments, users } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
+import { assertOccurrence } from './tasks';
 
 export type Actor = { id: number; role: 'member' | 'admin' };
 
@@ -60,8 +61,10 @@ export function listTaskComments(db: Db, taskId: number, occurrenceKey: string):
 export async function addTaskComment(
   db: Db, actor: Actor, taskId: number, occurrenceKey: string, body: string, now: Date,
 ): Promise<number> {
+  const text = cleanBody(body);
+  await assertOccurrence(db, taskId, occurrenceKey);
   const [row] = await db.insert(taskComments).values({
-    taskId, occurrenceKey, authorId: actor.id, body: cleanBody(body), createdAt: now, updatedAt: now,
+    taskId, occurrenceKey, authorId: actor.id, body: text, createdAt: now, updatedAt: now,
   }).returning({ id: taskComments.id });
   return row.id;
 }
