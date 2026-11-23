@@ -5,7 +5,7 @@ import { DEFAULT_PREFS, getPrefs } from '@/lib/prefs';
 import { getCurrentUser } from '@/server/session';
 import './globals.css';
 
-export const metadata: Metadata = { title: 'Team Board', description: '함께 쓰는 업무 체크리스트' };
+export const metadata: Metadata = { title: 'Team Task', description: '함께 쓰는 업무 체크리스트' };
 export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

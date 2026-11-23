@@ -9,7 +9,7 @@ export function LoginForm({ notice }: { notice: string | null }) {
   const [state, action, pending] = useActionState(loginAction, null);
   return (
     <div className="auth-card">
-      <h1 className="auth-title">Team Board</h1>
+      <h1 className="auth-title">Team Task</h1>
       {notice && <p className="msg ok" role="status">{notice}</p>}
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={mode === 'member'}
