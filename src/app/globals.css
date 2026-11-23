@@ -439,3 +439,11 @@ input[type="date"], input[type="time"] { min-width: 0; max-width: 100%; display:
 td input[type="time"] { display: inline-block; }
 input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color: var(--ink); }
 .field { min-width: 0; }
+
+.icon-btn {
+  width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--on-accent) 12%, transparent); color: var(--on-accent);
+}
+.icon-btn:hover { background: color-mix(in srgb, var(--on-accent) 20%, transparent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) { .icon-btn .spin { animation: spin .8s linear infinite; } }

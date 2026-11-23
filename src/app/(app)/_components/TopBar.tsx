@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { logoutAction } from '@/app/actions/auth';
 
@@ -23,9 +24,27 @@ export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
         ))}
       </nav>
       <div className="top-right">
+        <RefreshButton />
         <form action={logoutAction} className="nav"><button>로그아웃</button></form>
         <span className="avatar" title={name}>{name.slice(-2)}</span>
       </div>
     </header>
+  );
+}
+
+/** 페이지 전체를 다시 불러온다(새 배포 화면 + 다른 사람이 바꾼 내용) */
+function RefreshButton() {
+  const [spinning, setSpinning] = useState(false);
+  return (
+    <button
+      type="button" className="icon-btn" aria-label="새로고침" title="새로고침"
+      onClick={() => { setSpinning(true); window.location.reload(); }}
+    >
+      <svg className={spinning ? 'spin' : undefined} width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 11a8 8 0 1 0-2.34 5.66" />
+        <path d="M20 4v7h-7" />
+      </svg>
+    </button>
   );
 }
