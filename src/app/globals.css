@@ -614,6 +614,7 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
   animation: snowfall linear infinite; opacity: .9;
 }
 @keyframes snowfall { to { transform: translate(var(--drift), 105vh); } }
-[data-season="xmas"] .shell, [data-season="xmas"] .auth-page { position: relative; z-index: 1; }
+.auth-col { position: relative; z-index: 1; width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
+.xmas-trees { display: block; width: 240px; margin-top: 18px; filter: drop-shadow(0 2px 3px hsl(var(--h) 30% 30% / .12)); }
 .xmas-note { color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .snow { display: none; } }
