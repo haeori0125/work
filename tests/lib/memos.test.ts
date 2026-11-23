@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
   addBoardPost, addTaskComment, deleteBoardPost, deleteTaskComment, editBoardPost, editTaskComment,
-  getPersonalMemo, listBoardPosts, listTaskComments, savePersonalMemo, type Actor,
+  listBoardPosts, listTaskComments, type Actor,
 } from '@/lib/memos';
 import { createTask, deleteTask } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -72,12 +72,3 @@ describe('board posts', () => {
   });
 });
 
-describe('personal memo', () => {
-  it('is separate per user and empty by default', async () => {
-    expect(await getPersonalMemo(db, a.id)).toBe('');
-    await savePersonalMemo(db, a.id, '내 메모', NOW);
-    await savePersonalMemo(db, a.id, '내 메모 2', NOW);
-    expect(await getPersonalMemo(db, a.id)).toBe('내 메모 2');
-    expect(await getPersonalMemo(db, b.id)).toBe('');
-  });
-});

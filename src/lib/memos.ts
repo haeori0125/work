@@ -1,6 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
-import { boardPosts, personalMemos, taskComments, users } from '@/db/schema';
+import { boardPosts, taskComments, users } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
 import { assertOccurrence } from './tasks';
@@ -17,7 +17,6 @@ export type Note = {
 };
 
 const MAX_NOTE = 2000;
-const MAX_PERSONAL = 20000;
 
 function cleanBody(body: string, max = MAX_NOTE): string {
   const t = body.trim();
@@ -93,19 +92,3 @@ export async function addBoardPost(db: Db, actor: Actor, date: string, body: str
 export const editBoardPost = (db: Db, actor: Actor, id: number, body: string, now: Date) =>
   editNote(db, boardPosts, actor, id, body, now);
 export const deleteBoardPost = (db: Db, actor: Actor, id: number) => deleteNote(db, boardPosts, actor, id);
-
-// 개인 메모
-export async function getPersonalMemoRecord(db: Db, userId: number): Promise<{ body: string; updatedAt: Date | null }> {
-  const [row] = await db.select().from(personalMemos).where(eq(personalMemos.userId, userId));
-  return { body: row?.body ?? '', updatedAt: row?.updatedAt ?? null };
-}
-
-export async function getPersonalMemo(db: Db, userId: number): Promise<string> {
-  return (await getPersonalMemoRecord(db, userId)).body;
-}
-
-export async function savePersonalMemo(db: Db, userId: number, body: string, now: Date): Promise<void> {
-  if (body.length > MAX_PERSONAL) throw new AppError('too_long', `${MAX_PERSONAL}자 이하로 입력하세요`);
-  await db.insert(personalMemos).values({ userId, body, updatedAt: now })
-    .onConflictDoUpdate({ target: personalMemos.userId, set: { body, updatedAt: now } });
-}
