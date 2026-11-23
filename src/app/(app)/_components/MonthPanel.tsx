@@ -49,10 +49,12 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
     <section className="panel p-month" aria-label="전체 업무">
       <div className="panel-head">
         <h2>전체 업무</h2>
-        <div className="week-nav">
-          <Link className="arrow" href={prevHref} scroll={false} aria-label="지난달">‹</Link>
-          <span className="sub mc-title">{title}</span>
-          <Link className="arrow" href={nextHref} scroll={false} aria-label="다음 달">›</Link>
+        <div className="nav-group">
+          <div className="week-nav">
+            <Link className="arrow" href={prevHref} scroll={false} aria-label="지난달">‹</Link>
+            <span className="sub">{title}</span>
+            <Link className="arrow" href={nextHref} scroll={false} aria-label="다음 달">›</Link>
+          </div>
           {thisHref && <Link className="btn small soft" href={thisHref} scroll={false}>이번 달</Link>}
         </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />

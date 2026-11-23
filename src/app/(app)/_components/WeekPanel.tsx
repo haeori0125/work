@@ -61,10 +61,12 @@ export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: al
     <section className="panel p-week" aria-label="위클리">
       <div className="panel-head">
         <h2>위클리</h2>
-        <div className="week-nav">
-          <Link className="arrow" href={`/?week=${prevWeek}${monthQuery}`} scroll={false} aria-label="지난주">‹</Link>
-          <span className="sub">{rangeLabel}</span>
-          <Link className="arrow" href={`/?week=${nextWeek}${monthQuery}`} scroll={false} aria-label="다음 주">›</Link>
+        <div className="nav-group">
+          <div className="week-nav">
+            <Link className="arrow" href={`/?week=${prevWeek}${monthQuery}`} scroll={false} aria-label="지난주">‹</Link>
+            <span className="sub">{rangeLabel}</span>
+            <Link className="arrow" href={`/?week=${nextWeek}${monthQuery}`} scroll={false} aria-label="다음 주">›</Link>
+          </div>
           {!isThisWeek && <Link className="btn small soft" href={monthQuery ? `/?${monthQuery.slice(1)}` : '/'} scroll={false}>이번 주</Link>}
         </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />

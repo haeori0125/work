@@ -594,9 +594,12 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 }
 
 /* 위클리 주 넘기기 */
-.week-nav { display: inline-flex; align-items: center; gap: 6px; }
-.week-nav .arrow { width: 26px; height: 26px; font-size: 15px; }
-.week-nav .sub { min-width: 104px; text-align: center; font-variant-numeric: tabular-nums; }
+/* 제목 옆 기간 이동: ‹ 날짜 › 를 한 덩어리 알약으로 */
+.nav-group { display: inline-flex; align-items: center; gap: 8px; margin-left: 4px; }
+.week-nav { display: inline-flex; align-items: center; gap: 0; padding: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.week-nav .arrow { width: 28px; height: 28px; border: 0; border-radius: 50%; background: none; font-size: 16px; line-height: 1; }
+@media (hover: hover) { .week-nav .arrow:hover { background: var(--surface-2); color: var(--ink); } }
+.week-nav .sub { padding: 0 6px; text-align: center; font-size: 13.5px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* 이번 주 업무: 태그가 많아 줄이 늘어나면 알약 대신 둥근 카드로 */
 .goal { border-radius: 10px; flex-wrap: wrap; row-gap: 4px; max-width: 100%; }
@@ -633,7 +636,6 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 
 /* 전체 업무 달력: 선은 얇게, 글자는 한 줄, 색은 상태 점으로만 */
 .p-month { grid-column: 1 / -1; }
-.mc-title { min-width: 96px; text-align: center; font-weight: 700; color: var(--text); font-size: 14px; }
 .mc { padding: 4px 18px 18px; }
 .mc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
 .mc-wd { padding: 8px 10px; font-size: 12px; font-weight: 700; color: var(--muted); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
@@ -792,3 +794,40 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .dpop-day:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .dpop-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .tf-dates { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+
+/* 업무 메모: 채팅처럼 (내 말은 오른쪽, 다른 사람은 왼쪽에 사진·이름) */
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.chat-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.chat-msg { display: flex; gap: 8px; align-items: flex-start; }
+.chat-msg.first:not(:first-child) { margin-top: 8px; }
+.chat-msg.mine { justify-content: flex-end; }
+.chat-av { flex: none; width: 28px; }
+.chat-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; max-width: 80%; }
+.chat-msg.mine .chat-col { align-items: flex-end; }
+.chat-name { font-size: 12px; font-weight: 700; color: var(--muted); padding-left: 2px; }
+.chat-line { display: flex; align-items: flex-end; gap: 6px; }
+.chat-msg.mine .chat-line { flex-direction: row-reverse; }
+.chat-bubble {
+  padding: 8px 12px; border-radius: 16px 16px 16px 4px; background: var(--surface-2); font-size: 14px; line-height: 1.45;
+  white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0;
+}
+.chat-msg.mine .chat-bubble { background: var(--soft); color: var(--ink); border-radius: 16px 16px 4px 16px; }
+.chat-msg:not(.first) .chat-bubble { border-radius: 16px; }
+.chat-meta { flex: none; display: flex; flex-direction: column; gap: 1px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.chat-msg.mine .chat-meta { align-items: flex-end; }
+.chat-acts { display: flex; gap: 6px; }
+.chat-acts button { border: 0; background: none; padding: 0; font: inherit; font-size: 11px; color: var(--muted); cursor: pointer; }
+.chat-acts button:hover { color: var(--ink); text-decoration: underline; }
+@media (hover: hover) {
+  .chat-acts { opacity: 0; transition: opacity .12s; }
+  .chat-msg:hover .chat-acts, .chat-acts:focus-within { opacity: 1; }
+}
+.chat-edit { display: flex; flex-direction: column; gap: 6px; width: min(420px, 100%); }
+.chat-edit .row { justify-content: flex-end; }
+.chat-input { display: flex; align-items: flex-end; gap: 6px; padding: 5px 5px 5px 14px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); }
+.chat-input:focus-within { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); }
+.chat-input textarea {
+  flex: 1; border: 0; padding: 6px 0; background: none; resize: none; min-height: 32px; max-height: 120px; field-sizing: content; line-height: 1.4; outline: none;
+}
+.chat-send { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.chat-send:disabled { background: var(--surface-2); color: var(--muted); cursor: default; }
