@@ -5,14 +5,14 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { logoutAction } from '@/app/actions/auth';
 import { Avatar } from '@/app/_ui/Avatar';
-import { CheckIcon, GearIcon, RefreshIcon, TreeIcon } from '@/app/_ui/icons';
+import { CheckIcon, GearIcon, RefreshIcon } from '@/app/_ui/icons';
 
-export function TopBar({ name, avatar, tabs, xmas = false }: { name: string; isAdmin: boolean; avatar: string | null; tabs: React.ReactNode; xmas?: boolean }) {
+export function TopBar({ name, avatar, tabs }: { name: string; isAdmin: boolean; avatar: string | null; tabs: React.ReactNode }) {
   const path = usePathname();
   const [spinning, setSpinning] = useState(false);
   return (
     <header className="topbar">
-      <Link href="/" className="brand"><b aria-hidden>{xmas ? <TreeIcon size={14} /> : <CheckIcon size={12} />}</b>Team Task</Link>
+      <Link href="/" className="brand"><b aria-hidden><CheckIcon size={12} /></b>Team Task</Link>
       {tabs}
       {/* 자주 쓰는 순서: 새로고침 · 설정 · 내 프로필, 실수로 누르기 쉬운 로그아웃은 맨 끝 */}
       <div className="top-right">

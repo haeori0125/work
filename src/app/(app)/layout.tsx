@@ -8,7 +8,6 @@ import { RefreshOnFocus } from './_components/RefreshOnFocus';
 import { ShiftBar } from './_components/ShiftBar';
 import { IndexTabs } from './_components/IndexTabs';
 import { TopBar } from './_components/TopBar';
-import { isXmasSeason } from '@/lib/season';
 import { RememberTheme } from './_components/RememberTheme';
 import { encodeThemeCookie } from '@/lib/theme-cookie';
 
@@ -31,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         working={today?.state === 'working'}
       />
       <div className="frame">
-        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} xmas={isXmasSeason(kstDate(new Date()))}
+        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar}
           tabs={<IndexTabs isAdmin={user.role === 'admin'} />} />
         <div className="content">{children}</div>
       </div>
