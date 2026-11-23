@@ -564,20 +564,19 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 /* 다이어리 인덱스 탭: 상단 바 아래쪽에 매달려 내용 영역으로 이어진다 */
 .topbar { align-items: flex-end; padding-bottom: 0; }
 .topbar .brand, .topbar .top-right { align-self: center; padding-bottom: 10px; }
-.index-tabs { display: flex; gap: 4px; align-self: flex-end; margin-left: 4px; }
+.index-tabs { display: flex; gap: 4px; align-self: flex-end; align-items: flex-end; margin-left: 4px; }
 .itab {
   position: relative; width: 48px; height: 40px; display: grid; place-items: center; text-decoration: none;
   border-radius: 10px 10px 0 0; color: var(--ink);
-  transform: translateY(4px); transition: transform .18s ease-out, background-color .18s ease-out;
-  will-change: transform;
+  transition: background-color .15s ease-out;
 }
 /* 다이어리처럼 탭마다 테마 색의 조금씩 다른 농도 */
 .itab-0 { background: color-mix(in srgb, var(--bg) 58%, var(--accent)); }
 .itab-1 { background: color-mix(in srgb, var(--bg) 48%, var(--accent)); }
 .itab-2 { background: color-mix(in srgb, var(--bg) 38%, var(--accent)); }
 .itab-3 { background: color-mix(in srgb, var(--bg) 28%, var(--accent)); }
-.itab:hover { transform: translateY(1px); }
-.itab[aria-current="page"] { background: var(--bg); transform: translateY(0); height: 44px; }
+.itab:not([aria-current="page"]):hover { background: color-mix(in srgb, var(--bg) 72%, var(--accent)); }
+.itab[aria-current="page"] { background: var(--bg); height: 44px; }
 .itab-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .itab { transition: none; } }
 @media (max-width: 760px) {
