@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/server/session';
 import { kstDate, kstWeekday } from '@/lib/time';
 import { isXmasSeason } from '@/lib/season';
+import '@fontsource/great-vibes/latin-400.css';
 import { Snow } from '@/app/_ui/Snow';
+import { XmasTitle } from '@/app/_ui/XmasTitle';
 import { LoginForm } from './LoginForm';
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ out?: string }> }) {
@@ -14,8 +16,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="auth-page">
       {xmas && <Snow />}
+      {xmas && <XmasTitle />}
       <div className="auth-col">
-        <LoginForm xmas={xmas} stamp={stamp} notice={out ? '퇴근했습니다. 수고하셨어요! 다시 일할 때 로그인하면 새로 출근이 기록됩니다.' : null} />
+        <LoginForm stamp={stamp} notice={out ? '퇴근했습니다. 수고하셨어요! 다시 일할 때 로그인하면 새로 출근이 기록됩니다.' : null} />
       </div>
     </main>
   );

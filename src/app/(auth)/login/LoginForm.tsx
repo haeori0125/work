@@ -4,15 +4,15 @@ import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { loginAction } from '@/app/actions/auth';
 
-type Props = { notice: string | null; stamp: { date: string; day: string }; xmas?: boolean };
+type Props = { notice: string | null; stamp: { date: string; day: string } };
 
-export function LoginForm({ notice, stamp, xmas = false }: Props) {
+export function LoginForm({ notice, stamp }: Props) {
   const [mode, setMode] = useState<'member' | 'admin'>('member');
   const [state, action, pending] = useActionState(loginAction, null);
   return (
     <div className="auth-card">
       <h1 className="auth-title">Team Task</h1>
-      <p className="auth-date">{stamp.date} {stamp.day}{xmas && <span className="xmas-note"> · Merry Christmas</span>}</p>
+      <p className="auth-date">{stamp.date} {stamp.day}</p>
       {notice && <p className="msg ok" role="status">{notice}</p>}
       <div className="tabs" role="tablist" aria-label="로그인 종류">
         <button type="button" role="tab" aria-selected={mode === 'member'} className={`tab${mode === 'member' ? ' active' : ''}`} onClick={() => setMode('member')}>멤버</button>
