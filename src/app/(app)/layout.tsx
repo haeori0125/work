@@ -8,6 +8,8 @@ import { RefreshOnFocus } from './_components/RefreshOnFocus';
 import { ShiftBar } from './_components/ShiftBar';
 import { IndexTabs } from './_components/IndexTabs';
 import { TopBar } from './_components/TopBar';
+import { RememberTheme } from './_components/RememberTheme';
+import { encodeThemeCookie } from '@/lib/theme-cookie';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -33,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div className="content">{children}</div>
       </div>
       <RefreshOnFocus />
+      <RememberTheme value={encodeThemeCookie(prefs)} />
     </div>
     </AvatarProvider>
   );
