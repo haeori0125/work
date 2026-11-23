@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { MiniAvatar } from '@/app/_ui/AvatarContext';
 import { matchesWeekFilter, type OccurrenceView } from '@/lib/view';
 import { TaskDialog } from './TaskDialog';
 import { WeekFilter } from './WeekFilter';
@@ -28,12 +29,19 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
   const current = opened && (all.find((o) => o.taskId === opened.taskId && o.occurrenceKey === opened.occurrenceKey) ?? opened);
   const pickedDay = days.find((d) => d.date === picked);
 
-  const chip = (o: OccurrenceView) => (
+  // 담당자는 프로필 사진만(2명까지 + 나머지 수), 폰 목록에서는 조금 크게
+  const chip = (o: OccurrenceView, big = false) => (
     <button key={`${o.taskId}-${o.occurrenceKey}`} type="button" className={`mc-item ${o.status}`} onClick={() => setOpened(o)}
-      title={o.title}>
+      title={o.assignees.length ? `${o.title} · 담당 ${o.assignees.join(', ')}` : o.title}>
       <span className="mc-dot" aria-hidden />
       <span className="mc-t">{o.title}</span>
       {o.dueHere && <span className="mc-due">마감</span>}
+      {o.assignees.length > 0 && (
+        <span className="mc-who av-stack" aria-label={`담당 ${o.assignees.join(', ')}`}>
+          {o.assignees.slice(0, big ? 3 : 2).map((n) => <MiniAvatar key={n} name={n} size={big ? 20 : 15} />)}
+          {o.assignees.length > (big ? 3 : 2) && <span className="mc-extra">+{o.assignees.length - (big ? 3 : 2)}</span>}
+        </span>
+      )}
     </button>
   );
 
@@ -64,7 +72,7 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
                 <button type="button" className={`mc-num${d.isSun ? ' sun' : ''}${d.isSat ? ' sat' : ''}`} onClick={() => setPicked(d.date)}
                   aria-label={`${d.dayNum}일 업무 보기`}>{d.dayNum}</button>
                 <div className="mc-items">
-                  {shown.map(chip)}
+                  {shown.map((o) => chip(o))}
                   {more > 0 && <button type="button" className="mc-more" onClick={() => setOpen(new Set(open).add(d.date))}>+{more}개</button>}
                   {expanded && d.items.length > MAX && (
                     <button type="button" className="mc-more" onClick={() => { const n = new Set(open); n.delete(d.date); setOpen(n); }}>접기</button>
@@ -83,7 +91,7 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
         {pickedDay && (
           <div className="mc-agenda" aria-label="고른 날 업무">
             <div className="group-label">{Number(pickedDay.date.slice(5, 7))}월 {pickedDay.dayNum}일</div>
-            {pickedDay.items.length === 0 ? <p className="empty">업무 없음</p> : <div className="mc-list">{pickedDay.items.map(chip)}</div>}
+            {pickedDay.items.length === 0 ? <p className="empty">업무 없음</p> : <div className="mc-list">{pickedDay.items.map((o) => chip(o, true))}</div>}
           </div>
         )}
       </div>
