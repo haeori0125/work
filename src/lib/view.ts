@@ -1,6 +1,6 @@
 import type { Note } from './memos';
-import type { Occurrence, TaskStatus } from './tasks';
-import { formatDateLabel, formatKstTime, kstDate } from './time';
+import type { LastChange, Occurrence, TaskStatus } from './tasks';
+import { formatDateLabel, formatKstTime, kstDate, kstWeekday } from './time';
 
 export const STATUS_LABEL: Record<TaskStatus, string> = { todo: '미완료', doing: '진행 중', done: '완료' };
 export const STATUSES: TaskStatus[] = ['todo', 'doing', 'done'];
@@ -13,6 +13,17 @@ export function formatWhen(at: Date, today: string): string {
   return d === today ? formatKstTime(at) : `${formatDateLabel(d)} ${formatKstTime(at)}`;
 }
 
+const WEEKDAY_SHORT = ['월', '화', '수', '목', '금', '토', '일'];
+
+export type PartView = {
+  id: number;
+  title: string;
+  assignee: string | null;
+  status: TaskStatus;
+  /** "영희 10:12" — 화면에서 상태 아이콘(✓/◐)을 앞에 붙인다 */
+  tag: string | null;
+};
+
 export type OccurrenceView = {
   taskId: number;
   occurrenceKey: string;
@@ -22,16 +33,29 @@ export type OccurrenceView = {
   dateLabel: string;
   assignees: string[];
   status: TaskStatus;
+  /** 상태 태그 글자: "민수 09:14" (미완료면 null) */
   lastChange: string | null;
-  /** 위클리 칸용 짧은 표기: 바꾼 사람 이름 */
+  /** 위클리 칸용 짧은 상태 태그 글자: "민수" */
   lastBy: string | null;
   commentCount: number;
   repeatLabel: string | null;
+  /** 주간 업무 마감: "~목" */
+  dueLabel: string | null;
+  overdue: boolean;
+  dueHere: boolean;
+  parts: PartView[];
+  /** "파트 1/3" */
+  partsLabel: string | null;
 };
 
+function changeTag(status: TaskStatus, change: LastChange | null, today: string | null): string | null {
+  if (status === 'todo' || !change) return null; // 미완료로 되돌린 경우도 태그 없음(기록에는 남음)
+  const when = today ? ` ${formatWhen(change.at, today)}` : '';
+  return `${change.userName}${when}`;
+}
+
 export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
-  // 미완료로 되돌린 업무에는 상태 태그를 붙이지 않는다(누가 되돌렸는지는 변경 기록에 남음).
-  const change = o.status === 'todo' ? null : o.lastChange;
+  const partsDone = o.parts.filter((p) => p.status === 'done').length;
   return {
     taskId: o.taskId,
     occurrenceKey: o.occurrenceKey,
@@ -41,10 +65,19 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     dateLabel: o.kind === 'weekly' ? `${formatDateLabel(o.occurrenceKey)} 주` : formatDateLabel(o.occurrenceKey),
     assignees: o.assignees.map((a) => a.name),
     status: o.status,
-    lastChange: change ? `${STATUS_LABEL[o.status]} · ${change.userName} ${formatWhen(change.at, today)}` : null,
-    lastBy: change ? change.userName : null,
+    // 파트가 있는 업무는 파트마다 태그가 붙으므로 업무 줄에는 상태 태그를 두지 않는다
+    lastChange: o.parts.length ? null : changeTag(o.status, o.lastChange, today),
+    lastBy: o.parts.length ? null : changeTag(o.status, o.lastChange, null),
     commentCount: o.commentCount,
     repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
+    dueLabel: o.dueDate ? `~${WEEKDAY_SHORT[kstWeekday(o.dueDate)]}` : null,
+    overdue: !!o.dueDate && o.dueDate < today && o.status !== 'done',
+    dueHere: !!o.dueHere,
+    parts: o.parts.map((p) => ({
+      id: p.id, title: p.title, assignee: p.assignee?.name ?? null, status: p.status,
+      tag: changeTag(p.status, p.lastChange, today),
+    })),
+    partsLabel: o.parts.length ? `파트 ${partsDone}/${o.parts.length}` : null,
   };
 }
 

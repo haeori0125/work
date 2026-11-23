@@ -9,7 +9,7 @@ import {
   approveMember, rejectMember, resetPassword, setDisabled, setRole,
 } from '@/lib/members';
 import type { Kind, Repeat } from '@/lib/recurrence';
-import { createTask, deleteTask, updateTask, type TaskInput } from '@/lib/tasks';
+import { createTask, deleteTask, updateTask, type PartInput, type TaskInput } from '@/lib/tasks';
 import { kstDateTime } from '@/lib/time';
 import { requireActionAdmin } from '@/server/session';
 import { runAction, type ActionResult } from './result';
@@ -28,7 +28,22 @@ function parseTask(form: FormData): TaskInput {
     startDate: str(form, 'startDate'),
     endDate: str(form, 'endDate') || null,
     assigneeIds: form.getAll('assignees').map(Number).filter(Number.isInteger),
+    dueWeekday: kind === 'weekly' && str(form, 'dueWeekday') !== '' ? Number(str(form, 'dueWeekday')) : null,
+    parts: parseParts(str(form, 'parts')),
   };
+}
+
+/** 폼의 숨은 칸에 담긴 파트 목록(JSON)을 검사해서 꺼낸다 */
+function parseParts(raw: string): PartInput[] {
+  if (!raw) return [];
+  let data: unknown;
+  try { data = JSON.parse(raw); } catch { throw new AppError('invalid', '파트 정보를 읽지 못했습니다'); }
+  if (!Array.isArray(data)) throw new AppError('invalid', '파트 정보를 읽지 못했습니다');
+  return data.map((p) => ({
+    id: Number.isInteger(p?.id) ? p.id : undefined,
+    title: typeof p?.title === 'string' ? p.title : '',
+    assigneeId: Number.isInteger(p?.assigneeId) ? p.assigneeId : null,
+  }));
 }
 
 export async function saveTaskAction(_prev: ActionResult, form: FormData): Promise<ActionResult> {

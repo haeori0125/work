@@ -40,7 +40,9 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
                 <div className="tags">
                   <span className="tag line">{d.repeat === 'none' ? '' : '↻ '}{describeRepeat(d)}</span>
                   <span className="tag line">{period(d)}</span>
-                  {d.assigneeIds.length > 0 && <span className="tag">담당 {d.assigneeIds.map(nameOf).join(', ')}</span>}
+                  {d.dueWeekday !== null && <span className="tag line">~{['월', '화', '수', '목', '금', '토', '일'][d.dueWeekday]}</span>}
+                  {d.assigneeIds.length > 0 && <span className="tag line">담당 {d.assigneeIds.map(nameOf).join(', ')}</span>}
+                  {d.parts.length > 0 && <span className="tag line">파트 {d.parts.length}개</span>}
                 </div>
               </li>
             ))}

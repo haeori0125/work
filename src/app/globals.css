@@ -460,3 +460,21 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .set-profile { grid-column: 1 / -1; }
 .profile-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .avatar.avatar-lg { background: var(--soft); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+
+/* 태그 규칙: 사람 배정·마감·반복 = 테두리(흰 바탕), 진행 기록 = 채움 */
+.tag.line { background: var(--surface); }
+.tag.line.due { border-color: color-mix(in srgb, var(--accent) 70%, var(--ink)); font-weight: 700; }
+
+/* 파트 */
+.parts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.part { display: grid; grid-template-columns: 19px minmax(0, 1fr); gap: 8px; align-items: start; }
+.part-title { font-size: 14px; }
+.part.done .part-title { color: var(--muted); text-decoration: line-through; }
+.parts.compact { margin-top: 6px; padding: 8px; border-radius: 8px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.parts.compact .part-title { font-size: 13px; }
+.parts-wrap { border-top: 1px dashed var(--line); }
+.goal-title { white-space: nowrap; }
+.goal .tags.mini { margin-top: 0; }
+.goal-parts { flex-basis: 100%; }
+.part-edit { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 6px; align-items: center; }
+@media (max-width: 760px) { .part-edit { grid-template-columns: minmax(0, 1fr) 110px auto; } }

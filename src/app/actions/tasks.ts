@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
 import { AppError } from '@/lib/errors';
 import { addTaskComment, deleteTaskComment, editTaskComment, listTaskComments } from '@/lib/memos';
-import { getStatusHistory, getTaskOrigin, setStatus, type TaskStatus } from '@/lib/tasks';
+import { getStatusHistory, getTaskOrigin, setPartStatus, setStatus, type TaskStatus } from '@/lib/tasks';
 import { formatDateLabel, kstDate } from '@/lib/time';
 import { STATUS_LABEL, STATUSES, formatWhen, toNoteView, type NoteView } from '@/lib/view';
 import { requireActionUser } from '@/server/session';
@@ -15,6 +15,15 @@ export async function setStatusAction(taskId: number, occurrenceKey: string, sta
     const user = await requireActionUser();
     if (!STATUSES.includes(status)) throw new AppError('invalid', '잘못된 상태입니다');
     await setStatus(await getDb(), user.id, taskId, occurrenceKey, status, new Date());
+    revalidatePath('/');
+  });
+}
+
+export async function setPartStatusAction(partId: number, occurrenceKey: string, status: TaskStatus): Promise<ActionResult> {
+  return runAction(async () => {
+    const user = await requireActionUser();
+    if (!STATUSES.includes(status)) throw new AppError('invalid', '잘못된 상태입니다');
+    await setPartStatus(await getDb(), user.id, partId, occurrenceKey, status, new Date());
     revalidatePath('/');
   });
 }

@@ -15,6 +15,8 @@ export function TaskForm({ task, members, today }: Props) {
   const [repeatDated, setRepeatDated] = useState(task?.kind === 'dated' ? task.repeat : 'none');
   const [repeatWeekly, setRepeatWeekly] = useState(task?.kind === 'weekly' ? task.repeat : 'none');
   const repeating = kind === 'dated' ? repeatDated !== 'none' : repeatWeekly !== 'none';
+  const [parts, setParts] = useState<{ id?: number; title: string; assigneeId: number | null }[]>(task?.parts ?? []);
+  const setPart = (i: number, patch: Partial<(typeof parts)[number]>) => setParts(parts.map((p, j) => (j === i ? { ...p, ...patch } : p)));
 
   return (
     <form action={action} className="stack" key={task?.id ?? 'new'}>
@@ -67,7 +69,35 @@ export function TaskForm({ task, members, today }: Props) {
         )}
       </div>
 
-      <div className="field">담당자 (선택)
+      {kind === 'weekly' && (
+        <label className="field">마감 요일 (선택)
+          <select name="dueWeekday" defaultValue={task?.dueWeekday ?? ''}>
+            <option value="">마감 없음 (그 주 안에)</option>
+            {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}요일까지</option>)}
+          </select>
+        </label>
+      )}
+
+      <div className="field">파트 나누기 (선택)
+        <p className="help" style={{ fontWeight: 400 }}>파트를 만들면 파트마다 담당자와 체크 원이 따로 생기고, 업무 상태는 파트에서 자동으로 정해집니다.</p>
+        <input type="hidden" name="parts" value={JSON.stringify(parts)} />
+        {parts.map((p, i) => (
+          <div key={p.id ?? `new-${i}`} className="part-edit">
+            <input value={p.title} onChange={(e) => setPart(i, { title: e.target.value })} placeholder={`파트 ${i + 1} 이름`}
+              aria-label={`파트 ${i + 1} 이름`} maxLength={100} required />
+            <select value={p.assigneeId ?? ''} onChange={(e) => setPart(i, { assigneeId: e.target.value ? Number(e.target.value) : null })}
+              aria-label={`파트 ${i + 1} 담당자`}>
+              <option value="">담당 없음</option>
+              {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+            <button type="button" className="btn small danger" onClick={() => setParts(parts.filter((_, j) => j !== i))}>빼기</button>
+          </div>
+        ))}
+        <button type="button" className="btn small" style={{ alignSelf: 'flex-start' }}
+          onClick={() => setParts([...parts, { title: '', assigneeId: null }])}>＋ 파트 추가</button>
+      </div>
+
+      <div className="field">담당자 (선택{parts.length ? ' · 파트 담당자는 자동으로 포함' : ''})
         <div className="checks">
           {members.map((m) => (
             <label key={m.id}><input type="checkbox" name="assignees" value={m.id} defaultChecked={task?.assigneeIds.includes(m.id)} /> {m.name}</label>

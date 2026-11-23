@@ -6,7 +6,10 @@ import {
 } from '@/app/actions/tasks';
 import type { OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
+import { StatusMark } from '@/app/_ui/icons';
+import { STATUS_LABEL } from '@/lib/view';
 import { NoteList } from './NoteList';
+import { PartList } from './PartList';
 
 type Props = { occ: OccurrenceView; me: { id: number; role: 'member' | 'admin' }; showDate?: boolean };
 
@@ -18,7 +21,8 @@ export function TaskItem({ occ, me, showDate }: Props) {
 
   const reload = () => start(async () => setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey)));
   const toggle = () => { if (!open && !details) reload(); setOpen(!open); };
-  const cycle = () => start(async () => {
+  const hasParts = occ.parts.length > 0;
+  const cycle = () => hasParts ? toggle() : start(async () => {
     const res = await setStatusAction(occ.taskId, occ.occurrenceKey, NEXT_STATUS[occ.status]);
     setError(res?.error ?? null);
     if (open) setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey));
@@ -26,21 +30,25 @@ export function TaskItem({ occ, me, showDate }: Props) {
 
   return (
     <li className={`task-row ${occ.status}`}>
-      <CheckCircle status={occ.status} title={occ.title} onCycle={cycle} disabled={pending} />
+      <CheckCircle status={occ.status} title={hasParts ? `${occ.title} (파트 보기)` : occ.title} onCycle={cycle} disabled={pending} />
       <div>
         <div className="task-title">{occ.title}</div>
         {occ.description && <p className="task-desc">{occ.description}</p>}
         <div className="meta tags">
           {showDate && <span className="tag date">{occ.dateLabel}</span>}
-          {occ.assignees.length > 0 && <span className="tag">담당 {occ.assignees.join(', ')}</span>}
+          {occ.overdue && <span className="tag date">마감 지남</span>}
+          {occ.assignees.length > 0 && <span className="tag line">담당 {occ.assignees.join(', ')}</span>}
+          {occ.dueLabel && !occ.overdue && <span className="tag line">{occ.dueLabel}</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
-          {occ.lastChange && <span className={`tag ${occ.status} last-change`}>{occ.lastChange}</span>}
+          {occ.partsLabel && <span className={`tag ${occ.status === 'todo' ? 'line' : occ.status}`}>{occ.partsLabel}</span>}
+          {occ.lastChange && <span className={`tag ${occ.status} last-change`} title={STATUS_LABEL[occ.status]}><StatusMark status={occ.status} />{occ.lastChange}</span>}
           <button className={occ.commentCount > 0 || open ? 'tag line memo-n' : 'tag line memo-n reveal'} onClick={toggle} aria-expanded={open}>
             {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모 · 기록'}{open ? ' ▴' : ''}
           </button>
         </div>
         {error && <p className="msg error" style={{ marginTop: 6 }}>{error}</p>}
       </div>
+      {hasParts && open && <div className="details parts-wrap"><PartList parts={occ.parts} occurrenceKey={occ.occurrenceKey} /></div>}
       {open && (
         <div className="details">
           {!details ? <span className="muted">불러오는 중…</span> : (

@@ -1,23 +1,39 @@
 import { and, asc, count, desc, eq, inArray, isNull, or } from 'drizzle-orm';
 import {
-  taskAssignees, taskComments, taskStatus, taskStatusHistory, tasks, users,
+  partStatus, taskAssignees, taskComments, taskParts, taskStatus, taskStatusHistory, tasks, users,
 } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
 import {
   occursInWeek, occursOn, validateRecurrence, type Kind, type RecurrenceSpec, type Repeat,
 } from './recurrence';
-import { weekDates, weekStartOf } from './time';
+import { addDays, kstWeekday, weekDates, weekStartOf } from './time';
 
 export type TaskStatus = 'todo' | 'doing' | 'done';
+
+export type PartInput = { id?: number; title: string; assigneeId: number | null };
 
 export type TaskInput = RecurrenceSpec & {
   title: string;
   description: string | null;
   assigneeIds: number[];
+  /** 주간 업무의 마감 요일 (0=월 … 6=일) */
+  dueWeekday?: number | null;
+  /** 나눠 맡기는 파트. 있으면 업무 상태는 파트에서 자동으로 정해진다 */
+  parts?: PartInput[];
 };
 
-export type TaskDefinition = TaskInput & { id: number };
+export type TaskDefinition = TaskInput & { id: number; dueWeekday: number | null; parts: (PartInput & { id: number })[] };
+
+export type LastChange = { userId: number; userName: string; at: Date };
+
+export type PartOccurrence = {
+  id: number;
+  title: string;
+  assignee: { id: number; name: string } | null;
+  status: TaskStatus;
+  lastChange: LastChange | null;
+};
 
 export type Occurrence = {
   taskId: number;
@@ -28,9 +44,16 @@ export type Occurrence = {
   repeat: Repeat;
   assignees: { id: number; name: string }[];
   status: TaskStatus;
-  lastChange: { userName: string; at: Date } | null;
+  lastChange: LastChange | null;
   commentCount: number;
+  parts: PartOccurrence[];
+  /** 주간 업무 마감일 (YYYY-MM-DD), 없으면 null */
+  dueDate: string | null;
+  /** 위클리에서 마감 요일 칸에 나온 항목 */
+  dueHere?: boolean;
 };
+
+const MAX_PARTS = 20;
 
 type TaskRow = typeof tasks.$inferSelect;
 
@@ -45,16 +68,40 @@ function clean(input: TaskInput): TaskInput {
     weekdays: input.repeat === 'weekly_days' ? [...new Set(input.weekdays)].sort() : [],
     endDate: input.repeat === 'none' ? null : input.endDate || null,
     assigneeIds: [...new Set(input.assigneeIds)],
+    dueWeekday: input.dueWeekday ?? null,
+    parts: (input.parts ?? []).map((p) => ({ ...p, title: p.title.trim() })),
   };
   const err = validateRecurrence(spec);
   if (err) throw new AppError('invalid', err);
+  if (spec.dueWeekday !== null) {
+    if (spec.kind !== 'weekly') throw new AppError('invalid', '마감 요일은 주간 업무에만 정할 수 있습니다');
+    if (!Number.isInteger(spec.dueWeekday) || spec.dueWeekday! < 0 || spec.dueWeekday! > 6) throw new AppError('invalid', '마감 요일이 올바르지 않습니다');
+  }
+  if (spec.parts!.length > MAX_PARTS) throw new AppError('invalid', `파트는 ${MAX_PARTS}개까지 만들 수 있습니다`);
+  if (spec.parts!.some((p) => !p.title)) throw new AppError('invalid', '파트 이름을 입력하세요');
+  if (spec.parts!.some((p) => p.title.length > 100)) throw new AppError('invalid', '파트 이름은 100자 이하로 입력하세요');
   return spec;
+}
+
+/** 파트를 저장한다. id가 있는 파트는 그대로 두고(체크 기록 유지) 이름·담당만 바꾸고, 빠진 파트는 지운다. */
+async function setParts(db: Db, taskId: number, parts: PartInput[]) {
+  const existing = await db.select({ id: taskParts.id }).from(taskParts).where(eq(taskParts.taskId, taskId));
+  const keep = new Set(parts.filter((p) => p.id).map((p) => p.id!));
+  const gone = existing.map((e) => e.id).filter((id) => !keep.has(id));
+  if (gone.length) await db.delete(taskParts).where(inArray(taskParts.id, gone));
+  for (const [i, p] of parts.entries()) {
+    if (p.id && existing.some((e) => e.id === p.id)) {
+      await db.update(taskParts).set({ title: p.title, assigneeId: p.assigneeId, sort: i }).where(eq(taskParts.id, p.id));
+    } else {
+      await db.insert(taskParts).values({ taskId, title: p.title, assigneeId: p.assigneeId, sort: i });
+    }
+  }
 }
 
 function columns(spec: TaskInput) {
   return {
     title: spec.title, description: spec.description, kind: spec.kind, repeat: spec.repeat,
-    weekdays: spec.weekdays, startDate: spec.startDate, endDate: spec.endDate,
+    weekdays: spec.weekdays, startDate: spec.startDate, endDate: spec.endDate, dueWeekday: spec.dueWeekday ?? null,
   };
 }
 
@@ -67,6 +114,7 @@ export async function createTask(db: Db, actorId: number, input: TaskInput): Pro
   const spec = clean(input);
   const [row] = await db.insert(tasks).values({ ...columns(spec), createdBy: actorId }).returning({ id: tasks.id });
   await setAssignees(db, row.id, spec.assigneeIds);
+  await setParts(db, row.id, spec.parts ?? []);
   return row.id;
 }
 
@@ -76,6 +124,7 @@ export async function updateTask(db: Db, id: number, input: TaskInput): Promise<
     .where(and(eq(tasks.id, id), isNull(tasks.deletedAt))).returning({ id: tasks.id });
   if (!updated.length) throw new AppError('not_found', '업무를 찾을 수 없습니다');
   await setAssignees(db, id, spec.assigneeIds);
+  await setParts(db, id, spec.parts ?? []);
 }
 
 export async function deleteTask(db: Db, id: number, now: Date): Promise<void> {
@@ -89,26 +138,45 @@ function liveTasks(db: Db): Promise<TaskRow[]> {
 export async function listTaskDefinitions(db: Db): Promise<TaskDefinition[]> {
   const rows = await liveTasks(db);
   if (!rows.length) return [];
-  const assigned = await db.select().from(taskAssignees)
-    .where(inArray(taskAssignees.taskId, rows.map((r) => r.id)));
+  const ids = rows.map((r) => r.id);
+  const [assigned, parts] = await Promise.all([
+    db.select().from(taskAssignees).where(inArray(taskAssignees.taskId, ids)),
+    db.select().from(taskParts).where(inArray(taskParts.taskId, ids)).orderBy(asc(taskParts.sort), asc(taskParts.id)),
+  ]);
   return rows.map((r) => ({
     id: r.id, title: r.title, description: r.description, kind: r.kind, repeat: r.repeat,
-    weekdays: r.weekdays, startDate: r.startDate, endDate: r.endDate,
+    weekdays: r.weekdays, startDate: r.startDate, endDate: r.endDate, dueWeekday: r.dueWeekday,
     assigneeIds: assigned.filter((x) => x.taskId === r.id).map((x) => x.userId).sort((p, q) => p - q),
+    parts: parts.filter((p) => p.taskId === r.id).map((p) => ({ id: p.id, title: p.title, assigneeId: p.assigneeId })),
   }));
 }
 
-async function buildOccurrences(db: Db, items: { task: TaskRow; key: string }[]): Promise<Occurrence[]> {
+function deriveStatus(parts: { status: TaskStatus }[]): TaskStatus {
+  if (parts.every((p) => p.status === 'done')) return 'done';
+  return parts.some((p) => p.status !== 'todo') ? 'doing' : 'todo';
+}
+
+async function buildOccurrences(db: Db, items: { task: TaskRow; key: string; dueHere?: boolean }[]): Promise<Occurrence[]> {
   if (!items.length) return [];
   const taskIds = [...new Set(items.map((i) => i.task.id))];
   const keys = [...new Set(items.map((i) => i.key))];
+  const parts = await db.select({
+    id: taskParts.id, taskId: taskParts.taskId, title: taskParts.title,
+    assigneeId: taskParts.assigneeId, assigneeName: users.name,
+  }).from(taskParts).leftJoin(users, eq(users.id, taskParts.assigneeId))
+    .where(inArray(taskParts.taskId, taskIds)).orderBy(asc(taskParts.sort), asc(taskParts.id));
+  const partStatuses = parts.length ? await db.select({
+    partId: partStatus.partId, key: partStatus.occurrenceKey, status: partStatus.status,
+    userId: users.id, userName: users.name, at: partStatus.updatedAt,
+  }).from(partStatus).innerJoin(users, eq(users.id, partStatus.updatedBy))
+    .where(and(inArray(partStatus.partId, parts.map((p) => p.id)), inArray(partStatus.occurrenceKey, keys))) : [];
   const [assigned, statuses, comments] = await Promise.all([
     db.select({ taskId: taskAssignees.taskId, id: users.id, name: users.name })
       .from(taskAssignees).innerJoin(users, eq(users.id, taskAssignees.userId))
       .where(inArray(taskAssignees.taskId, taskIds)).orderBy(asc(users.name)),
     db.select({
       taskId: taskStatus.taskId, key: taskStatus.occurrenceKey, status: taskStatus.status,
-      userName: users.name, at: taskStatus.updatedAt,
+      userId: users.id, userName: users.name, at: taskStatus.updatedAt,
     }).from(taskStatus).innerJoin(users, eq(users.id, taskStatus.updatedBy))
       .where(and(inArray(taskStatus.taskId, taskIds), inArray(taskStatus.occurrenceKey, keys))),
     db.select({ taskId: taskComments.taskId, key: taskComments.occurrenceKey, n: count() })
@@ -116,8 +184,21 @@ async function buildOccurrences(db: Db, items: { task: TaskRow; key: string }[])
       .where(and(inArray(taskComments.taskId, taskIds), inArray(taskComments.occurrenceKey, keys)))
       .groupBy(taskComments.taskId, taskComments.occurrenceKey),
   ]);
-  return items.map(({ task, key }) => {
+  return items.map(({ task, key, dueHere }) => {
     const st = statuses.find((s) => s.taskId === task.id && s.key === key);
+    const myParts: PartOccurrence[] = parts.filter((p) => p.taskId === task.id).map((p) => {
+      const ps = partStatuses.find((x) => x.partId === p.id && x.key === key);
+      return {
+        id: p.id, title: p.title,
+        assignee: p.assigneeId && p.assigneeName ? { id: p.assigneeId, name: p.assigneeName } : null,
+        status: ps?.status ?? 'todo',
+        lastChange: ps ? { userId: ps.userId, userName: ps.userName, at: ps.at } : null,
+      };
+    });
+    const assignees = assigned.filter((x) => x.taskId === task.id).map(({ id, name }) => ({ id, name }));
+    for (const p of myParts) if (p.assignee && !assignees.some((x) => x.id === p.assignee!.id)) assignees.push(p.assignee);
+    const latestPart = myParts.map((p) => p.lastChange).filter((c): c is LastChange => !!c)
+      .sort((x, y) => y.at.getTime() - x.at.getTime())[0] ?? null;
     return {
       taskId: task.id,
       occurrenceKey: key,
@@ -125,10 +206,13 @@ async function buildOccurrences(db: Db, items: { task: TaskRow; key: string }[])
       description: task.description,
       kind: task.kind,
       repeat: task.repeat,
-      assignees: assigned.filter((x) => x.taskId === task.id).map(({ id, name }) => ({ id, name })),
-      status: st?.status ?? 'todo',
-      lastChange: st ? { userName: st.userName, at: st.at } : null,
+      assignees: assignees.sort((x, y) => x.name.localeCompare(y.name, 'ko')),
+      status: myParts.length ? deriveStatus(myParts) : st?.status ?? 'todo',
+      lastChange: myParts.length ? latestPart : st ? { userId: st.userId, userName: st.userName, at: st.at } : null,
       commentCount: comments.find((c) => c.taskId === task.id && c.key === key)?.n ?? 0,
+      parts: myParts,
+      dueDate: task.kind === 'weekly' && task.dueWeekday !== null ? addDays(key, task.dueWeekday) : null,
+      ...(dueHere ? { dueHere: true } : {}),
     };
   });
 }
@@ -151,9 +235,15 @@ export async function getWeeklyOccurrences(db: Db, weekStart: string): Promise<O
 export async function getWeekView(db: Db, weekStart: string): Promise<Record<string, Occurrence[]>> {
   const all = await liveTasks(db);
   const days = weekDates(weekStart);
-  const items = days.flatMap((date) => all.filter((t) => occursOn(t, date)).map((task) => ({ task, key: date })));
+  const items = days.flatMap((date) => [
+    ...all.filter((t) => occursOn(t, date)).map((task) => ({ task, key: date })),
+    // 마감 요일이 이 날인 주간 업무 (회차 키는 그 주 월요일)
+    ...all.filter((t) => t.kind === 'weekly' && t.dueWeekday === kstWeekday(date) && occursInWeek(t, weekStartOf(date)))
+      .map((task) => ({ task, key: weekStartOf(date), dueHere: true })),
+  ]);
   const built = await buildOccurrences(db, items);
-  return Object.fromEntries(days.map((d) => [d, sortOpenFirst(built.filter((o) => o.occurrenceKey === d))]));
+  return Object.fromEntries(days.map((d) => [d, sortOpenFirst(built.filter((o) =>
+    (o.dueHere ? o.dueDate === d : o.occurrenceKey === d && o.kind === 'dated')))]));
 }
 
 export async function getPastOccurrences(db: Db, today: string): Promise<Occurrence[]> {
@@ -190,6 +280,8 @@ export async function setStatus(
   db: Db, actorId: number, taskId: number, occurrenceKey: string, status: TaskStatus, now: Date,
 ): Promise<void> {
   await assertOccurrence(db, taskId, occurrenceKey);
+  const [hasPart] = await db.select({ id: taskParts.id }).from(taskParts).where(eq(taskParts.taskId, taskId)).limit(1);
+  if (hasPart) throw new AppError('has_parts', '파트가 있는 업무는 파트에서 체크하세요');
   await db.transaction(async (tx) => {
     const [cur] = await tx.select({ status: taskStatus.status }).from(taskStatus)
       .where(and(eq(taskStatus.taskId, taskId), eq(taskStatus.occurrenceKey, occurrenceKey)))
@@ -223,4 +315,15 @@ export async function getTaskOrigin(db: Db, taskId: number): Promise<{ creatorNa
   const [row] = await db.select({ creatorName: users.name, createdAt: tasks.createdAt })
     .from(tasks).innerJoin(users, eq(users.id, tasks.createdBy)).where(eq(tasks.id, taskId));
   return row ?? null;
+}
+
+/** 파트 하나의 상태를 바꾼다. 누구나 체크할 수 있고, 누가 바꿨는지 남는다. */
+export async function setPartStatus(
+  db: Db, actorId: number, partId: number, occurrenceKey: string, status: TaskStatus, now: Date,
+): Promise<void> {
+  const [part] = await db.select({ taskId: taskParts.taskId }).from(taskParts).where(eq(taskParts.id, partId));
+  if (!part) throw new AppError('not_found', '파트를 찾을 수 없습니다');
+  await assertOccurrence(db, part.taskId, occurrenceKey);
+  await db.insert(partStatus).values({ partId, occurrenceKey, status, updatedBy: actorId, updatedAt: now })
+    .onConflictDoUpdate({ target: [partStatus.partId, partStatus.occurrenceKey], set: { status, updatedBy: actorId, updatedAt: now } });
 }

@@ -36,3 +36,17 @@ export function RefreshIcon({ size = 18, spinning = false }: P & { spinning?: bo
     </svg>
   );
 }
+
+/** 상태 태그 앞 아이콘: 완료 ✓, 진행 중 반쪽 원 */
+export function StatusMark({ status }: { status: 'todo' | 'doing' | 'done' }) {
+  if (status === 'done') return <CheckIcon size={10} />;
+  if (status === 'doing') {
+    return (
+      <svg width={10} height={10} viewBox="0 0 10 10" aria-hidden="true">
+        <circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5 1a4 4 0 0 1 0 8Z" fill="currentColor" />
+      </svg>
+    );
+  }
+  return null;
+}

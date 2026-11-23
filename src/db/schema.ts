@@ -43,6 +43,8 @@ export const tasks = pgTable('tasks', {
   weekdays: integer('weekdays').array().notNull().default([]),
   startDate: text('start_date').notNull(),
   endDate: text('end_date'),
+  /** 주간 업무의 마감 요일 (0=월 … 6=일), 없으면 null */
+  dueWeekday: integer('due_weekday'),
   createdBy: integer('created_by').notNull().references(() => users.id),
   createdAt: ts('created_at').notNull().defaultNow(),
   deletedAt: ts('deleted_at'),
@@ -63,6 +65,23 @@ export const taskStatus = pgTable('task_status', {
   updatedBy: integer('updated_by').notNull().references(() => users.id),
   updatedAt: ts('updated_at').notNull(),
 }, (t) => [unique().on(t.taskId, t.occurrenceKey)]);
+
+export const taskParts = pgTable('task_parts', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id').notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  assigneeId: integer('assignee_id').references(() => users.id, { onDelete: 'set null' }),
+  sort: integer('sort').notNull().default(0),
+});
+
+export const partStatus = pgTable('part_status', {
+  id: serial('id').primaryKey(),
+  partId: integer('part_id').notNull().references(() => taskParts.id, { onDelete: 'cascade' }),
+  occurrenceKey: text('occurrence_key').notNull(),
+  status: text('status', { enum: statusEnum }).notNull(),
+  updatedBy: integer('updated_by').notNull().references(() => users.id),
+  updatedAt: ts('updated_at').notNull(),
+}, (t) => [unique().on(t.partId, t.occurrenceKey)]);
 
 export const taskStatusHistory = pgTable('task_status_history', {
   id: serial('id').primaryKey(),
