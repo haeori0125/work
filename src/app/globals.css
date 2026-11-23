@@ -479,8 +479,8 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .goal-title { white-space: nowrap; }
 .goal .tags.mini { margin-top: 0; }
 .goal-parts { flex-basis: 100%; }
-.part-edit { display: grid; grid-template-columns: minmax(0, 1fr) 150px auto; gap: 6px; align-items: center; }
-@media (max-width: 760px) { .part-edit { grid-template-columns: minmax(0, 1fr) 110px auto; } }
+.part-edit { display: grid; grid-template-columns: minmax(0, 1fr) 160px auto; gap: 6px; align-items: center; }
+@media (max-width: 760px) { .part-edit { grid-template-columns: minmax(0, 1fr) 128px auto; } }
 
 /* 프로필 사진(작게) */
 .mini-av { border-radius: 50%; object-fit: cover; flex: none; display: inline-grid; place-items: center; vertical-align: middle; }
@@ -735,3 +735,25 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .tf-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
 .tf-actions .btn.primary { min-width: 140px; }
 @media (max-width: 560px) { .tf-actions .btn.primary { flex: 1; } }
+
+/* 담당자 고르기(드롭다운 대신) */
+.psel { position: relative; min-width: 0; }
+.psel-btn {
+  width: 100%; min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 8px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font: inherit; font-size: 14px; color: var(--text); text-align: left; cursor: pointer;
+}
+.psel-btn > .psel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psel-btn:hover, .psel-btn.open { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); }
+.psel-caret { flex: none; color: var(--muted); transition: transform .15s; }
+.psel-btn.open .psel-caret { transform: rotate(180deg); }
+.psel-list {
+  position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; min-width: 100%; max-height: 240px; overflow-y: auto;
+  margin: 0; padding: 4px; list-style: none; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 28px hsl(var(--h) 30% 20% / .16); animation: psel-in .12s ease-out;
+}
+.psel-list li { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.psel-list li.active { background: var(--surface-2); }
+.psel-list li[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+.psel-check { margin-left: auto; color: var(--ink); }
+@keyframes psel-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .psel-list { animation: none; } .psel-caret { transition: none; } }

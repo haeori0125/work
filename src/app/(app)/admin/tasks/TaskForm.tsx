@@ -6,6 +6,7 @@ import { saveTaskAction } from '@/app/actions/admin';
 import { createRequestAction } from '@/app/actions/requests';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
+import { PersonSelect } from '@/app/_ui/PersonSelect';
 import type { TaskDefinition, TaskInput } from '@/lib/tasks';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -79,11 +80,7 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
                 <div key={p.id ?? `new-${i}`} className="part-edit">
                   <input value={p.title} onChange={(e) => setPart(i, { title: e.target.value })} placeholder={`파트 ${i + 1} 이름`}
                     aria-label={`파트 ${i + 1} 이름`} maxLength={100} required />
-                  <select value={p.assigneeId ?? ''} onChange={(e) => setPart(i, { assigneeId: e.target.value ? Number(e.target.value) : null })}
-                    aria-label={`파트 ${i + 1} 담당자`}>
-                    <option value="">담당 없음</option>
-                    {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
+                  <PersonSelect value={p.assigneeId} options={members} onChange={(id) => setPart(i, { assigneeId: id })} label={`파트 ${i + 1} 담당자`} />
                   <button type="button" className="part-x" aria-label={`파트 ${i + 1} 빼기`} onClick={() => setParts(parts.filter((_, j) => j !== i))}>✕</button>
                 </div>
               ))}

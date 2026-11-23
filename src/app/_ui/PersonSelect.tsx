@@ -39,7 +39,7 @@ export function PersonSelect({ value, options, onChange, label, emptyLabel = 'ë‹
           else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(all[active]); }
           else if (e.key === 'Escape' || e.key === 'Tab') setOpen(false);
         }}>
-        {current ? <><MiniAvatar name={current.name} size={20} /><span>{current.name}</span></> : <span className="muted">{emptyLabel}</span>}
+        {current ? <><MiniAvatar name={current.name} size={20} /><span className="psel-name">{current.name}</span></> : <span className="psel-name muted">{emptyLabel}</span>}
         <svg className="psel-caret" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
           <path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
