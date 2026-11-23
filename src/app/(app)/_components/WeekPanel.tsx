@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
 import { matchesWeekFilter, type OccurrenceView } from '@/lib/view';
@@ -13,7 +14,7 @@ export type WeekDay = {
 };
 
 type Props = {
-  rangeLabel: string; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
+  rangeLabel: string; prevWeek: string; nextWeek: string; isThisWeek: boolean; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
   members: string[]; savedFilter: string[] | null;
 };
 
@@ -33,7 +34,7 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
   );
 }
 
-export function WeekPanel({ rangeLabel, days: allDays, goals: allGoals, me, members, savedFilter }: Props) {
+export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: allDays, goals: allGoals, me, members, savedFilter }: Props) {
   const [saved, setSaved] = useState(savedFilter);
   const [filter, setFilter] = useState(savedFilter);
   const keep = (o: OccurrenceView) => matchesWeekFilter(o.assignees, filter);
@@ -57,7 +58,13 @@ export function WeekPanel({ rangeLabel, days: allDays, goals: allGoals, me, memb
   return (
     <section className="panel p-week" aria-label="위클리">
       <div className="panel-head">
-        <h2>위클리</h2><span className="sub">{rangeLabel}</span>
+        <h2>위클리</h2>
+        <div className="week-nav">
+          <Link className="arrow" href={`/?week=${prevWeek}`} scroll={false} aria-label="지난주">‹</Link>
+          <span className="sub">{rangeLabel}</span>
+          <Link className="arrow" href={`/?week=${nextWeek}`} scroll={false} aria-label="다음 주">›</Link>
+          {!isThisWeek && <Link className="btn small soft" href="/" scroll={false}>이번 주</Link>}
+        </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />
       </div>
       <div className="week-wrap">
