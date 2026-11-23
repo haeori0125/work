@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { and, count, eq, gt, gte } from 'drizzle-orm';
 import { loginFailures, sessions, users } from '@/db/schema';
 import type { Db } from '@/db/types';
-import { recordLogin } from './attendance';
+import { clockOut, recordLogin } from './attendance';
 import { AppError } from './errors';
 import { nextKstMidnight } from './time';
 
@@ -98,4 +98,10 @@ export async function logout(db: Db, token: string): Promise<void> {
 
 export async function deleteUserSessions(db: Db, userId: number): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, userId));
+}
+
+/** 퇴근하기: 오늘 열린 구간을 닫고 그 사람의 모든 세션을 끝낸다(자동 로그아웃). */
+export async function endShift(db: Db, userId: number, now: Date): Promise<void> {
+  await clockOut(db, userId, now);
+  await deleteUserSessions(db, userId);
 }

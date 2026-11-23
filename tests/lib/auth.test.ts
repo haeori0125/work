@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { attendance, users } from '@/db/schema';
+import { users, workSegments } from '@/db/schema';
 import type { Db } from '@/db/types';
 import {
-  ensureBootstrapAdmin, getSessionUser, login, logout, normalizeName, signup,
+  endShift, ensureBootstrapAdmin, getSessionUser, login, logout, normalizeName, signup,
 } from '@/lib/auth';
 import { createTestDb } from '../helpers/db';
 import { at } from '../helpers/fixtures';
@@ -50,7 +50,7 @@ describe('login', () => {
     expect(res.user.name).toBe('철수');
     expect(res.user.role).toBe('member');
     expect(res.expiresAt.toISOString()).toBe('2026-11-23T15:00:00.000Z');
-    expect(await db.select().from(attendance)).toHaveLength(1);
+    expect(await db.select().from(workSegments)).toHaveLength(1);
   });
 
   it('rejects wrong password and unknown names with the same code', async () => {
@@ -97,6 +97,20 @@ describe('sessions', () => {
     const { token } = await login(db, { name: '철수', password: 'pw1234', asAdmin: false, now: NOW });
     await db.update(users).set({ status: 'disabled' }).where(eq(users.name, '철수'));
     expect(await getSessionUser(db, token, NOW)).toBeNull();
+  });
+});
+
+describe('endShift', () => {
+  it('closes the open segment, logs out, and a new login opens a new segment', async () => {
+    await signup(db, { name: '철수', password: 'pw1234' });
+    await activate('철수');
+    const { token, user } = await login(db, { name: '철수', password: 'pw1234', asAdmin: false, now: NOW });
+    await endShift(db, user.id, at('2026-11-23T06:00:00Z'));
+    expect(await getSessionUser(db, token, at('2026-11-23T06:00:01Z'))).toBeNull();
+    await login(db, { name: '철수', password: 'pw1234', asAdmin: false, now: at('2026-11-23T07:00:00Z') });
+    const segs = await db.select().from(workSegments);
+    expect(segs).toHaveLength(2);
+    expect(segs.filter((s) => s.clockOut === null)).toHaveLength(1);
   });
 });
 
