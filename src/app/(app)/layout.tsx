@@ -27,12 +27,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         firstIn={today ? formatKstTime(today.firstIn) : null}
         working={today?.state === 'working'}
       />
-      <div className="frame-wrap">
-        <div className="frame">
-          <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} />
-          <div className="content">{children}</div>
-        </div>
-        <IndexTabs isAdmin={user.role === 'admin'} />
+      <div className="frame">
+        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar}
+          tabs={<IndexTabs isAdmin={user.role === 'admin'} />} />
+        <div className="content">{children}</div>
       </div>
       <RefreshOnFocus />
     </div>
