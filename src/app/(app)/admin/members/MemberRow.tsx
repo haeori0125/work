@@ -24,7 +24,7 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   return (
     <li className="task">
       <div className="task-top">
-        <span className="task-title"><Person name={m.name} size={24} />{isMe && ' (나)'}</span>
+        <span className="task-title who-line"><Person name={m.name} size={24} />{isMe && <span className="muted">(나)</span>}</span>
         {m.role === 'admin' && <span className="badge doing">관리자</span>}
         {m.status === 'pending' && <span className="badge todo">승인 대기</span>}
         {m.status === 'disabled' && <span className="badge warn">사용 중지</span>}

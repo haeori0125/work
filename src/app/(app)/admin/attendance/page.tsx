@@ -27,7 +27,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
         </form>
         {days.length === 0 ? <p className="muted">기록이 없습니다</p> : (
           <div className="table-wrap">
-            <table>
+            <table className="seg-table">
               <thead><tr><th>날짜</th><th>이름</th><th>구간</th><th>출근</th><th>퇴근</th><th>하루 합계</th><th></th></tr></thead>
               <tbody>
                 {days.flatMap((d) => d.segments.map((s, i) => (

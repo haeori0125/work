@@ -852,3 +852,28 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .rt-sort button[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); }
 .list-card .task-top .check.small { flex: none; }
 .list-card > li.is-done .task-title { color: var(--muted); text-decoration: line-through; }
+
+.who-line { display: inline-flex; align-items: center; gap: 6px; }
+.who-line .muted { font-size: 13px; font-weight: 600; }
+/* 출퇴근 기록: 폰에서는 표 대신 구간마다 카드 */
+@media (max-width: 640px) {
+  .table-wrap:has(.seg-table) { overflow: visible; }
+  .seg-table thead { display: none; }
+  .seg-table, .seg-table tbody { display: block; }
+  .seg-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 10px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: center; }
+  .seg-table tr.seg-first { border-top: 2px solid var(--line); margin-top: 6px; }
+  .seg-table td { padding: 0; border: 0; white-space: normal; }
+  .seg-table td:empty { display: none; }
+  .seg-table .c-date { font-weight: 700; }
+  .seg-table .c-name { justify-self: end; }
+  .seg-table .c-seg { grid-column: 1 / -1; font-size: 12px; }
+  .seg-table .c-seg::before { content: "구간 "; }
+  .seg-table .c-in, .seg-table .c-out { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  .seg-table .c-in::before { content: "출근"; }
+  .seg-table .c-out::before { content: "퇴근"; }
+  .seg-table .c-in input, .seg-table .c-out input { width: 100%; color: var(--text); font-size: 15px; }
+  .seg-table .c-out .badge { align-self: flex-start; }
+  .seg-table .c-total { font-weight: 700; }
+  .seg-table .c-act { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
+  .seg-table .c-act .btn { margin-left: 0 !important; }
+}
