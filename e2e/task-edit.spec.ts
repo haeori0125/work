@@ -9,14 +9,14 @@ test('editing a weekly task keeps it weekly and keeps its parts', async ({ page 
   await page.waitForURL(/admin\/tasks/);
 
   await page.getByLabel('제목').fill('[DB] 어법파트 통일하기');
-  await page.getByLabel('주간 업무 (그 주 안에)').check();
+  await page.getByLabel('기간 업무 (기간 안에)').check();
   await page.getByRole('button', { name: '업무 추가' }).click();
   await expect(page.locator('.toast', { hasText: '등록되었습니다' })).toBeVisible();
 
   const row = page.locator('.list-card > li', { hasText: '[DB] 어법파트 통일하기' });
   await row.getByRole('link', { name: '수정' }).click();
   await page.waitForURL(/edit=/);
-  await expect(page.getByLabel('주간 업무 (그 주 안에)')).toBeChecked();
+  await expect(page.getByLabel('기간 업무 (기간 안에)')).toBeChecked();
 
   await page.getByRole('button', { name: '＋ 파트 추가' }).click();
   await page.getByLabel('파트 1 이름').fill('1~10번');
@@ -25,7 +25,7 @@ test('editing a weekly task keeps it weekly and keeps its parts', async ({ page 
   await expect(page.getByRole('checkbox', { name: /운영자/ })).toBeChecked();
   await page.getByRole('button', { name: '수정 저장' }).click();
   await expect(page.locator('.toast', { hasText: '저장되었습니다' })).toBeVisible();
-  await expect(row.locator('.tag').first()).toHaveText('주간 · 한 번');
+  await expect(row.locator('.tag').first()).toHaveText('기간 · 한 번');
   await expect(row).toContainText('파트 1개');
   await expect(row.locator('.tag', { hasText: '담당' })).toContainText('운영자');
   // 새 업무 칸은 다시 비어 있어야 한다

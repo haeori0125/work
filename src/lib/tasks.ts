@@ -80,7 +80,7 @@ export function cleanTaskInput(input: TaskInput): TaskInput {
   const err = validateRecurrence(spec);
   if (err) throw new AppError('invalid', err);
   if (spec.dueDate !== null) {
-    if (spec.kind !== 'weekly' || spec.repeat !== 'none') throw new AppError('invalid', '마감일은 한 번만 하는 주간 업무에만 정할 수 있습니다');
+    if (spec.kind !== 'weekly' || spec.repeat !== 'none') throw new AppError('invalid', '마감일은 한 번만 하는 기간 업무에만 정할 수 있습니다');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(spec.dueDate!)) throw new AppError('invalid', '마감일이 올바르지 않습니다');
     if (spec.dueDate! < spec.startDate) throw new AppError('invalid', '마감일이 시작일보다 빠릅니다');
   }

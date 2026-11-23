@@ -102,7 +102,7 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
                 </label>
                 <label>
                   <input type="radio" className="vh" name="kind" value="weekly" checked={kind === 'weekly'} onChange={() => setKind('weekly')} />
-                  <span><b>주간 업무</b> <small>(그 주 안에)</small></span>
+                  <span><b>기간 업무</b> <small>(기간 안에)</small></span>
                 </label>
               </div>
             </div>
