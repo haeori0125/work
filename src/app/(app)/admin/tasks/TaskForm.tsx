@@ -6,6 +6,7 @@ import { saveTaskAction } from '@/app/actions/admin';
 import { createRequestAction } from '@/app/actions/requests';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
+import { DateField } from '@/app/_ui/DateField';
 import { PersonSelect } from '@/app/_ui/PersonSelect';
 import type { TaskDefinition, TaskInput } from '@/lib/tasks';
 
@@ -132,13 +133,13 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
             <div className="tf-dates">
               <label className="field">
                 {kind === 'weekly' && repeating ? '시작 주' : repeating || kind === 'weekly' ? '시작일' : '날짜'}
-                <input type="date" name="startDate" required defaultValue={init?.startDate ?? today} />
+                <DateField name="startDate" defaultValue={init?.startDate ?? today} />
               </label>
               {repeating && (
-                <label className="field"><span className="fl">종료일 <small>선택</small></span><input type="date" name="endDate" defaultValue={init?.endDate ?? ''} /></label>
+                <label className="field"><span className="fl">종료일 <small>선택</small></span><DateField name="endDate" defaultValue={init?.endDate} optional placeholder="없음" /></label>
               )}
               {kind === 'weekly' && !repeating && (
-                <label className="field"><span className="fl">마감일 <small>선택</small></span><input type="date" name="dueDate" defaultValue={init?.dueDate ?? ''} /></label>
+                <label className="field"><span className="fl">마감일 <small>선택</small></span><DateField name="dueDate" defaultValue={init?.dueDate} optional placeholder="없음" /></label>
               )}
             </div>
             {kind === 'weekly' && repeating && <p className="help">시작 주에는 그 주의 아무 날짜나 고르면 돼요.</p>}

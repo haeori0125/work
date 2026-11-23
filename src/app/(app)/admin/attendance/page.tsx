@@ -1,4 +1,5 @@
 import { getDb } from '@/db';
+import { DateField } from '@/app/_ui/DateField';
 import { listDays } from '@/lib/attendance';
 import { addDays, formatDateLabel, formatDuration, formatKstTime, kstDate } from '@/lib/time';
 import { requireAdmin } from '@/server/session';
@@ -19,9 +20,9 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
       <div className="panel-head"><h2>출퇴근 기록</h2><span className="count" style={{ fontSize: 14 }}>{days.length}건</span></div>
       <div className="panel-body stack">
         <form className="row">
-          <input type="date" name="from" defaultValue={from} style={{ width: 'auto' }} aria-label="시작일" />
+          <DateField name="from" defaultValue={from} aria-label="시작일" />
           <span>~</span>
-          <input type="date" name="to" defaultValue={to} style={{ width: 'auto' }} aria-label="종료일" />
+          <DateField name="to" defaultValue={to} aria-label="종료일" />
           <button className="btn small">조회</button>
         </form>
         {days.length === 0 ? <p className="muted">기록이 없습니다</p> : (

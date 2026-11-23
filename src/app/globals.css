@@ -757,3 +757,38 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .psel-check { margin-left: auto; color: var(--ink); }
 @keyframes psel-in { from { opacity: 0; transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .psel-list { animation: none; } .psel-caret { transition: none; } }
+
+/* 날짜 고르기(기본 달력 대신) */
+.dfield { position: relative; min-width: 0; }
+.dfield-btn {
+  width: 100%; min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font: inherit; font-size: 14px; font-weight: 500; color: var(--text); text-align: left; cursor: pointer; white-space: nowrap;
+}
+.dfield-btn > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.dfield-btn > svg { flex: none; color: var(--muted); }
+.dfield-btn:hover, .dfield-btn.open { border-color: color-mix(in srgb, var(--accent) 70%, var(--line)); }
+.row .dfield-btn { width: auto; min-width: 150px; }
+.dpop {
+  position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 276px; padding: 12px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px hsl(var(--h) 30% 20% / .18); animation: psel-in .12s ease-out;
+  font-weight: 400;
+}
+.dpop-head { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.dpop-head b { flex: 1; font-size: 15px; font-weight: 800; color: var(--ink); padding-left: 4px; }
+.dpop-nav { width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+.dpop-nav:hover { background: var(--surface-2); color: var(--ink); }
+.dpop-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dpop-wd { text-align: center; font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 4px 0 6px; }
+.dpop-wd.sun, .dpop-day.sun { color: var(--red); }
+.dpop-wd.sat, .dpop-day.sat { color: color-mix(in srgb, #3b6fd8 80%, var(--text)); }
+.dpop-day {
+  height: 34px; border: 0; border-radius: 50%; background: none; font: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--text); font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.dpop-day:hover { background: var(--surface-2); }
+.dpop-day.out { opacity: .35; }
+.dpop-day.today { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 80%, var(--line)); }
+.dpop-day.on { background: var(--accent); color: var(--on-accent); box-shadow: none; }
+.dpop-day:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.dpop-foot { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.tf-dates { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
