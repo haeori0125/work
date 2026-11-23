@@ -8,6 +8,7 @@ import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
 import { DateField } from '@/app/_ui/DateField';
 import { PersonSelect } from '@/app/_ui/PersonSelect';
+import { PlusIcon } from '@/app/_ui/icons';
 import type { TaskDefinition, TaskInput } from '@/lib/tasks';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -86,7 +87,7 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
                 </div>
               ))}
               <button type="button" className="btn small soft" style={{ alignSelf: 'flex-start' }}
-                onClick={() => setParts([...parts, { title: '', assigneeId: null }])}>＋ 파트 추가</button>
+                onClick={() => setParts([...parts, { title: '', assigneeId: null }])}><PlusIcon size={10} />파트 추가</button>
             </div>
           </section>
 

@@ -18,7 +18,7 @@ test('editing a weekly task keeps it weekly and keeps its parts', async ({ page 
   await page.waitForURL(/edit=/);
   await expect(page.getByLabel('기간 업무 (기간 안에)')).toBeChecked();
 
-  await page.getByRole('button', { name: '＋ 파트 추가' }).click();
+  await page.getByRole('button', { name: '파트 추가' }).click();
   await page.getByLabel('파트 1 이름').fill('1~10번');
   await page.getByRole('button', { name: '파트 1 담당자' }).click();
   await page.getByRole('option', { name: '운영자' }).click();
