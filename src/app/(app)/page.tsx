@@ -1,6 +1,7 @@
 import { getDb } from '@/db';
 import { listBoardPosts } from '@/lib/memos';
 import { getPrefs } from '@/lib/prefs';
+import { listActiveMembers } from '@/lib/members';
 import { getDayOccurrences, getPastOccurrences, getWeekView, getWeeklyOccurrences } from '@/lib/tasks';
 import { addDays, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
 import { toNoteView, toOccurrenceView } from '@/lib/view';
@@ -19,12 +20,13 @@ export default async function Home() {
   const today = kstDate(new Date());
   const prefs = await getPrefs(db, user.id);
   const start = weekStartOf(today, prefs.weekStart);
-  const [past, day, weekly, week, posts] = await Promise.all([
+  const [past, day, weekly, week, posts, members] = await Promise.all([
     getPastOccurrences(db, today),
     getDayOccurrences(db, today),
     getWeeklyOccurrences(db, weekStartOf(today)),
     getWeekView(db, start),
     listBoardPosts(db, today),
+    listActiveMembers(db),
   ]);
   const v = (list: typeof day) => list.map((o) => toOccurrenceView(o, today));
   const days = Object.entries(week).map(([date, items]) => ({
@@ -40,7 +42,7 @@ export default async function Home() {
     <div className="home">
       <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} />
       <div className="home-right">
-        <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} me={me} />
+        <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
         <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />
       </div>
     </div>

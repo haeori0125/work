@@ -119,3 +119,13 @@ export function pctOfDay(at: Date, date: string): number {
   const pct = ((min - SCALE_START) / (SCALE_END - SCALE_START)) * 100;
   return Math.min(100, Math.max(0, Math.round(pct * 100) / 100));
 }
+
+/** 위클리 필터에서 "담당자가 없는 업무"를 뜻하는 값 */
+export const NO_ASSIGNEE = '담당 없음';
+
+/** 위클리 담당 필터: null이면 전체, 아니면 고른 사람이 담당(파트 포함)인 업무만 */
+export function matchesWeekFilter(assignees: string[], filter: string[] | null): boolean {
+  if (filter === null) return true;
+  if (assignees.length === 0) return filter.includes(NO_ASSIGNEE);
+  return assignees.some((n) => filter.includes(n));
+}

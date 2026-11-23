@@ -2,16 +2,20 @@
 
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
-import type { OccurrenceView } from '@/lib/view';
+import { matchesWeekFilter, type OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { TaskDialog } from './TaskDialog';
 import { AssigneeTag, StatusTag } from './TaskTags';
+import { WeekFilter } from './WeekFilter';
 
 export type WeekDay = {
   date: string; dayNum: number; weekday: string; isToday: boolean; isPast: boolean; isSun: boolean; items: OccurrenceView[];
 };
 
-type Props = { rangeLabel: string; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' } };
+type Props = {
+  rangeLabel: string; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
+  members: string[]; savedFilter: string[] | null;
+};
 
 /** 마감 · 담당(테두리) · 파트 진행 · 체크한 사람(채움) 태그 */
 function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
@@ -29,7 +33,12 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
   );
 }
 
-export function WeekPanel({ rangeLabel, days, goals, me }: Props) {
+export function WeekPanel({ rangeLabel, days: allDays, goals: allGoals, me, members, savedFilter }: Props) {
+  const [saved, setSaved] = useState(savedFilter);
+  const [filter, setFilter] = useState(savedFilter);
+  const keep = (o: OccurrenceView) => matchesWeekFilter(o.assignees, filter);
+  const goals = allGoals.filter(keep);
+  const days = allDays.map((d) => ({ ...d, items: d.items.filter(keep) }));
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [opened, setOpened] = useState<OccurrenceView | null>(null);
@@ -42,12 +51,15 @@ export function WeekPanel({ rangeLabel, days, goals, me }: Props) {
     });
   };
   // 팝업은 서버에서 새로 받은 최신 데이터로 보여 준다
-  const all = [...goals, ...days.flatMap((d) => d.items)];
+  const all = [...allGoals, ...allDays.flatMap((d) => d.items)];
   const current = opened && (all.find((o) => o.taskId === opened.taskId && o.occurrenceKey === opened.occurrenceKey) ?? opened);
 
   return (
     <section className="panel p-week" aria-label="위클리">
-      <div className="panel-head"><h2>위클리</h2><span className="sub">{rangeLabel}</span></div>
+      <div className="panel-head">
+        <h2>위클리</h2><span className="sub">{rangeLabel}</span>
+        <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />
+      </div>
       <div className="week-wrap">
         <div className="goals" aria-label="이번 주 업무">
           <span className="lbl">이번 주 업무</span>

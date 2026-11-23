@@ -528,3 +528,16 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 
 .who-tag.compact { padding: 1px 5px 1px 7px; gap: 4px; }
 .tag.who-tag.compact.doing, .tag.who-tag.compact.done { padding: 1px 3px 1px 6px; }
+
+/* 위클리 담당 필터 */
+.wf { margin-left: auto; position: relative; }
+.wf-btn { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.wf-btn:hover { color: var(--ink); }
+.wf-btn.on { background: var(--soft); color: var(--ink); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.wf-count { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+.wf-pop { position: absolute; right: 0; top: 40px; z-index: 20; width: min(340px, calc(100vw - 40px)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 36px hsl(var(--h) 30% 10% / .18); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.wf-head { display: flex; flex-direction: column; gap: 2px; }
+.wf-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.wf-opt { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 13px; display: inline-flex; align-items: center; }
+.wf-opt[aria-pressed="true"] { background: var(--soft); border-color: var(--accent); color: var(--ink); font-weight: 700; }
+.wf-foot { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }

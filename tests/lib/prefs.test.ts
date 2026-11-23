@@ -50,3 +50,15 @@ describe('getAvatarMap', () => {
     expect(await getAvatarMap(db)).toEqual({ 영희: img });
   });
 });
+
+describe('weekly filter', () => {
+  it('saves a list of names (or null for everyone) and validates it', async () => {
+    expect((await getPrefs(db, uid)).weekFilter).toBeNull();
+    await savePrefs(db, uid, { weekFilter: ['영희', '담당 없음'] }, NOW);
+    expect((await getPrefs(db, uid)).weekFilter).toEqual(['영희', '담당 없음']);
+    await savePrefs(db, uid, { weekFilter: null }, NOW);
+    expect((await getPrefs(db, uid)).weekFilter).toBeNull();
+    expect((await errOf(savePrefs(db, uid, { weekFilter: 'x' as unknown as string[] }, NOW)))?.[0]).toBe('invalid');
+    expect((await errOf(savePrefs(db, uid, { weekFilter: ['a'.repeat(40)] }, NOW)))?.[0]).toBe('invalid');
+  });
+});

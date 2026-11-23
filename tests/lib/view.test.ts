@@ -54,3 +54,15 @@ describe('toOccurrenceView', () => {
     expect(v.parts.map((p) => p.tag)).toEqual(['이현은 10:12', null]);
   });
 });
+
+describe('matchesWeekFilter', () => {
+  it('keeps tasks whose assignees (incl. part assignees) are selected, or unassigned ones when chosen', async () => {
+    const { matchesWeekFilter, NO_ASSIGNEE } = await import('@/lib/view');
+    expect(matchesWeekFilter(['영희'], null)).toBe(true);
+    expect(matchesWeekFilter(['영희', '민수'], ['민수'])).toBe(true);
+    expect(matchesWeekFilter(['영희'], ['민수'])).toBe(false);
+    expect(matchesWeekFilter([], ['민수'])).toBe(false);
+    expect(matchesWeekFilter([], [NO_ASSIGNEE])).toBe(true);
+    expect(matchesWeekFilter(['영희'], [])).toBe(false);
+  });
+});

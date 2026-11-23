@@ -33,6 +33,7 @@ export async function getPrefs(db: Db, userId: number): Promise<Prefs> {
   return {
     themeH: row.themeH, themeS: row.themeS, themeL: row.themeL, themeHex: row.themeHex,
     weekStart: row.weekStart, doingHex: row.doingHex, doneHex: row.doneHex, avatar: row.avatar,
+    weekFilter: parseFilter(row.weekFilter),
   };
 }
 
@@ -51,12 +52,20 @@ export async function savePrefs(db: Db, userId: number, patch: Partial<Prefs>, n
     }
     next.avatar = a;
   }
+  if ('weekFilter' in patch) {
+    const f = patch.weekFilter;
+    if (f !== null && (!Array.isArray(f) || f.length > 100 || f.some((n) => typeof n !== 'string' || !n || n.length > 30))) {
+      throw new AppError('invalid', '필터를 저장하지 못했습니다');
+    }
+    next.weekFilter = f === null ? null : [...new Set(f)];
+  }
   if ('weekStart' in patch) {
     if (patch.weekStart !== 'mon' && patch.weekStart !== 'sun') throw new AppError('invalid', '시작 요일이 올바르지 않습니다');
     next.weekStart = patch.weekStart;
   }
-  await db.insert(userPrefs).values({ userId, ...next, updatedAt: now })
-    .onConflictDoUpdate({ target: userPrefs.userId, set: { ...next, updatedAt: now } });
+  const row = { ...next, weekFilter: next.weekFilter === null ? null : JSON.stringify(next.weekFilter) };
+  await db.insert(userPrefs).values({ userId, ...row, updatedAt: now })
+    .onConflictDoUpdate({ target: userPrefs.userId, set: { ...row, updatedAt: now } });
   return next;
 }
 
@@ -65,4 +74,14 @@ export async function getAvatarMap(db: Db): Promise<Record<string, string>> {
   const rows = await db.select({ name: users.name, avatar: userPrefs.avatar })
     .from(userPrefs).innerJoin(users, eq(users.id, userPrefs.userId)).where(isNotNull(userPrefs.avatar));
   return Object.fromEntries(rows.map((r) => [r.name, r.avatar!]));
+}
+
+function parseFilter(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : null;
+  } catch {
+    return null;
+  }
 }

@@ -59,3 +59,12 @@ export function ArrowIcon({ size = 8 }: P) {
     </svg>
   );
 }
+
+export function FilterIcon({ size = 16 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 5h18l-7 8.5V19l-4 2v-7.5Z" />
+    </svg>
+  );
+}
