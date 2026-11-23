@@ -10,7 +10,7 @@ import { WeekFilter } from './WeekFilter';
 export type MonthDay = { date: string; dayNum: number; inMonth: boolean; isToday: boolean; isSun: boolean; isSat: boolean; items: OccurrenceView[] };
 
 type Props = {
-  title: string; prevHref: string; nextHref: string; thisHref: string | null;
+  title: string; titleShort: string; prevHref: string; nextHref: string; thisHref: string | null;
   weekdays: string[]; days: MonthDay[]; today: string;
   me: { id: number; role: 'member' | 'admin' }; members: string[]; savedFilter: string[] | null;
 };
@@ -18,7 +18,7 @@ type Props = {
 const MAX = 3;
 
 /** 전체 업무 달력: 칸마다 업무 이름 한 줄씩, 많으면 +n. 폰에서는 점만 보이고 날짜를 누르면 아래에 목록 */
-export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days: allDays, today, me, members, savedFilter }: Props) {
+export function MonthPanel({ title, titleShort, prevHref, nextHref, thisHref, weekdays, days: allDays, today, me, members, savedFilter }: Props) {
   const [saved, setSaved] = useState(savedFilter);
   const [filter, setFilter] = useState(savedFilter);
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -55,10 +55,10 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
         <div className="nav-group">
           <div className="week-nav">
             <Link className="arrow" href={prevHref} scroll={false} aria-label="지난달">‹</Link>
-            <span className="sub">{title}</span>
+            <span className="sub"><span className="lbl-long">{title}</span><span className="lbl-short">{titleShort}</span></span>
             <Link className="arrow" href={nextHref} scroll={false} aria-label="다음 달">›</Link>
           </div>
-          {thisHref && <Link className="btn small soft" href={thisHref} scroll={false}>이번 달</Link>}
+          {thisHref && <Link className="btn small soft" href={thisHref} scroll={false}><span className="lbl-long">이번 달</span><span className="lbl-short">오늘</span></Link>}
         </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />
       </div>

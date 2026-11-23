@@ -127,12 +127,16 @@ h1, h2, h3 { margin: 0; line-height: 1.3; }
   letter-spacing: -0.02em; box-shadow: 0 4px 14px rgb(229 56 59 / .3);
 }
 .out-btn:hover { background: #cf2b2e; }
+/* 조교실: 퇴근하기와 같은 크기(테두리는 안쪽 그림자라 크기에 안 더해짐) */
 .out-btn.link-btn {
-  display: inline-flex; align-items: center; gap: 6px; text-decoration: none; background: var(--surface); color: var(--ink);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, var(--line)); box-shadow: none; padding: 10px 20px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; background: var(--surface); color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 65%, var(--line)); line-height: inherit;
 }
 .out-btn.link-btn:hover { background: var(--soft); }
-.out-btn.link-btn svg { opacity: .7; }
+.out-btn { line-height: 1.5; }
+.out-btn.link-btn > span { font-size: .95em; line-height: 1; }
+.out-area .out-btn:not(.ghost) { min-width: 132px; justify-content: center; }
+@media (max-width: 760px) { .out-area .out-btn:not(.ghost) { min-width: 108px; } }
 .out-btn.ghost { background: var(--surface-2); color: var(--muted); box-shadow: none; font-size: 14px; padding: 9px 16px; }
 .out-q { font-size: 13px; color: var(--text); font-weight: 600; }
 
@@ -876,4 +880,27 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
   .seg-table .c-total { font-weight: 700; }
   .seg-table .c-act { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
   .seg-table .c-act .btn { margin-left: 0 !important; }
+}
+
+/* 위클리·전체 업무 머리줄: 폰에서도 제목 · 기간 이동 · 필터를 한 줄에 */
+.lbl-short { display: none; }
+@media (max-width: 560px) {
+  .lbl-long { display: none; }
+  .lbl-short { display: inline; }
+  .p-week .panel-head, .p-month .panel-head { flex-wrap: nowrap; gap: 6px; padding-left: 14px; padding-right: 14px; }
+  .p-week .panel-head h2, .p-month .panel-head h2 { font-size: 19px; white-space: nowrap; }
+  .nav-group { gap: 6px; margin-left: 0; min-width: 0; }
+  .nav-group .btn.small { padding: 4px 9px; font-size: 12px; }
+  .week-nav .arrow { width: 24px; height: 26px; }
+  .week-nav .sub { padding: 0 2px; font-size: 13px; }
+  .p-week .wf-btn, .p-month .wf-btn { width: 30px; height: 30px; }
+}
+@media (max-width: 360px) {
+  .p-week .panel-head, .p-month .panel-head { gap: 4px; padding-left: 12px; padding-right: 12px; }
+  .p-week .panel-head h2, .p-month .panel-head h2 { font-size: 17px; }
+  .week-nav .arrow { width: 21px; }
+  .week-nav .sub { font-size: 12.5px; padding: 0 1px; }
+  .nav-group { gap: 4px; }
+  .nav-group .btn.small { padding: 3px 7px; }
+  .p-week .wf-btn, .p-month .wf-btn { width: 28px; height: 28px; }
 }

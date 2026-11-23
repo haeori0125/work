@@ -55,6 +55,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const end = addDays(start, 6);
   const endLabel = start.slice(5, 7) === end.slice(5, 7) ? `${Number(end.slice(8))}일` : md(end);
   const rangeLabel = `${md(start)} – ${endLabel}`;
+  // 폰에서 한 줄에 들어가게 짧게: 11.22–28, 11.29–12.5
+  const dot = (d: string) => `${Number(d.slice(5, 7))}.${Number(d.slice(8))}`;
+  const rangeShort = `${dot(start)}–${start.slice(5, 7) === end.slice(5, 7) ? Number(end.slice(8)) : dot(end)}`;
   const q = (week: string | null, m: string | null) => {
     const p = new URLSearchParams();
     if (week) p.set('week', week);
@@ -75,10 +78,11 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
       <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} todayDate={today} members={members.map((m) => ({ id: m.id, name: m.name }))}
         myRequests={mine.map((r) => ({ id: r.id, title: r.title, status: r.status, wantedLabel: r.wantedDate ? formatDateLabel(r.wantedDate) : null }))} />
       <div className="home-right">
-        <WeekPanel rangeLabel={rangeLabel} prevWeek={addDays(start, -7)} nextWeek={addDays(start, 7)} isThisWeek={start === thisStart} monthQuery={keepMonth ? `&month=${keepMonth}` : ''} days={days} goals={v(weekly)} me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
+        <WeekPanel rangeLabel={rangeLabel} rangeShort={rangeShort} prevWeek={addDays(start, -7)} nextWeek={addDays(start, 7)} isThisWeek={start === thisStart} monthQuery={keepMonth ? `&month=${keepMonth}` : ''} days={days} goals={v(weekly)} me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
         <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />
       </div>
-      <MonthPanel title={`${month.slice(0, 4)}년 ${Number(month.slice(5))}월`} today={today}
+      <MonthPanel title={`${month.slice(0, 4)}년 ${Number(month.slice(5))}월`}
+        titleShort={month.slice(0, 4) === today.slice(0, 4) ? `${Number(month.slice(5))}월` : `${month.slice(2, 4)}년 ${Number(month.slice(5))}월`} today={today}
         prevHref={q(keepWeek, shiftMonth(month, -1) === thisMonth ? null : shiftMonth(month, -1))}
         nextHref={q(keepWeek, shiftMonth(month, 1) === thisMonth ? null : shiftMonth(month, 1))}
         thisHref={keepMonth ? q(keepWeek, null) : null} weekdays={weekdayNames} days={monthDays}

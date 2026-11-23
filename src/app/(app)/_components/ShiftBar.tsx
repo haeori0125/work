@@ -33,8 +33,7 @@ export function ShiftBar({ name, dateLabel, firstIn, working }: Props) {
         ) : (
           <>
             <a className="out-btn link-btn" href={STUDENTS_URL} target="_blank" rel="noopener noreferrer" title="조교실 (새 탭)">
-              조교실
-              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 2.5h5v5M9.5 2.5 3 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <span aria-hidden>💻</span>조교실
             </a>
             {working && <button type="button" className="out-btn" onClick={() => setAsking(true)}>퇴근하기</button>}
           </>

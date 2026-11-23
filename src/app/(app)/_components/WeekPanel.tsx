@@ -14,7 +14,7 @@ export type WeekDay = {
 };
 
 type Props = {
-  rangeLabel: string; prevWeek: string; nextWeek: string; isThisWeek: boolean; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
+  rangeLabel: string; rangeShort: string; prevWeek: string; nextWeek: string; isThisWeek: boolean; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
   members: string[]; savedFilter: string[] | null;
   /** 보고 있는 달력 달을 유지하려고 링크에 붙이는 값 */
   monthQuery?: string;
@@ -36,7 +36,7 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
   );
 }
 
-export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: allDays, goals: allGoals, me, members, savedFilter, monthQuery = '' }: Props) {
+export function WeekPanel({ rangeLabel, rangeShort, prevWeek, nextWeek, isThisWeek, days: allDays, goals: allGoals, me, members, savedFilter, monthQuery = '' }: Props) {
   const [saved, setSaved] = useState(savedFilter);
   const [filter, setFilter] = useState(savedFilter);
   const keep = (o: OccurrenceView) => matchesWeekFilter(o.assignees, filter);
@@ -64,10 +64,10 @@ export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: al
         <div className="nav-group">
           <div className="week-nav">
             <Link className="arrow" href={`/?week=${prevWeek}${monthQuery}`} scroll={false} aria-label="지난주">‹</Link>
-            <span className="sub">{rangeLabel}</span>
+            <span className="sub"><span className="lbl-long">{rangeLabel}</span><span className="lbl-short">{rangeShort}</span></span>
             <Link className="arrow" href={`/?week=${nextWeek}${monthQuery}`} scroll={false} aria-label="다음 주">›</Link>
           </div>
-          {!isThisWeek && <Link className="btn small soft" href={monthQuery ? `/?${monthQuery.slice(1)}` : '/'} scroll={false}>이번 주</Link>}
+          {!isThisWeek && <Link className="btn small soft" href={monthQuery ? `/?${monthQuery.slice(1)}` : '/'} scroll={false}><span className="lbl-long">이번 주</span><span className="lbl-short">오늘</span></Link>}
         </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />
       </div>
