@@ -50,3 +50,12 @@ export function StatusMark({ status }: { status: 'todo' | 'doing' | 'done' }) {
   }
   return null;
 }
+
+/** 위클리 담당 표시용 작은 ▶ */
+export function ArrowIcon({ size = 8 }: P) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 8 8" aria-hidden="true">
+      <path d="M1.5 0.8 7 4 1.5 7.2Z" fill="currentColor" />
+    </svg>
+  );
+}

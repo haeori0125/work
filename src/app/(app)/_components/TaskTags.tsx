@@ -1,7 +1,7 @@
 'use client';
 
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
-import { StatusMark } from '@/app/_ui/icons';
+import { ArrowIcon, StatusMark } from '@/app/_ui/icons';
 import type { TaskStatus } from '@/lib/tasks';
 import { STATUS_LABEL } from '@/lib/view';
 
@@ -12,7 +12,7 @@ export function AssigneeTag({ names, compact = false }: { names: string[]; compa
   if (compact) {
     return (
       <span className="tag line who-tag compact" title={`담당 ${names.join(', ')}`} aria-label={`담당 ${names.join(', ')}`}>
-        담당
+        <ArrowIcon />
         <span className="av-stack">{names.map((n) => <MiniAvatar key={n} name={n} size={16} />)}</span>
       </span>
     );
