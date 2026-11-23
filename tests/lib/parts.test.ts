@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createTask, getDayOccurrences, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
+  createTask, getDayOccurrences, getOneOffStatuses, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
   setPartStatus, setStatus, updateTask, type TaskInput,
 } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -103,5 +103,18 @@ describe('one-off weekly task with exact dates', () => {
   it('validates the exact due date', async () => {
     expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-11-24' })))).toBe('invalid');
     expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', repeat: 'weekly', dueDate: '2026-11-27' })))).toBe('invalid');
+  });
+});
+
+describe('one-off statuses', () => {
+  it('reports the status of one-off tasks only', async () => {
+    const once = await createTask(db, admin, input({ title: '한 번' }));
+    await createTask(db, admin, input({ title: '매일', repeat: 'daily' }));
+    const parted = await createTask(db, admin, input({ title: '파트', parts: [{ title: 'A', assigneeId: a }, { title: 'B', assigneeId: b }] }));
+    await setStatus(db, a, once, '2026-11-23', 'done', at('2026-11-23T01:00:00Z'));
+    const [p1] = (await listTaskDefinitions(db)).find((d) => d.id === parted)!.parts;
+    await setPartStatus(db, a, p1.id, '2026-11-23', 'done', at('2026-11-23T01:00:00Z'));
+    const map = await getOneOffStatuses(db);
+    expect([...map.entries()].sort()).toEqual([[once, 'done'], [parted, 'doing']].sort());
   });
 });

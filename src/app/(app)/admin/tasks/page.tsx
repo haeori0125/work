@@ -1,14 +1,12 @@
-import Link from 'next/link';
 import { getDb } from '@/db';
 import { requireAdmin } from '@/server/session';
 import { listActiveMembers } from '@/lib/members';
 import { listPendingRequests } from '@/lib/requests';
-import { listTaskDefinitions } from '@/lib/tasks';
+import { getOneOffStatuses, listTaskDefinitions } from '@/lib/tasks';
 import { formatDateLabel, formatKstTime, kstDate } from '@/lib/time';
 import { describeRepeat } from '@/lib/view';
 import { FlashToast } from '@/app/_ui/Toast';
-import { DeleteTaskButton } from './DeleteTaskButton';
-import { DragScroll } from './DragScroll';
+import { RegisteredTasks } from './RegisteredTasks';
 import { RequestRow } from './RequestRow';
 import { TaskForm } from './TaskForm';
 
@@ -16,7 +14,9 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   await requireAdmin();
   const db = await getDb();
   const sp = await searchParams;
-  const [defs, members, requests] = await Promise.all([listTaskDefinitions(db), listActiveMembers(db), listPendingRequests(db)]);
+  const [defs, members, requests, statuses] = await Promise.all([
+    listTaskDefinitions(db), listActiveMembers(db), listPendingRequests(db), getOneOffStatuses(db),
+  ]);
   const editing = sp.edit ? defs.find((d) => d.id === Number(sp.edit)) ?? null : null;
   const from = editing ? null : requests.find((r) => r.id === Number(sp.from)) ?? null;
   const fromRequest = from && {
@@ -27,9 +27,24 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
     },
   };
   const nameOf = (id: number) => members.find((m) => m.id === id)?.name ?? '(비활성)';
-  const period = (d: (typeof defs)[number]) =>
-    d.repeat === 'none' ? formatDateLabel(d.startDate)
+  const registered = defs.map((d) => {
+    // 업무 담당자 + 파트 담당자(중복 제외)
+    const ids = [...new Set([...d.assigneeIds, ...d.parts.map((p) => p.assigneeId).filter((x): x is number => x !== null)])];
+    return {
+      id: d.id, title: d.title, date: d.startDate,
+      status: d.repeat === 'none' ? statuses.get(d.id) ?? 'todo' : ('repeat' as const),
+      tags: [
+        `${d.repeat === 'none' ? '' : '↻ '}${describeRepeat(d)}`, period(d),
+        ...(d.dueDate ? [`~${formatDateLabel(d.dueDate)}`] : []),
+        ...(ids.length ? [`담당 ${ids.map(nameOf).join(', ')}`] : []),
+        ...(d.parts.length ? [`파트 ${d.parts.length}개`] : []),
+      ],
+    };
+  });
+  function period(d: (typeof defs)[number]) {
+    return d.repeat === 'none' ? formatDateLabel(d.startDate)
       : `${formatDateLabel(d.startDate)} ~ ${d.endDate ? formatDateLabel(d.endDate) : ''}`;
+  }
 
   return (
     <>
@@ -53,30 +68,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
       </section>
       <section className="panel admin-card">
         <div className="panel-head"><h2>등록된 업무</h2><span className="spacer" /><span className="muted">{defs.length}개</span></div>
-        {defs.length === 0 ? <p className="empty">등록된 업무가 없습니다</p> : (
-          <DragScroll className="scroll-3"><ul className="list-card">
-            {defs.map((d) => (
-              <li key={d.id} className="task">
-                <div className="task-top">
-                  <span className="task-title">{d.title}</span>
-                  <Link className="btn small" href={`/admin/tasks?edit=${d.id}`}>수정</Link>
-                  <DeleteTaskButton id={d.id} title={d.title} />
-                </div>
-                <div className="tags">
-                  <span className="tag line">{d.repeat === 'none' ? '' : '↻ '}{describeRepeat(d)}</span>
-                  <span className="tag line">{period(d)}</span>
-                  {d.dueDate && <span className="tag line">~{formatDateLabel(d.dueDate)}</span>}
-                  {(() => {
-                    // 업무 담당자 + 파트 담당자(중복 제외)
-                    const ids = [...new Set([...d.assigneeIds, ...d.parts.map((p) => p.assigneeId).filter((x): x is number => x !== null)])];
-                    return ids.length > 0 && <span className="tag line">담당 {ids.map(nameOf).join(', ')}</span>;
-                  })()}
-                  {d.parts.length > 0 && <span className="tag line">파트 {d.parts.length}개</span>}
-                </div>
-              </li>
-            ))}
-          </ul></DragScroll>
-        )}
+        <RegisteredTasks items={registered} />
       </section>
     </>
   );

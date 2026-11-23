@@ -239,6 +239,13 @@ function weeklyKey(task: TaskRow, weekStart: string): string {
   return task.repeat === 'none' ? weekStartOf(task.startDate) : weekStart;
 }
 
+/** 한 번만 하는 업무의 지금 상태(관리 화면 목록용). 반복 업무는 회차마다 달라서 빠진다 */
+export async function getOneOffStatuses(db: Db): Promise<Map<number, TaskStatus>> {
+  const once = (await liveTasks(db)).filter((t) => t.repeat === 'none');
+  const built = await buildOccurrences(db, once.map((task) => ({ task, key: task.kind === 'dated' ? task.startDate : weeklyKey(task, task.startDate) })));
+  return new Map(built.map((o) => [o.taskId, o.status]));
+}
+
 function sortOpenFirst(list: Occurrence[]): Occurrence[] {
   const rank = (o: Occurrence) => (o.status === 'done' ? 1 : 0);
   return [...list].sort((x, y) => rank(x) - rank(y) || x.title.localeCompare(y.title, 'ko'));
