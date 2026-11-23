@@ -12,7 +12,7 @@ export function TopBar({ name, avatar, tabs }: { name: string; isAdmin: boolean;
   const [spinning, setSpinning] = useState(false);
   return (
     <header className="topbar">
-      <Link href="/" className="brand"><b aria-hidden><CheckIcon size={12} /></b>Team to-do</Link>
+      <Link href="/" className="brand"><b aria-hidden><CheckIcon size={12} /></b>Team Board</Link>
       {tabs}
       {/* 자주 쓰는 순서: 새로고침 · 설정 · 내 프로필, 실수로 누르기 쉬운 로그아웃은 맨 끝 */}
       <div className="top-right">

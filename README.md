@@ -1,4 +1,4 @@
-# Team to-do
+# Team Board
 
 모임 멤버가 함께 쓰는 업무 체크리스트입니다.
 
