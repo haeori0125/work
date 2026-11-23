@@ -17,7 +17,7 @@ export function ShiftBar({ name, dateLabel, firstIn, working }: Props) {
     <div className="shift">
       <span className="who">{name}</span>
       <span className={working ? 'pill' : 'pill off'}>{working ? '근무 중' : '근무 기록 없음'}</span>
-      <span className="st">{dateLabel}{firstIn && <> · 출근 <b>{firstIn}</b></>}</span>
+      <span className="st">{dateLabel}{firstIn && <span className="st-in">출근 <b>{firstIn}</b></span>}</span>
       <div className="out-area">
         {error && <span className="badge warn">{error}</span>}
         {asking ? (

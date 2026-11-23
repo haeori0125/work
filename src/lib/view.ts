@@ -23,6 +23,8 @@ export type OccurrenceView = {
   assignees: string[];
   status: TaskStatus;
   lastChange: string | null;
+  /** 위클리 칸용 짧은 표기: 바꾼 사람 이름 */
+  lastBy: string | null;
   commentCount: number;
   repeatLabel: string | null;
 };
@@ -38,6 +40,7 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     assignees: o.assignees.map((a) => a.name),
     status: o.status,
     lastChange: o.lastChange ? `${STATUS_LABEL[o.status]} · ${o.lastChange.userName} ${formatWhen(o.lastChange.at, today)}` : null,
+    lastBy: o.lastChange ? o.lastChange.userName : null,
     commentCount: o.commentCount,
     repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
   };

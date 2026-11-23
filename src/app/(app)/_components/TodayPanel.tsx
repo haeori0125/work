@@ -16,7 +16,6 @@ export function TodayPanel({ dateLabel, past, today, me }: Props) {
     <section className="panel p-today" aria-label="오늘">
       <div className="panel-head">
         <h2>오늘</h2><span className="sub">{dateLabel}</span>
-        <span className="count" aria-label="남은 일">{left}</span>
       </div>
       <div className="tiles">
         <div className="tile"><span className="dot" style={{ background: 'var(--accent)' }} /><span className="l">남은 일</span><span className="n">{left}</span></div>

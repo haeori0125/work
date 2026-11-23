@@ -35,8 +35,8 @@ export function TaskItem({ occ, me, showDate }: Props) {
           {occ.assignees.length > 0 && <span className="tag">담당 {occ.assignees.join(', ')}</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
           {occ.lastChange && <span className={`tag ${occ.status} last-change`}>{occ.lastChange}</span>}
-          <button className="btn link small memo-n" onClick={toggle} aria-expanded={open}>
-            {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모·기록'}{open ? ' ▴' : ''}
+          <button className={occ.commentCount > 0 || open ? 'tag line memo-n' : 'tag line memo-n reveal'} onClick={toggle} aria-expanded={open}>
+            {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모 · 기록'}{open ? ' ▴' : ''}
           </button>
         </div>
         {error && <p className="msg error" style={{ marginTop: 6 }}>{error}</p>}

@@ -22,7 +22,6 @@ test('settings are saved to the account and follow the user to another browser',
 
   const other = await browser.newPage();
   await login(other);
-  await expect(other.locator('.p-week .sub')).toContainText('일요일 시작');
   await expect(other.locator('.day-head .w').first()).toHaveText('일');
   await other.getByRole('link', { name: '설정' }).click();
   await expect(other.locator('#theme-hex')).toHaveValue('F4B6C2');

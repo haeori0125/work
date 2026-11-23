@@ -20,7 +20,7 @@ export function MemoPanel({ posts, me }: Props) {
   });
   return (
     <section className="panel p-memo" aria-label="오늘의 공용 메모">
-      <div className="panel-head"><h2>메모</h2><span className="sub">오늘의 공용 메모 · 모두가 함께 봅니다</span></div>
+      <div className="panel-head"><h2>메모</h2><span className="sub">모두가 함께 보는 메모</span></div>
       <div className="memo-body">
         {posts.length === 0 ? <p className="muted" style={{ margin: 0 }}>아직 메모가 없습니다. 인수인계나 공지를 남겨 보세요.</p> : (
           <ul className="cards">

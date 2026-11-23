@@ -33,14 +33,16 @@ export default async function Home() {
   }));
   const end = addDays(start, 6);
   const endLabel = start.slice(5, 7) === end.slice(5, 7) ? `${Number(end.slice(8))}일` : md(end);
-  const rangeLabel = `${md(start)} – ${endLabel} · ${prefs.weekStart === 'sun' ? '일요일' : '월요일'} 시작`;
+  const rangeLabel = `${md(start)} – ${endLabel}`;
   const dateLabel = `${md(today)} ${WD[kstWeekday(today)]}요일`;
 
   return (
     <div className="home">
       <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} />
-      <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} />
-      <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />
+      <div className="home-right">
+        <WeekPanel rangeLabel={rangeLabel} days={days} goals={v(weekly)} />
+        <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />
+      </div>
     </div>
   );
 }

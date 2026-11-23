@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
-import { STATUS_LABEL, type OccurrenceView } from '@/lib/view';
+import type { OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 
 export type WeekDay = {
@@ -29,7 +29,7 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
             <span key={o.taskId} className={`goal ${o.status}`}>
               <CheckCircle status={o.status} title={o.title} size="sm" onCycle={() => cycle(o)} disabled={pending} />
               <span>{o.title}</span>
-              {o.lastChange && <small className={`by ${o.status}`}>{o.lastChange.split(' · ')[1]}</small>}
+              {o.lastBy && <span className={`tag ${o.status}`}>{o.lastBy}</span>}
             </span>
           ))}
         </div>
@@ -51,8 +51,12 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
                         <CheckCircle status={o.status} title={o.title} size="sm" onCycle={() => cycle(o)} disabled={pending} />
                         <div>
                           <span className="t">{o.title}</span>
-                          {o.assignees.length > 0 && <span className="a">{o.assignees.join(', ')}</span>}
-                          {o.lastChange && <span className={`a by ${o.status}`}>{o.lastChange}</span>}
+                          {(o.assignees.length > 0 || o.lastBy) && (
+                            <span className="tags mini">
+                              {o.assignees.length > 0 && <span className="tag">담당 {o.assignees.join(', ')}</span>}
+                              {o.lastBy && <span className={`tag ${o.status}`} title={o.lastChange ?? undefined}>{o.lastBy}</span>}
+                            </span>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -62,7 +66,6 @@ export function WeekPanel({ rangeLabel, days, goals }: Props) {
             );
           })}
         </div>
-        <p className="muted" style={{ marginTop: 8 }}>원을 누를 때마다 {STATUS_LABEL.todo} → {STATUS_LABEL.doing} → {STATUS_LABEL.done} 순서로 바뀝니다.</p>
       </div>
     </section>
   );

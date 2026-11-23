@@ -11,6 +11,7 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<ActionResult>(null);
   const [pw, setPw] = useState('');
+  const [pwOpen, setPwOpen] = useState(false);
   const run = (fn: () => Promise<ActionResult>, okText?: string) => start(async () => {
     const res = await fn();
     setMsg(res?.error ? res : okText ? { ok: okText } : null);
@@ -43,11 +44,16 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
                 {m.status === 'disabled' ? '사용 재개' : '사용 중지'}
               </button>
             )}
-            <form className="row" onSubmit={(e) => { e.preventDefault(); run(() => resetPasswordAction(m.id, pw), '비밀번호를 바꿨습니다'); setPw(''); }}>
-              <input type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="새 비밀번호"
-                aria-label={`${m.name} 새 비밀번호`} style={{ width: 130 }} minLength={4} required />
-              <button className="btn small" disabled={pending}>비밀번호 재설정</button>
-            </form>
+            {pwOpen ? (
+              <form className="row" onSubmit={(e) => { e.preventDefault(); run(() => resetPasswordAction(m.id, pw), '비밀번호를 바꿨습니다'); setPw(''); setPwOpen(false); }}>
+                <input className="input-small" type="text" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="새 비밀번호 (4자 이상)"
+                  aria-label={`${m.name} 새 비밀번호`} minLength={4} required autoFocus />
+                <button className="btn small primary" disabled={pending}>바꾸기</button>
+                <button type="button" className="btn small" onClick={() => { setPw(''); setPwOpen(false); }}>취소</button>
+              </form>
+            ) : (
+              <button type="button" className="btn small" onClick={() => setPwOpen(true)}>비밀번호 재설정</button>
+            )}
           </>
         )}
       </div>
