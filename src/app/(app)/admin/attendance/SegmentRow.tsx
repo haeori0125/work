@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { editSegmentAction } from '@/app/actions/admin';
+import { deleteSegmentAction, editSegmentAction } from '@/app/actions/admin';
 
 type Props = {
   id: number; dateLabel: string; name: string; index: number; count: number;
@@ -14,6 +14,7 @@ export function SegmentRow(p: Props) {
   const [outT, setOut] = useState(p.clockOut);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
+  const [armed, setArmed] = useState(false);
   const dirty = inT !== p.clockIn || outT !== p.clockOut;
   const label = `${p.name} ${p.dateLabel}${p.count > 1 ? ` ${p.index + 1}번째` : ''}`;
   return (
@@ -34,6 +35,18 @@ export function SegmentRow(p: Props) {
             const res = await editSegmentAction(p.id, inT, outT);
             setMsg(res?.error ?? res?.ok ?? null);
           })}>저장</button>
+        <button className="btn small danger" disabled={pending} style={{ marginLeft: 6 }}
+          onClick={() => {
+            if (!armed) { setArmed(true); setMsg(null); return; }
+            start(async () => {
+              const res = await deleteSegmentAction(p.id);
+              setArmed(false);
+              setMsg(res?.error ?? null);
+            });
+          }}
+          onBlur={() => setArmed(false)}>
+          {armed ? '한 번 더 누르면 삭제' : '삭제'}
+        </button>
         {msg && <span className="muted"> {msg}</span>}
       </td>
     </tr>

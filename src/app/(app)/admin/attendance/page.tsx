@@ -42,7 +42,7 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
             </table>
           </div>
         )}
-        <p className="muted">하루에 여러 번 출퇴근한 경우 구간별로 나옵니다. 퇴근 칸을 비우고 저장하면 퇴근 기록이 지워집니다. 수정하면 이전 값이 기록으로 남습니다.</p>
+        <p className="muted">하루에 여러 번 출퇴근한 경우 구간별로 나옵니다. 퇴근 칸을 비우고 저장하면 퇴근 기록이 지워집니다. 수정하면 이전 값이 기록으로 남고, 삭제하면 그 구간과 수정 기록이 함께 지워집니다.</p>
       </div>
     </section>
   );

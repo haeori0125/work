@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createNoteAction, deleteNoteAction, setNotePinnedAction, updateNoteAction, type NoteDto,
 } from '@/app/actions/notes';
+import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
 
 const SAVE_DELAY = 800;
@@ -151,7 +152,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
       <section className="panel note-list" aria-label="메모 목록">
         <div className="nl-head">
           <h2>개인 메모</h2>
-          <button className="btn primary small" type="button" onClick={create} disabled={creating}>＋ 새 메모</button>
+          <button className="btn primary small" type="button" onClick={create} disabled={creating}><PlusIcon size={10} /> 새 메모</button>
           <span className="lock">🔒 나만 볼 수 있습니다</span>
         </div>
         <input className="nl-search" type="search" placeholder="검색" aria-label="메모 검색" value={query} onChange={(e) => setQuery(e.target.value)} />

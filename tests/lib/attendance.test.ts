@@ -90,3 +90,19 @@ describe('editSegment', () => {
     expect(await codeOf(editSegment(db, admin, seg.id, { clockOut: at('2026-11-23T01:00:00Z') }, at('2026-11-24T01:00:00Z')))).toBe('invalid');
   });
 });
+
+describe('deleteSegment', () => {
+  it('removes one segment and the day total follows', async () => {
+    const { deleteSegment } = await import('@/lib/attendance');
+    await recordLogin(db, uid, at('2026-11-23T00:00:00Z'));
+    await clockOut(db, uid, at('2026-11-23T01:00:00Z'));
+    await recordLogin(db, uid, at('2026-11-23T02:00:00Z'));
+    await clockOut(db, uid, at('2026-11-23T04:00:00Z'));
+    const segs = await db.select().from(workSegments);
+    await deleteSegment(db, segs[0].id);
+    const [day] = await listDays(db, { userId: uid, from: '2026-11-23', to: '2026-11-23', now: at('2026-11-23T05:00:00Z') });
+    expect(day.segments).toHaveLength(1);
+    expect(day.totalMs).toBe(2 * 3600e3);
+    expect(await codeOf(deleteSegment(db, 99999))).toBe('not_found');
+  });
+});

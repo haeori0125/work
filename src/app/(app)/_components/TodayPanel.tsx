@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PlusIcon } from '@/app/_ui/icons';
 import type { OccurrenceView } from '@/lib/view';
 import { TaskItem } from './TaskItem';
 
@@ -34,7 +35,7 @@ export function TodayPanel({ dateLabel, past, today, me }: Props) {
           <ul className="rows">{today.map((o) => <TaskItem key={`${o.taskId}-${o.occurrenceKey}`} occ={o} me={me} />)}</ul>
         )}
       </section>
-      {me.role === 'admin' && <Link className="add-link" href="/admin/tasks"><span aria-hidden>+</span>새로운 할 일</Link>}
+      {me.role === 'admin' && <Link className="add-link" href="/admin/tasks"><span aria-hidden><PlusIcon size={10} /></span>새로운 할 일</Link>}
     </section>
   );
 }

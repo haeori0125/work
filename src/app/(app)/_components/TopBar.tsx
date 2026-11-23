@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { CheckIcon } from '@/app/_ui/icons';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { logoutAction } from '@/app/actions/auth';
@@ -17,7 +18,7 @@ export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href.split('/').slice(0, 2).join('/')));
   return (
     <header className="topbar">
-      <Link href="/" className="brand"><b aria-hidden>✓</b>팀 투두</Link>
+      <Link href="/" className="brand"><b aria-hidden><CheckIcon size={12} /></b>팀 투두</Link>
       <nav className="nav" aria-label="메뉴">
         {links.map((l) => (
           <Link key={l.href} href={l.href} aria-current={active(l.href) ? 'page' : undefined}>{l.label}</Link>

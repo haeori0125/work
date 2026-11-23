@@ -14,7 +14,7 @@ const isNoteSave = (req: { method(): string; headers(): Record<string, string>; 
 test('a failed autosave is retried instead of being dropped', async ({ page }) => {
   await login(page);
   await page.goto('/memo');
-  await page.getByRole('button', { name: '＋ 새 메모' }).click();
+  await page.getByRole('button', { name: '새 메모' }).click();
   await expect(page.locator('#note-text')).toBeVisible();
 
   let failing = true;
@@ -34,7 +34,7 @@ test('a failed autosave is retried instead of being dropped', async ({ page }) =
 test('leaving the page with unsaved text asks before closing', async ({ page }) => {
   await login(page);
   await page.goto('/memo');
-  await page.getByRole('button', { name: '＋ 새 메모' }).click();
+  await page.getByRole('button', { name: '새 메모' }).click();
   await page.locator('#note-text').fill('닫기 직전 입력');
   const dialog = page.waitForEvent('dialog');
   await page.close({ runBeforeUnload: true });

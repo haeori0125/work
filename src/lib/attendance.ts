@@ -96,3 +96,9 @@ export async function getSegmentDate(db: Db, segmentId: number): Promise<string>
   if (!row) throw new AppError('not_found', '기록을 찾을 수 없습니다');
   return row.date;
 }
+
+/** 관리자가 잘못 생긴 근무 구간을 지운다(수정 이력도 함께 지워짐). */
+export async function deleteSegment(db: Db, segmentId: number): Promise<void> {
+  const rows = await db.delete(workSegments).where(eq(workSegments.id, segmentId)).returning({ id: workSegments.id });
+  if (!rows.length) throw new AppError('not_found', '기록을 찾을 수 없습니다');
+}

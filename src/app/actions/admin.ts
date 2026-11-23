@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/db';
-import { editSegment, getSegmentDate } from '@/lib/attendance';
+import { deleteSegment, editSegment, getSegmentDate } from '@/lib/attendance';
 import { AppError } from '@/lib/errors';
 import {
   approveMember, rejectMember, resetPassword, setDisabled, setRole,
@@ -69,6 +69,14 @@ export const setDisabledAction = async (id: number, disabled: boolean) =>
   memberAction(async (adminId) => setDisabled(await getDb(), adminId, id, disabled));
 export const resetPasswordAction = async (id: number, password: string) =>
   memberAction(async () => resetPassword(await getDb(), id, password));
+
+export async function deleteSegmentAction(id: number): Promise<ActionResult> {
+  return runAction(async () => {
+    await requireActionAdmin();
+    await deleteSegment(await getDb(), id);
+    revalidatePath('/', 'layout');
+  });
+}
 
 export async function editSegmentAction(id: number, clockIn: string, clockOut: string): Promise<ActionResult> {
   return runAction(async () => {

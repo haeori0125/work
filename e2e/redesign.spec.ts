@@ -44,7 +44,7 @@ test('clocking out logs out, and logging in again adds a second segment to the d
 test('personal notes are kept after reload', async ({ page }) => {
   await login(page);
   await page.getByRole('link', { name: '개인 메모' }).click();
-  await page.getByRole('button', { name: '＋ 새 메모' }).click();
+  await page.getByRole('button', { name: '새 메모' }).click();
   await page.locator('#note-text').fill('장보기\n우유, 커피');
   await expect(page.getByText('자동 저장됨')).toBeVisible();
   await page.reload();
