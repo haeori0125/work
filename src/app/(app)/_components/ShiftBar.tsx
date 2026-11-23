@@ -33,7 +33,8 @@ export function ShiftBar({ name, dateLabel, firstIn, working }: Props) {
         ) : (
           <>
             <a className="out-btn link-btn" href={STUDENTS_URL} target="_blank" rel="noopener noreferrer" title="조교실 (새 탭)" aria-label="조교실">
-              <span aria-hidden>💻</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/emoji/laptop.png" alt="" width={26} height={26} />
             </a>
             {working && <button type="button" className="out-btn" onClick={() => setAsking(true)}>퇴근하기</button>}
           </>
