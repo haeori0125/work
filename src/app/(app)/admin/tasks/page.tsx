@@ -37,10 +37,10 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
                   <Link className="btn small" href={`/admin/tasks?edit=${d.id}`}>수정</Link>
                   <DeleteTaskButton id={d.id} title={d.title} />
                 </div>
-                <div className="task-meta">
-                  <span>{describeRepeat(d)}</span>
-                  <span>{period(d)}</span>
-                  {d.assigneeIds.length > 0 && <span>담당: {d.assigneeIds.map(nameOf).join(', ')}</span>}
+                <div className="tags">
+                  <span className="tag line">{d.repeat === 'none' ? '' : '↻ '}{describeRepeat(d)}</span>
+                  <span className="tag line">{period(d)}</span>
+                  {d.assigneeIds.length > 0 && <span className="tag">담당 {d.assigneeIds.map(nameOf).join(', ')}</span>}
                 </div>
               </li>
             ))}
