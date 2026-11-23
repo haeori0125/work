@@ -9,8 +9,10 @@ export type Prefs = {
   /** null이면 자동(테마에 맞춤) */
   doingHex: string | null;
   doneHex: string | null;
+  /** 프로필 사진(작게 줄인 이미지의 data URL), 없으면 null */
+  avatar: string | null;
 };
 
 export const DEFAULT_PREFS: Prefs = {
-  themeH: 232, themeS: 55, themeL: 76, themeHex: null, weekStart: 'mon', doingHex: null, doneHex: null,
+  themeH: 232, themeS: 55, themeL: 76, themeHex: null, weekStart: 'mon', doingHex: null, doneHex: null, avatar: null,
 };

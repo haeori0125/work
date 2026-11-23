@@ -1,5 +1,6 @@
 import { getDb } from '@/db';
 import { getToday } from '@/lib/attendance';
+import { getPrefs } from '@/lib/prefs';
 import { formatKstTime, kstDate } from '@/lib/time';
 import { requireUser } from '@/server/session';
 import { RefreshOnFocus } from './_components/RefreshOnFocus';
@@ -11,7 +12,8 @@ const WD = ['일', '월', '화', '수', '목', '금', '토'];
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const now = new Date();
-  const today = await getToday(await getDb(), user.id, now);
+  const db = await getDb();
+  const [today, prefs] = await Promise.all([getToday(db, user.id, now), getPrefs(db, user.id)]);
   const d = kstDate(now);
   const dateLabel = `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WD[new Date(`${d}T00:00:00Z`).getUTCDay()]})`;
   return (
@@ -23,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         working={today?.state === 'working'}
       />
       <div className="frame">
-        <TopBar name={user.name} isAdmin={user.role === 'admin'} />
+        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} />
         <div className="content">{children}</div>
       </div>
       <RefreshOnFocus />

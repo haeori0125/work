@@ -129,5 +129,6 @@ export const userPrefs = pgTable('user_prefs', {
   weekStart: text('week_start', { enum: ['mon', 'sun'] }).notNull().default('mon'),
   doingHex: text('doing_hex'),
   doneHex: text('done_hex'),
+  avatar: text('avatar'),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });

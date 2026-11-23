@@ -1,18 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckIcon } from '@/app/_ui/icons';
-import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 import { logoutAction } from '@/app/actions/auth';
+import { Avatar } from '@/app/_ui/Avatar';
+import { CheckIcon, GearIcon, RefreshIcon } from '@/app/_ui/icons';
 
-export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
+export function TopBar({ name, isAdmin, avatar }: { name: string; isAdmin: boolean; avatar: string | null }) {
   const path = usePathname();
+  const [spinning, setSpinning] = useState(false);
   const links = [
     { href: '/', label: '홈' },
     { href: '/attendance', label: '내 기록' },
     { href: '/memo', label: '개인 메모' },
-    { href: '/settings', label: '설정' },
     ...(isAdmin ? [{ href: '/admin/tasks', label: '관리' }] : []),
   ];
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href.split('/').slice(0, 2).join('/')));
@@ -24,28 +25,21 @@ export function TopBar({ name, isAdmin }: { name: string; isAdmin: boolean }) {
           <Link key={l.href} href={l.href} aria-current={active(l.href) ? 'page' : undefined}>{l.label}</Link>
         ))}
       </nav>
+      {/* 자주 쓰는 순서: 새로고침 · 설정 · 내 프로필, 실수로 누르기 쉬운 로그아웃은 맨 끝 */}
       <div className="top-right">
-        <RefreshButton />
-        <form action={logoutAction} className="nav"><button>로그아웃</button></form>
-        <span className="avatar" title={name}>{name.slice(-2)}</span>
+        <button type="button" className="icon-btn" aria-label="새로고침" title="새로고침"
+          onClick={() => { setSpinning(true); window.location.reload(); }}>
+          <RefreshIcon spinning={spinning} />
+        </button>
+        <Link href="/settings" className="icon-btn" aria-label="설정" title="설정"
+          aria-current={path.startsWith('/settings') ? 'page' : undefined}>
+          <GearIcon />
+        </Link>
+        <Link href="/settings#profile" className="avatar-link" aria-label={`${name} 프로필`} title={`${name} · 프로필 사진 바꾸기`}>
+          <Avatar name={name} src={avatar} size={30} />
+        </Link>
+        <form action={logoutAction} className="nav logout"><button>로그아웃</button></form>
       </div>
     </header>
-  );
-}
-
-/** 페이지 전체를 다시 불러온다(새 배포 화면 + 다른 사람이 바꾼 내용) */
-function RefreshButton() {
-  const [spinning, setSpinning] = useState(false);
-  return (
-    <button
-      type="button" className="icon-btn" aria-label="새로고침" title="새로고침"
-      onClick={() => { setSpinning(true); window.location.reload(); }}
-    >
-      <svg className={spinning ? 'spin' : undefined} width="18" height="18" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M20 11a8 8 0 1 0-2.34 5.66" />
-        <path d="M20 4v7h-7" />
-      </svg>
-    </button>
   );
 }

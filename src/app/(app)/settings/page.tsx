@@ -6,5 +6,5 @@ import { SettingsView } from './SettingsView';
 export default async function SettingsPage() {
   const user = await requireUser();
   const prefs = await getPrefs(await getDb(), user.id);
-  return <SettingsView initial={prefs} />;
+  return <SettingsView initial={prefs} name={user.name} />;
 }

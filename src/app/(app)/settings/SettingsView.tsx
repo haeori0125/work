@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { savePrefsAction } from '@/app/actions/prefs';
+import { Avatar } from '@/app/_ui/Avatar';
 import { hexToHsl, hslToHex, parseHex, themeVars } from '@/lib/color';
 import { DEFAULT_PREFS, type Prefs } from '@/lib/prefs-shared';
 
@@ -21,7 +22,7 @@ function paint(p: Prefs) {
   }
 }
 
-export function SettingsView({ initial }: { initial: Prefs }) {
+export function SettingsView({ initial, name }: { initial: Prefs; name: string }) {
   const [prefs, setPrefs] = useState(initial);
   const [status, setStatus] = useState<string>('바꾸면 바로 저장됩니다.');
   const [, start] = useTransition();
@@ -43,6 +44,7 @@ export function SettingsView({ initial }: { initial: Prefs }) {
 
   return (
     <div className="settings">
+      <ProfilePanel name={name} avatar={prefs.avatar} save={save} />
       <ThemePanel prefs={prefs} preview={(p) => setPrefs({ ...prefs, ...p })} save={save} />
       <section className="panel set-card" aria-labelledby="h-week">
         <h2 id="h-week">위클리 시작 요일</h2>
@@ -195,5 +197,64 @@ function StatusPicker({ label, kind, value, onSave }: {
         </div>
       )}
     </div>
+  );
+}
+
+const AVATAR_PX = 160;
+
+/** 고른 사진의 가운데를 정사각형으로 잘라 160px로 줄인 data URL */
+async function toAvatar(file: File): Promise<string> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('load'));
+      el.src = url;
+    });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = AVATAR_PX; canvas.height = AVATAR_PX;
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, AVATAR_PX, AVATAR_PX);
+    const webp = canvas.toDataURL('image/webp', 0.85);
+    // webp를 못 만드는 브라우저는 png를 돌려주므로 jpeg로 다시 만든다
+    return webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', 0.85);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function ProfilePanel({ name, avatar, save }: { name: string; avatar: string | null; save: (p: Partial<Prefs>) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setErr('사진 파일을 골라 주세요.'); return; }
+    setErr(null); setBusy(true);
+    try { save({ avatar: await toAvatar(file) }); }
+    catch { setErr('이 사진은 열 수 없습니다. 다른 사진을 골라 주세요.'); }
+    finally { setBusy(false); if (input.current) input.current.value = ''; }
+  };
+  return (
+    <section className="panel set-card set-profile" id="profile" aria-labelledby="h-profile">
+      <h2 id="h-profile">프로필 사진</h2>
+      <div className="profile-row">
+        <Avatar name={name} src={avatar} size={72} className="avatar-lg" />
+        <div className="stack" style={{ gap: 8 }}>
+          <p className="help">상단 바에 보이는 사진입니다. 가운데를 정사각형으로 잘라 저장합니다.</p>
+          <div className="row">
+            <button type="button" className="btn primary small" disabled={busy} onClick={() => input.current?.click()}>
+              {busy ? '사진 처리 중…' : avatar ? '사진 바꾸기' : '사진 고르기'}
+            </button>
+            {avatar && <button type="button" className="btn small" onClick={() => save({ avatar: null })}>사진 지우기</button>}
+            <input ref={input} type="file" accept="image/*" hidden aria-label="프로필 사진 파일" onChange={(e) => pick(e.target.files?.[0])} />
+          </div>
+          {err && <p className="err">{err}</p>}
+        </div>
+      </div>
+    </section>
   );
 }

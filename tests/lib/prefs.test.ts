@@ -28,4 +28,14 @@ describe('prefs', () => {
     expect(await errOf(savePrefs(db, uid, { doingHex: 'zz' }, NOW))).toEqual(['invalid', '색상 코드는 # 뒤에 6자리로 입력하세요']);
     expect((await errOf(savePrefs(db, uid, { weekStart: 'tue' as 'mon' }, NOW)))?.[0]).toBe('invalid');
   });
+
+  it('stores a small profile photo and rejects anything that is not a png/jpeg/webp data URL', async () => {
+    const ok = 'data:image/webp;base64,' + 'A'.repeat(2000);
+    expect((await savePrefs(db, uid, { avatar: ok }, NOW)).avatar).toBe(ok);
+    expect((await getPrefs(db, uid)).avatar).toBe(ok);
+    expect((await savePrefs(db, uid, { avatar: null }, NOW)).avatar).toBeNull();
+    expect((await errOf(savePrefs(db, uid, { avatar: 'data:image/svg+xml;base64,AAAA' }, NOW)))?.[0]).toBe('invalid');
+    expect((await errOf(savePrefs(db, uid, { avatar: 'https://example.com/a.png' }, NOW)))?.[0]).toBe('invalid');
+    expect((await errOf(savePrefs(db, uid, { avatar: 'data:image/png;base64,' + 'A'.repeat(200000) }, NOW)))?.[0]).toBe('invalid');
+  });
 });
