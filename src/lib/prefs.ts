@@ -4,21 +4,8 @@ import type { Db } from '@/db/types';
 import { parseHex } from './color';
 import { AppError } from './errors';
 
-export type Prefs = {
-  themeH: number;
-  themeS: number;
-  themeL: number;
-  /** 색상 코드로 고른 경우 입력값 그대로 보여 주기 위해 저장 */
-  themeHex: string | null;
-  weekStart: 'mon' | 'sun';
-  /** null이면 자동(테마에 맞춤) */
-  doingHex: string | null;
-  doneHex: string | null;
-};
-
-export const DEFAULT_PREFS: Prefs = {
-  themeH: 232, themeS: 55, themeL: 76, themeHex: null, weekStart: 'mon', doingHex: null, doneHex: null,
-};
+export { DEFAULT_PREFS, type Prefs } from './prefs-shared';
+import { DEFAULT_PREFS, type Prefs } from './prefs-shared';
 
 const HEX_MSG = '색상 코드는 # 뒤에 6자리로 입력하세요';
 

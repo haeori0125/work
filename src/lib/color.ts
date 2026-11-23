@@ -1,4 +1,4 @@
-import type { Prefs } from './prefs';
+import type { Prefs } from './prefs-shared';
 
 /** "#a3b1f0" → "A3B1F0", 형식이 틀리면 null */
 export function parseHex(input: string): string | null {
