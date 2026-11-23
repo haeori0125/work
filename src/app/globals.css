@@ -595,3 +595,12 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .week-nav { display: inline-flex; align-items: center; gap: 6px; }
 .week-nav .arrow { width: 26px; height: 26px; font-size: 15px; }
 .week-nav .sub { min-width: 104px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* 이번 주 업무: 태그가 많아 줄이 늘어나면 알약 대신 둥근 카드로 */
+.goal { border-radius: 10px; flex-wrap: wrap; row-gap: 4px; max-width: 100%; }
+.goal .goal-title { white-space: normal; }
+@media (max-width: 760px) {
+  .goals { flex-direction: column; align-items: stretch; }
+  .goal { display: grid; grid-template-columns: 17px minmax(0, 1fr); column-gap: 8px; row-gap: 4px; padding: 8px 10px; align-items: center; }
+  .goal .tags.mini { grid-column: 2; flex-wrap: wrap; white-space: normal; }
+}
