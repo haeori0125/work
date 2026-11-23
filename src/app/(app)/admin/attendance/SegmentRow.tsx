@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { deleteSegmentAction, editSegmentAction } from '@/app/actions/admin';
 import { Person } from '@/app/_ui/AvatarContext';
+import { useToast } from '@/app/_ui/Toast';
 
 type Props = {
   id: number; dateLabel: string; name: string; index: number; count: number;
@@ -16,6 +17,7 @@ export function SegmentRow(p: Props) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
   const [armed, setArmed] = useState(false);
+  const toast = useToast();
   const dirty = inT !== p.clockIn || outT !== p.clockOut;
   const label = `${p.name} ${p.dateLabel}${p.count > 1 ? ` ${p.index + 1}번째` : ''}`;
   return (
@@ -34,7 +36,8 @@ export function SegmentRow(p: Props) {
         <button className="btn small primary" disabled={!dirty || pending}
           onClick={() => start(async () => {
             const res = await editSegmentAction(p.id, inT, outT);
-            setMsg(res?.error ?? res?.ok ?? null);
+            setMsg(res?.error ?? null);
+            if (!res?.error) toast('저장되었습니다');
           })}>저장</button>
         <button className="btn small danger" disabled={pending} style={{ marginLeft: 6 }}
           onClick={() => {
@@ -43,6 +46,7 @@ export function SegmentRow(p: Props) {
               const res = await deleteSegmentAction(p.id);
               setArmed(false);
               setMsg(res?.error ?? null);
+              if (!res?.error) toast('삭제되었습니다');
             });
           }}
           onBlur={() => setArmed(false)}>

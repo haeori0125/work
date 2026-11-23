@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { ActionResult } from '@/app/actions/result';
 import { Person } from '@/app/_ui/AvatarContext';
+import { useToast } from '@/app/_ui/Toast';
 import type { NoteView } from '@/lib/view';
 
 type Props = {
@@ -21,9 +22,11 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
-  const run = (fn: () => Promise<ActionResult>, after?: () => void) => start(async () => {
+  const toast = useToast();
+  const run = (fn: () => Promise<ActionResult>, after?: () => void, okText?: string) => start(async () => {
     const res = await fn();
     if (res?.error) { setError(res.error); return; }
+    if (okText) toast(okText);
     setError(null);
     after?.();
     onChanged?.();
@@ -39,7 +42,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
                 <div className="note-form">
                   <textarea value={editing.body} onChange={(e) => setEditing({ id: n.id, body: e.target.value })} maxLength={2000} />
                   <button className="btn small primary" disabled={pending}
-                    onClick={() => run(() => onEdit(n.id, editing.body), () => setEditing(null))}>저장</button>
+                    onClick={() => run(() => onEdit(n.id, editing.body), () => setEditing(null), '저장되었습니다')}>저장</button>
                   <button className="btn small" onClick={() => setEditing(null)}>취소</button>
                 </div>
               ) : (
@@ -52,7 +55,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
                     )}
                     {(n.authorId === me.id || me.role === 'admin') && (
                       <button className="btn link small" disabled={pending}
-                        onClick={() => { if (confirm('메모를 삭제할까요?')) run(() => onDelete(n.id)); }}>삭제</button>
+                        onClick={() => { if (confirm('메모를 삭제할까요?')) run(() => onDelete(n.id), undefined, '삭제되었습니다'); }}>삭제</button>
                     )}
                   </div>
                 </>
@@ -61,7 +64,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
           ))}
         </ul>
       )}
-      <form className="note-form" onSubmit={(e) => { e.preventDefault(); run(() => onAdd(draft), () => setDraft('')); }}>
+      <form className="note-form" onSubmit={(e) => { e.preventDefault(); run(() => onAdd(draft), () => setDraft(''), '등록되었습니다'); }}>
         <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} maxLength={2000} rows={2} />
         <button className="btn small primary" disabled={pending || !draft.trim()}>등록</button>
       </form>

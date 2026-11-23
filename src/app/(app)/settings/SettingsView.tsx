@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { savePrefsAction } from '@/app/actions/prefs';
 import { Avatar } from '@/app/_ui/Avatar';
+import { useToast } from '@/app/_ui/Toast';
 import { hexToHsl, hslToHex, parseHex, themeVars } from '@/lib/color';
 import { DEFAULT_PREFS, type Prefs } from '@/lib/prefs-shared';
 
@@ -12,7 +13,7 @@ const HEX_MSG = '색상 코드는 # 뒤에 6자리로 입력하세요. 예: A3B1
 const VAR_KEYS = ['--h', '--s', '--l', '--on-accent', '--on-done', '--dh', '--ds', '--dl', '--oh', '--os', '--ol'];
 const WHEEL = 220;
 
-/** 화면에 바로 적용(저장 전 미리 보기 포함) */
+/** 화면에 바로 적용(저장 전 미리 보기) */
 function paint(p: Prefs) {
   const root = document.documentElement;
   const vars = themeVars(p);
@@ -23,24 +24,36 @@ function paint(p: Prefs) {
 }
 
 export function SettingsView({ initial, name }: { initial: Prefs; name: string }) {
+  // 고치는 동안은 화면에만 미리 보여 주고, '저장'을 눌러야 계정에 저장된다
   const [prefs, setPrefs] = useState(initial);
-  const [status, setStatus] = useState<string>('바꾸면 바로 저장됩니다.');
-  const [, start] = useTransition();
-  const saved = useRef(initial);
+  const [saved, setSaved] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const toast = useToast();
+  const changed = (Object.keys(prefs) as (keyof Prefs)[]).filter((k) => prefs[k] !== saved[k]);
+  const dirty = changed.length > 0;
 
   useEffect(() => { paint(prefs); }, [prefs]);
+  // 저장하지 않고 다른 화면으로 가면 저장된 색으로 되돌린다
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  useEffect(() => () => paint(savedRef.current), []);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
-  const save = (patch: Partial<Prefs>) => {
-    const next = { ...prefs, ...patch };
-    setPrefs(next);
-    setStatus('저장 중…');
-    start(async () => {
-      const res = await savePrefsAction(patch);
-      if (res?.error) { setStatus(res.error); setPrefs(saved.current); return; }
-      saved.current = next;
-      setStatus('저장했습니다.');
-    });
-  };
+  const save = (patch: Partial<Prefs>) => setPrefs((p) => ({ ...p, ...patch }));
+  const commit = () => start(async () => {
+    const patch = Object.fromEntries(changed.map((k) => [k, prefs[k]])) as Partial<Prefs>;
+    const res = await savePrefsAction(patch);
+    if (res?.error) { setError(res.error); return; }
+    setError(null);
+    setSaved(prefs);
+    toast('저장되었습니다');
+  });
 
   return (
     <div className="settings">
@@ -72,7 +85,11 @@ export function SettingsView({ initial, name }: { initial: Prefs; name: string }
           <span><i className="check done" /><span className="by done">완료 · 박민수 08:55</span></span>
         </div>
       </section>
-      <p className="muted set-status" role="status">{status}</p>
+      <div className={`save-bar${dirty ? ' dirty' : ''}`}>
+        <span className="muted">{error ?? (dirty ? '저장하지 않은 변경이 있어요' : '모든 설정이 저장되어 있어요')}</span>
+        <button type="button" className="btn" disabled={!dirty || pending} onClick={() => { setPrefs(saved); setError(null); }}>되돌리기</button>
+        <button type="button" className="btn primary" disabled={!dirty || pending} onClick={commit}>{pending ? '저장 중…' : '저장'}</button>
+      </div>
     </div>
   );
 }
@@ -166,7 +183,7 @@ function StatusPicker({ label, kind, value, onSave }: {
   const [manual, setManual] = useState(value !== null);
   const [input, setInput] = useState(value ?? '');
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => { setInput(value ?? ''); }, [value]);
+  useEffect(() => { setInput(value ?? ''); if (value === null) setManual(false); }, [value]);
   return (
     <div className="status-set">
       <div className="status-head">
@@ -244,7 +261,7 @@ function ProfilePanel({ name, avatar, save }: { name: string; avatar: string | n
       <div className="profile-row">
         <Avatar name={name} src={avatar} size={72} className="avatar-lg" />
         <div className="stack" style={{ gap: 8 }}>
-          <p className="help">상단 바에 보이는 사진입니다. 가운데를 정사각형으로 잘라 저장합니다.</p>
+          <p className="help">상단 바에 보이는 사진입니다. 가운데를 정사각형으로 잘라 씁니다.</p>
           <div className="row">
             <button type="button" className="btn primary small" disabled={busy} onClick={() => input.current?.click()}>
               {busy ? '사진 처리 중…' : avatar ? '사진 바꾸기' : '사진 고르기'}

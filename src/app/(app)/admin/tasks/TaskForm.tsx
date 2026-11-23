@@ -92,15 +92,6 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
         )}
       </div>
 
-      {kind === 'weekly' && repeating && (
-        <label className="field">마감 요일 (선택)
-          <select name="dueWeekday" defaultValue={init?.dueWeekday ?? ''}>
-            <option value="">마감 없음 (그 주 안에)</option>
-            {WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}요일까지</option>)}
-          </select>
-        </label>
-      )}
-
       <div className="field">파트 나누기 (선택)
         <p className="help" style={{ fontWeight: 400 }}>파트를 만들면 파트마다 담당자와 체크 원이 따로 생기고, 업무 상태는 파트에서 자동으로 정해집니다.</p>
         <input type="hidden" name="parts" value={JSON.stringify(parts)} />

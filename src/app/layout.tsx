@@ -5,6 +5,7 @@ import { DEFAULT_PREFS, getPrefs } from '@/lib/prefs';
 import { cookies } from 'next/headers';
 import { getCurrentUser } from '@/server/session';
 import { decodeThemeCookie, THEME_COOKIE } from '@/lib/theme-cookie';
+import { ToastProvider } from './_ui/Toast';
 import './globals.css';
 
 export const metadata: Metadata = { title: 'Team Task', description: '함께 쓰는 업무 체크리스트' };
@@ -21,7 +22,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* eslint-disable-next-line @next/next/no-css-tags */}
         <link rel="stylesheet" href="/fonts/pretendard/pretendardvariable-dynamic-subset.css" />
       </head>
-      <body>{children}</body>
+      <body><ToastProvider>{children}</ToastProvider></body>
     </html>
   );
 }

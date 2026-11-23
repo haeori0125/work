@@ -6,6 +6,7 @@ import { listPendingRequests } from '@/lib/requests';
 import { listTaskDefinitions } from '@/lib/tasks';
 import { formatDateLabel, formatKstTime, kstDate } from '@/lib/time';
 import { describeRepeat } from '@/lib/view';
+import { FlashToast } from '@/app/_ui/Toast';
 import { DeleteTaskButton } from './DeleteTaskButton';
 import { DragScroll } from './DragScroll';
 import { RequestRow } from './RequestRow';
@@ -34,7 +35,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
     <>
       <section className="panel admin-card">
         <div className="panel-head"><h2>{editing ? '업무 수정' : from ? '요청 승인' : '업무 추가'}</h2></div>
-        {sp.saved && !editing && <p className="msg ok" style={{ marginBottom: 10 }}>저장했습니다</p>}
+        <FlashToast param="saved" value={sp.saved} messages={{ new: '등록되었습니다', edit: '저장되었습니다', approved: '승인되었습니다' }} />
         <TaskForm key={editing ? `edit-${editing.id}` : from ? `req-${from.id}` : `new-${sp.saved ?? ''}-${defs.length}`} task={editing} fromRequest={fromRequest}
           members={members} today={kstDate(new Date())} />
       </section>
@@ -64,7 +65,6 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
                 <div className="tags">
                   <span className="tag line">{d.repeat === 'none' ? '' : '↻ '}{describeRepeat(d)}</span>
                   <span className="tag line">{period(d)}</span>
-                  {d.dueWeekday !== null && <span className="tag line">~{['월', '화', '수', '목', '금', '토', '일'][d.dueWeekday]}</span>}
                   {d.dueDate && <span className="tag line">~{formatDateLabel(d.dueDate)}</span>}
                   {(() => {
                     // 업무 담당자 + 파트 담당자(중복 제외)

@@ -7,15 +7,18 @@ import {
 import type { ActionResult } from '@/app/actions/result';
 import type { Member } from '@/lib/members';
 import { Person } from '@/app/_ui/AvatarContext';
+import { useToast } from '@/app/_ui/Toast';
 
 export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<ActionResult>(null);
   const [pw, setPw] = useState('');
   const [pwOpen, setPwOpen] = useState(false);
-  const run = (fn: () => Promise<ActionResult>, okText?: string) => start(async () => {
+  const toast = useToast();
+  const run = (fn: () => Promise<ActionResult>, okText = '저장되었습니다') => start(async () => {
     const res = await fn();
-    setMsg(res?.error ? res : okText ? { ok: okText } : null);
+    setMsg(res?.error ? res : null);
+    if (!res?.error) toast(okText);
   });
 
   return (
@@ -29,9 +32,9 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
       <div className="row">
         {m.status === 'pending' ? (
           <>
-            <button className="btn small primary" disabled={pending} onClick={() => run(() => approveAction(m.id))}>승인</button>
+            <button className="btn small primary" disabled={pending} onClick={() => run(() => approveAction(m.id), '승인되었습니다')}>승인</button>
             <button className="btn small danger" disabled={pending}
-              onClick={() => { if (confirm(`${m.name}님의 가입 신청을 거절할까요?`)) run(() => rejectAction(m.id)); }}>거절</button>
+              onClick={() => { if (confirm(`${m.name}님의 가입 신청을 거절할까요?`)) run(() => rejectAction(m.id), '거절했습니다'); }}>거절</button>
           </>
         ) : (
           <>
@@ -59,7 +62,6 @@ export function MemberRow({ m, isMe }: { m: Member; isMe: boolean }) {
         )}
       </div>
       {msg?.error && <p className="msg error">{msg.error}</p>}
-      {msg?.ok && <p className="msg ok">{msg.ok}</p>}
     </li>
   );
 }

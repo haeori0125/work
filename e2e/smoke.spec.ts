@@ -22,7 +22,7 @@ test('admin creates a task, approves a member, member completes it and admin see
   await expect(page).toHaveURL(/\/admin\/tasks/);
   await page.getByLabel('제목').fill('매장 오픈 준비');
   await page.getByRole('button', { name: '업무 추가' }).click();
-  await expect(page.getByText('저장했습니다')).toBeVisible();
+  await expect(page.locator('.toast', { hasText: '등록되었습니다' })).toBeVisible();
   await logout(page);
 
   // 민수: 가입 신청 → 승인 전 로그인 거절

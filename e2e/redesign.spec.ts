@@ -16,9 +16,12 @@ test('settings are saved to the account and follow the user to another browser',
   await expect(page.locator('.err')).toContainText('색상 코드는 # 뒤에 6자리로 입력하세요');
   await page.locator('#theme-hex').fill('#F4B6C2');
   await page.locator('#theme-hex').press('Enter');
-  await expect(page.getByRole('status')).toHaveText('저장했습니다.');
   await page.getByRole('button', { name: '일요일 시작' }).click();
-  await expect(page.getByRole('status')).toHaveText('저장했습니다.');
+  // 바꾼 것은 '저장'을 눌러야 계정에 저장된다
+  await expect(page.locator('.save-bar')).toContainText('저장하지 않은 변경이 있어요');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(page.locator('.toast', { hasText: '저장되었습니다' })).toBeVisible();
+  await expect(page.locator('.save-bar')).toContainText('모든 설정이 저장되어 있어요');
 
   const other = await browser.newPage();
   await login(other);

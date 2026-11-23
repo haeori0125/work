@@ -25,20 +25,12 @@ beforeEach(async () => {
 });
 
 describe('weekly deadline', () => {
-  it('only weekly tasks take a deadline weekday (0=월…6=일)', async () => {
-    expect(await codeOf(createTask(db, admin, input({ dueWeekday: 3 })))).toBe('invalid');
-    expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', dueWeekday: 7 })))).toBe('invalid');
-    const id = await createTask(db, admin, input({ kind: 'weekly', repeat: 'weekly', dueWeekday: 3 }));
-    expect((await listTaskDefinitions(db)).find((d) => d.id === id)?.dueWeekday).toBe(3);
-  });
-
-  it('appears on its deadline day in the week view, keyed by the week', async () => {
-    await createTask(db, admin, input({ title: '어법파트 통일', kind: 'weekly', repeat: 'weekly', dueWeekday: 3 }));
-    const view = await getWeekView(db, '2026-11-22'); // 일요일 시작 주
-    expect(view['2026-11-26'].map((o) => [o.title, o.occurrenceKey, o.dueHere])).toEqual([['어법파트 통일', '2026-11-23', true]]);
-    expect(view['2026-11-25']).toEqual([]);
+  it('repeating weekly tasks have no deadline day', async () => {
+    await createTask(db, admin, input({ title: '어법파트 통일', kind: 'weekly', repeat: 'weekly' }));
+    const view = await getWeekView(db, '2026-11-22');
+    expect(Object.values(view).flat()).toEqual([]);
     const [goal] = await getWeeklyOccurrences(db, '2026-11-23');
-    expect(goal.dueDate).toBe('2026-11-26');
+    expect(goal.dueDate).toBeNull();
   });
 });
 
@@ -111,6 +103,5 @@ describe('one-off weekly task with exact dates', () => {
   it('validates the exact due date', async () => {
     expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-11-24' })))).toBe('invalid');
     expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', repeat: 'weekly', dueDate: '2026-11-27' })))).toBe('invalid');
-    expect(await codeOf(createTask(db, admin, input({ kind: 'weekly', dueWeekday: 3 })))).toBe('invalid'); // 한 번짜리는 날짜로
   });
 });

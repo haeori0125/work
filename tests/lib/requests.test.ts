@@ -29,13 +29,13 @@ describe('task requests', () => {
   });
 
   it('lists pending oldest first for admins, mine newest first', async () => {
-    const r1 = await createRequest(db, a, spec({ title: '재고 점검', description: ' 창고 ', kind: 'weekly', repeat: 'weekly', dueWeekday: 4, assigneeIds: [a, b], parts: [{ id: 77, title: ' 1층 ', assigneeId: a }] }), at('2026-11-24T01:00:00Z'));
+    const r1 = await createRequest(db, a, spec({ title: '재고 점검', description: ' 창고 ', kind: 'weekly', repeat: 'weekly', assigneeIds: [a, b], parts: [{ id: 77, title: ' 1층 ', assigneeId: a }] }), at('2026-11-24T01:00:00Z'));
     const r2 = await createRequest(db, b, spec({}), at('2026-11-24T02:00:00Z'));
     const r3 = await createRequest(db, a, spec({ title: '보고서' }), at('2026-11-24T03:00:00Z'));
     const pending = await listPendingRequests(db);
     expect(pending.map((r) => r.id)).toEqual([r1, r2, r3]);
     expect(pending[0]).toMatchObject({ requesterName: '철수', description: '창고', wantedDate: '2026-11-30', status: 'pending' });
-    expect(pending[0].spec).toMatchObject({ kind: 'weekly', repeat: 'weekly', dueWeekday: 4, assigneeIds: [a, b], parts: [{ title: '1층', assigneeId: a }] });
+    expect(pending[0].spec).toMatchObject({ kind: 'weekly', repeat: 'weekly', assigneeIds: [a, b], parts: [{ title: '1층', assigneeId: a }] });
     expect(pending[0].spec!.parts![0]).not.toHaveProperty('id');
     expect((await listMyRequests(db, a)).map((r) => r.id)).toEqual([r3, r1]);
   });

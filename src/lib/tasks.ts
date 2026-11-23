@@ -7,7 +7,7 @@ import { AppError } from './errors';
 import {
   occursInWeek, occursOn, validateRecurrence, type Kind, type RecurrenceSpec, type Repeat,
 } from './recurrence';
-import { addDays, kstWeekday, weekDates, weekStartOf } from './time';
+import { weekDates, weekStartOf } from './time';
 
 export type TaskStatus = 'todo' | 'doing' | 'done';
 
@@ -17,15 +17,13 @@ export type TaskInput = RecurrenceSpec & {
   title: string;
   description: string | null;
   assigneeIds: number[];
-  /** 매주 반복하는 주간 업무의 마감 요일 (0=월 … 6=일) */
-  dueWeekday?: number | null;
   /** 한 번만 하는 주간 업무의 정확한 마감일. 시작일~마감일 동안 위클리에 보인다 */
   dueDate?: string | null;
   /** 나눠 맡기는 파트. 있으면 업무 상태는 파트에서 자동으로 정해진다 */
   parts?: PartInput[];
 };
 
-export type TaskDefinition = TaskInput & { id: number; dueWeekday: number | null; dueDate: string | null; parts: (PartInput & { id: number })[] };
+export type TaskDefinition = TaskInput & { id: number; dueDate: string | null; parts: (PartInput & { id: number })[] };
 
 export type LastChange = { userId: number; userName: string; at: Date };
 
@@ -66,14 +64,16 @@ export function cleanTaskInput(input: TaskInput): TaskInput {
   const title = input.title.trim();
   if (!title) throw new AppError('invalid', '제목을 입력하세요');
   if (title.length > 100) throw new AppError('invalid', '제목은 100자 이하로 입력하세요');
+  // 예전 요청에 남아 있을 수 있는, 없앤 항목(마감 요일)은 버린다
+  const rest: TaskInput & { dueWeekday?: unknown } = { ...input };
+  delete rest.dueWeekday;
   const spec: TaskInput = {
-    ...input,
+    ...rest,
     title,
     description: input.description?.trim() || null,
     weekdays: input.repeat === 'weekly_days' ? [...new Set(input.weekdays)].sort() : [],
     endDate: input.repeat === 'none' ? null : input.endDate || null,
     assigneeIds: [...new Set(input.assigneeIds)],
-    dueWeekday: input.dueWeekday ?? null,
     dueDate: input.dueDate || null,
     parts: (input.parts ?? []).map((p) => ({ ...p, title: p.title.trim() })),
   };
@@ -83,11 +83,6 @@ export function cleanTaskInput(input: TaskInput): TaskInput {
     if (spec.kind !== 'weekly' || spec.repeat !== 'none') throw new AppError('invalid', '마감일은 한 번만 하는 주간 업무에만 정할 수 있습니다');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(spec.dueDate!)) throw new AppError('invalid', '마감일이 올바르지 않습니다');
     if (spec.dueDate! < spec.startDate) throw new AppError('invalid', '마감일이 시작일보다 빠릅니다');
-  }
-  if (spec.dueWeekday !== null) {
-    if (spec.kind !== 'weekly') throw new AppError('invalid', '마감 요일은 주간 업무에만 정할 수 있습니다');
-    if (spec.repeat !== 'weekly') throw new AppError('invalid', '한 번만 하는 주간 업무는 마감일을 날짜로 정하세요');
-    if (!Number.isInteger(spec.dueWeekday) || spec.dueWeekday! < 0 || spec.dueWeekday! > 6) throw new AppError('invalid', '마감 요일이 올바르지 않습니다');
   }
   if (spec.parts!.length > MAX_PARTS) throw new AppError('invalid', `파트는 ${MAX_PARTS}개까지 만들 수 있습니다`);
   if (spec.parts!.some((p) => !p.title)) throw new AppError('invalid', '파트 이름을 입력하세요');
@@ -113,7 +108,7 @@ async function setParts(db: Db, taskId: number, parts: PartInput[]) {
 function columns(spec: TaskInput) {
   return {
     title: spec.title, description: spec.description, kind: spec.kind, repeat: spec.repeat,
-    weekdays: spec.weekdays, startDate: spec.startDate, endDate: spec.endDate, dueWeekday: spec.dueWeekday ?? null, dueDate: spec.dueDate ?? null,
+    weekdays: spec.weekdays, startDate: spec.startDate, endDate: spec.endDate, dueDate: spec.dueDate ?? null,
   };
 }
 
@@ -157,7 +152,7 @@ export async function listTaskDefinitions(db: Db): Promise<TaskDefinition[]> {
   ]);
   return rows.map((r) => ({
     id: r.id, title: r.title, description: r.description, kind: r.kind, repeat: r.repeat,
-    weekdays: r.weekdays, startDate: r.startDate, endDate: r.endDate, dueWeekday: r.dueWeekday, dueDate: r.dueDate,
+    weekdays: r.weekdays, startDate: r.startDate, endDate: r.endDate, dueDate: r.dueDate,
     assigneeIds: assigned.filter((x) => x.taskId === r.id).map((x) => x.userId).sort((p, q) => p - q),
     parts: parts.filter((p) => p.taskId === r.id).map((p) => ({ id: p.id, title: p.title, assigneeId: p.assigneeId })),
   }));
@@ -223,9 +218,7 @@ async function buildOccurrences(db: Db, items: { task: TaskRow; key: string; due
       lastChange: myParts.length ? latestPart : st ? { userId: st.userId, userName: st.userName, at: st.at } : null,
       commentCount: comments.find((c) => c.taskId === task.id && c.key === key)?.n ?? 0,
       parts: myParts,
-      dueDate: task.kind !== 'weekly' ? null
-        : task.repeat === 'none' ? task.dueDate
-          : task.dueWeekday !== null ? addDays(key, task.dueWeekday) : null,
+      dueDate: task.kind === 'weekly' && task.repeat === 'none' ? task.dueDate : null,
       startDate: task.startDate,
       ...(dueHere ? { dueHere: true } : {}),
     };
@@ -266,10 +259,8 @@ export async function getWeekView(db: Db, weekStart: string): Promise<Record<str
   const days = weekDates(weekStart);
   const items = days.flatMap((date) => [
     ...all.filter((t) => occursOn(t, date)).map((task) => ({ task, key: date })),
-    // 마감이 이 날인 주간 업무: 반복은 마감 요일, 한 번짜리는 정확한 마감일
-    ...all.filter((t) => t.kind === 'weekly' && (t.repeat === 'none'
-      ? t.dueDate === date
-      : t.dueWeekday === kstWeekday(date) && occursInWeek(t, weekStartOf(date))))
+    // 마감일이 이 날인 한 번짜리 주간 업무
+    ...all.filter((t) => t.kind === 'weekly' && t.repeat === 'none' && t.dueDate === date)
       .map((task) => ({ task, key: weeklyKey(task, weekStartOf(date)), dueHere: true })),
   ]);
   const built = await buildOccurrences(db, items);

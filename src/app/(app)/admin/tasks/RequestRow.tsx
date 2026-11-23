@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { rejectRequestAction } from '@/app/actions/requests';
 import { Person } from '@/app/_ui/AvatarContext';
+import { useToast } from '@/app/_ui/Toast';
 
 type Props = { id: number; title: string; description: string | null; requester: string; wantedLabel: string | null; createdLabel: string; selected: boolean };
 
@@ -11,13 +12,18 @@ type Props = { id: number; title: string; description: string | null; requester:
 export function RequestRow({ id, title, description, requester, wantedLabel, createdLabel, selected }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
   return (
     <li className={`task${selected ? ' selected' : ''}`}>
       <div className="task-top">
         <span className="task-title">{title}</span>
         <Link className="btn small primary" href={`/admin/tasks?from=${id}`} scroll>{selected ? '작성 중' : '승인'}</Link>
         <button type="button" className="btn small danger" disabled={pending}
-          onClick={() => { if (confirm(`'${title}' 요청을 거절할까요?`)) start(async () => setError((await rejectRequestAction(id))?.error ?? null)); }}>
+          onClick={() => { if (confirm(`'${title}' 요청을 거절할까요?`)) start(async () => {
+            const res = await rejectRequestAction(id);
+            setError(res?.error ?? null);
+            if (!res?.error) toast('거절했습니다');
+          }); }}>
           거절
         </button>
       </div>

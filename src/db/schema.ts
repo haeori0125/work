@@ -43,8 +43,6 @@ export const tasks = pgTable('tasks', {
   weekdays: integer('weekdays').array().notNull().default([]),
   startDate: text('start_date').notNull(),
   endDate: text('end_date'),
-  /** 주간 업무의 마감 요일 (0=월 … 6=일), 없으면 null */
-  dueWeekday: integer('due_weekday'),
   /** 한 번만 하는 주간 업무의 정확한 마감일 (YYYY-MM-DD) */
   dueDate: text('due_date'),
   createdBy: integer('created_by').notNull().references(() => users.id),

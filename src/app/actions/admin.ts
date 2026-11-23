@@ -31,9 +31,10 @@ export async function saveTaskAction(_prev: ActionResult, form: FormData): Promi
       if (requestId) await approveRequest(db, requestId, admin.id, taskId, new Date());
     }
     revalidatePath('/', 'layout');
+    return id ? 'edit' : requestId ? 'approved' : 'new';
   });
   if (result?.error) return result;
-  redirect('/admin/tasks?saved=1');
+  redirect(`/admin/tasks?saved=${result?.ok ?? 'new'}`);
 }
 
 export async function deleteTaskAction(id: number): Promise<ActionResult> {
