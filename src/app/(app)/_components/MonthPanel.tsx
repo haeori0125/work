@@ -27,7 +27,10 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
   const days = allDays.map((d) => ({ ...d, items: d.items.filter((o) => matchesWeekFilter(o.assignees, filter)) }));
   const all = allDays.flatMap((d) => d.items);
   const current = opened && (all.find((o) => o.taskId === opened.taskId && o.occurrenceKey === opened.occurrenceKey) ?? opened);
-  const pickedDay = days.find((d) => d.date === picked);
+  // 달을 넘겨 고른 날이 화면에 없으면: 이번 달이면 오늘, 아니면 그 달 1일
+  const shownPick = days.some((d) => d.date === picked) ? picked
+    : (days.find((d) => d.isToday) ?? days.find((d) => d.inMonth)!).date;
+  const pickedDay = days.find((d) => d.date === shownPick);
 
   // 담당자는 프로필 사진만(2명까지 + 나머지 수), 폰 목록에서는 조금 크게
   const chip = (o: OccurrenceView, big = false) => (
@@ -70,7 +73,7 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
             const more = d.items.length - shown.length;
             return (
               <div key={d.date} role="gridcell" aria-label={`${Number(d.date.slice(5, 7))}월 ${d.dayNum}일, 업무 ${d.items.length}개`}
-                className={`mc-cell${d.inMonth ? '' : ' out'}${d.isToday ? ' today' : ''}${d.date === picked ? ' picked' : ''}${d.date < today ? ' past' : ''}`}>
+                className={`mc-cell${d.inMonth ? '' : ' out'}${d.isToday ? ' today' : ''}${d.date === shownPick ? ' picked' : ''}${d.date < today ? ' past' : ''}`}>
                 <button type="button" className={`mc-num${d.isSun ? ' sun' : ''}${d.isSat ? ' sat' : ''}`} onClick={() => setPicked(d.date)}
                   aria-label={`${d.dayNum}일 업무 보기`}>{d.dayNum}</button>
                 <div className="mc-items">
@@ -93,7 +96,7 @@ export function MonthPanel({ title, prevHref, nextHref, thisHref, weekdays, days
         {pickedDay && (
           <div className="mc-agenda" aria-label="고른 날 업무">
             <div className="group-label">{Number(pickedDay.date.slice(5, 7))}월 {pickedDay.dayNum}일</div>
-            {pickedDay.items.length === 0 ? <p className="empty">업무 없음</p> : <div className="mc-list">{pickedDay.items.map((o) => chip(o, true))}</div>}
+            {pickedDay.items.length === 0 ? <p className="empty">업무 없음 · 날짜를 누르면 그날 업무가 보여요</p> : <div className="mc-list">{pickedDay.items.map((o) => chip(o, true))}</div>}
           </div>
         )}
       </div>
