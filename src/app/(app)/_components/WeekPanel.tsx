@@ -16,6 +16,8 @@ export type WeekDay = {
 type Props = {
   rangeLabel: string; prevWeek: string; nextWeek: string; isThisWeek: boolean; days: WeekDay[]; goals: OccurrenceView[]; me: { id: number; role: 'member' | 'admin' };
   members: string[]; savedFilter: string[] | null;
+  /** 보고 있는 달력 달을 유지하려고 링크에 붙이는 값 */
+  monthQuery?: string;
 };
 
 /** 마감 · 담당(테두리) · 파트 진행 · 체크한 사람(채움) 태그 */
@@ -34,7 +36,7 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
   );
 }
 
-export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: allDays, goals: allGoals, me, members, savedFilter }: Props) {
+export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: allDays, goals: allGoals, me, members, savedFilter, monthQuery = '' }: Props) {
   const [saved, setSaved] = useState(savedFilter);
   const [filter, setFilter] = useState(savedFilter);
   const keep = (o: OccurrenceView) => matchesWeekFilter(o.assignees, filter);
@@ -60,10 +62,10 @@ export function WeekPanel({ rangeLabel, prevWeek, nextWeek, isThisWeek, days: al
       <div className="panel-head">
         <h2>위클리</h2>
         <div className="week-nav">
-          <Link className="arrow" href={`/?week=${prevWeek}`} scroll={false} aria-label="지난주">‹</Link>
+          <Link className="arrow" href={`/?week=${prevWeek}${monthQuery}`} scroll={false} aria-label="지난주">‹</Link>
           <span className="sub">{rangeLabel}</span>
-          <Link className="arrow" href={`/?week=${nextWeek}`} scroll={false} aria-label="다음 주">›</Link>
-          {!isThisWeek && <Link className="btn small soft" href="/" scroll={false}>이번 주</Link>}
+          <Link className="arrow" href={`/?week=${nextWeek}${monthQuery}`} scroll={false} aria-label="다음 주">›</Link>
+          {!isThisWeek && <Link className="btn small soft" href={monthQuery ? `/?${monthQuery.slice(1)}` : '/'} scroll={false}>이번 주</Link>}
         </div>
         <WeekFilter members={members} filter={filter} saved={saved} onChange={setFilter} onSaved={setSaved} />
       </div>
