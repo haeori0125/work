@@ -2,7 +2,7 @@ import type { Note } from './memos';
 import type { Occurrence, TaskStatus } from './tasks';
 import { formatDateLabel, formatKstTime, kstDate } from './time';
 
-export const STATUS_LABEL: Record<TaskStatus, string> = { todo: '미체크', doing: '진행 중', done: '완료' };
+export const STATUS_LABEL: Record<TaskStatus, string> = { todo: '미완료', doing: '진행 중', done: '완료' };
 export const STATUSES: TaskStatus[] = ['todo', 'doing', 'done'];
 
 /** 오늘이면 "09:14", 다른 날이면 "11/21(금) 09:14" */

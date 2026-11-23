@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { loginAction } from '@/app/actions/auth';
 
-export function LoginForm() {
+export function LoginForm({ notice }: { notice: string | null }) {
   const [mode, setMode] = useState<'member' | 'admin'>('member');
   const [state, action, pending] = useActionState(loginAction, null);
   return (
     <div className="auth-card">
       <h1 className="auth-title">팀 투두</h1>
+      {notice && <p className="msg ok" role="status">{notice}</p>}
       <div className="tabs" role="tablist">
         <button type="button" role="tab" aria-selected={mode === 'member'}
           className={mode === 'member' ? 'tab active' : 'tab'} onClick={() => setMode('member')}>멤버</button>

@@ -1,33 +1,32 @@
 import { getDb } from '@/db';
-import { getTodayAttendance } from '@/lib/attendance';
-import { formatDateLabel, formatKstTime, kstDate } from '@/lib/time';
+import { getToday } from '@/lib/attendance';
+import { formatKstTime, kstDate } from '@/lib/time';
 import { requireUser } from '@/server/session';
-import { ClockBar } from './_components/ClockBar';
-import { NavLinks } from './_components/NavLinks';
 import { RefreshOnFocus } from './_components/RefreshOnFocus';
+import { ShiftBar } from './_components/ShiftBar';
+import { TopBar } from './_components/TopBar';
+
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const now = new Date();
-  const att = await getTodayAttendance(await getDb(), user.id, now);
+  const today = await getToday(await getDb(), user.id, now);
+  const d = kstDate(now);
+  const dateLabel = `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WD[new Date(`${d}T00:00:00Z`).getUTCDay()]})`;
   return (
-    <>
-      <header className="topbar">
-        <div className="topbar-inner">
-          <div className="who">
-            <strong>{user.name}</strong>
-            {user.role === 'admin' && <span className="badge doing">관리자</span>}
-            <span className="muted">{formatDateLabel(kstDate(now))}</span>
-            <ClockBar
-              clockIn={att ? formatKstTime(att.clockIn) : null}
-              clockOut={att?.clockOut ? formatKstTime(att.clockOut) : null}
-            />
-          </div>
-          <NavLinks isAdmin={user.role === 'admin'} />
-        </div>
-      </header>
+    <div className="shell">
+      <ShiftBar
+        name={user.name}
+        dateLabel={dateLabel}
+        firstIn={today ? formatKstTime(today.firstIn) : null}
+        working={today?.state === 'working'}
+      />
+      <div className="frame">
+        <TopBar name={user.name} isAdmin={user.role === 'admin'} />
+        <div className="content">{children}</div>
+      </div>
       <RefreshOnFocus />
-      {children}
-    </>
+    </div>
   );
 }

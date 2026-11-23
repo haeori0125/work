@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/db';
-import { editAttendance } from '@/lib/attendance';
+import { editSegment, getSegmentDate } from '@/lib/attendance';
 import { AppError } from '@/lib/errors';
 import {
   approveMember, rejectMember, resetPassword, setDisabled, setRole,
@@ -70,11 +70,11 @@ export const setDisabledAction = async (id: number, disabled: boolean) =>
 export const resetPasswordAction = async (id: number, password: string) =>
   memberAction(async () => resetPassword(await getDb(), id, password));
 
-export async function editAttendanceAction(
-  id: number, date: string, clockIn: string, clockOut: string,
-): Promise<ActionResult> {
+export async function editSegmentAction(id: number, clockIn: string, clockOut: string): Promise<ActionResult> {
   return runAction(async () => {
     const admin = await requireActionAdmin();
+    const db = await getDb();
+    const date = await getSegmentDate(db, id);
     const inAt = kstDateTime(date, clockIn);
     if (!inAt) throw new AppError('invalid', '출근 시간을 확인하세요');
     let outAt: Date | null = null;
@@ -82,7 +82,7 @@ export async function editAttendanceAction(
       outAt = kstDateTime(date, clockOut);
       if (!outAt) throw new AppError('invalid', '퇴근 시간을 확인하세요');
     }
-    await editAttendance(await getDb(), admin.id, id, { clockIn: inAt, clockOut: outAt }, new Date());
+    await editSegment(db, admin.id, id, { clockIn: inAt, clockOut: outAt }, new Date());
     revalidatePath('/', 'layout');
     return '저장했습니다';
   });

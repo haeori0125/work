@@ -49,8 +49,8 @@ test('admin creates a task, approves a member, member completes it and admin see
   await login(page, '민수', 'pw5678');
   const task = page.locator('section[aria-label="오늘 업무"] li.task', { hasText: '매장 오픈 준비' });
   await expect(task).toBeVisible();
-  await expect(page.locator('.who')).toContainText('출근');
-  await task.getByRole('button', { name: '완료' }).click();
+  await expect(page.locator('.shift')).toContainText('출근');
+  await task.getByRole('button', { name: '완료', exact: true }).click();
   await expect(task.locator('.last-change')).toContainText('완료 · 민수');
   await logout(page);
 
