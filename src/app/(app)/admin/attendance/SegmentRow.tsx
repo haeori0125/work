@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { deleteSegmentAction, editSegmentAction } from '@/app/actions/admin';
 import { Person } from '@/app/_ui/AvatarContext';
 import { useToast } from '@/app/_ui/Toast';
@@ -18,6 +18,12 @@ export function SegmentRow(p: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [armed, setArmed] = useState(false);
   const toast = useToast();
+  // 삭제 확인은 3초 뒤 저절로 풀린다(아이폰은 다른 곳을 눌러도 버튼 포커스가 안 빠져서)
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(t);
+  }, [armed]);
   const dirty = inT !== p.clockIn || outT !== p.clockOut;
   const label = `${p.name} ${p.dateLabel}${p.count > 1 ? ` ${p.index + 1}번째` : ''}`;
   return (
@@ -50,7 +56,7 @@ export function SegmentRow(p: Props) {
             });
           }}
           onBlur={() => setArmed(false)}>
-          {armed ? '한 번 더 누르면 삭제' : '삭제'}
+          {armed ? '정말 삭제' : '삭제'}
         </button>
         {msg && <span className="muted"> {msg}</span>}
       </td>
