@@ -4,9 +4,9 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 async function main() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
   if (!url) {
-    console.log('[migrate] DATABASE_URL not set — skipping (local PGlite migrates at runtime)');
+    console.log('[migrate] DATABASE_URL/POSTGRES_URL not set — skipping (local PGlite migrates at runtime)');
     return;
   }
   const client = postgres(url, { prepare: false, max: 1 });

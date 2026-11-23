@@ -9,7 +9,7 @@ const MIGRATIONS = path.join(process.cwd(), 'drizzle');
 let dbPromise: Promise<Db> | null = null;
 
 async function connect(): Promise<Db> {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
   if (url) {
     const { default: postgres } = await import('postgres');
     const { drizzle } = await import('drizzle-orm/postgres-js');
