@@ -1,6 +1,6 @@
 # 팀 투두 화면 개편 — 설계 문서
 
-작성일: 2026-11-23 · 상태: 승인 대기
+작성일: 2026-11-23 · 상태: 승인됨
 기준 시안: https://claude.ai/artifact/X3KGEcW3EEdqX2qBFmPj3L (9판)
 이전 설계: `docs/superpowers/specs/2026-11-23-team-todo-design.md` (기능은 그대로, 아래에서 바뀌는 것만 적음)
 
