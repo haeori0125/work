@@ -30,6 +30,8 @@ export type OccurrenceView = {
 };
 
 export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
+  // 미완료로 되돌린 업무에는 상태 태그를 붙이지 않는다(누가 되돌렸는지는 변경 기록에 남음).
+  const change = o.status === 'todo' ? null : o.lastChange;
   return {
     taskId: o.taskId,
     occurrenceKey: o.occurrenceKey,
@@ -39,8 +41,8 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     dateLabel: o.kind === 'weekly' ? `${formatDateLabel(o.occurrenceKey)} 주` : formatDateLabel(o.occurrenceKey),
     assignees: o.assignees.map((a) => a.name),
     status: o.status,
-    lastChange: o.lastChange ? `${STATUS_LABEL[o.status]} · ${o.lastChange.userName} ${formatWhen(o.lastChange.at, today)}` : null,
-    lastBy: o.lastChange ? o.lastChange.userName : null,
+    lastChange: change ? `${STATUS_LABEL[o.status]} · ${change.userName} ${formatWhen(change.at, today)}` : null,
+    lastBy: change ? change.userName : null,
     commentCount: o.commentCount,
     repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
   };
