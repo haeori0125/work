@@ -5,6 +5,8 @@ import { formatDateLabel, formatKstTime, kstDate } from './time';
 export const STATUS_LABEL: Record<TaskStatus, string> = { todo: '미완료', doing: '진행 중', done: '완료' };
 export const STATUSES: TaskStatus[] = ['todo', 'doing', 'done'];
 
+const REPEAT_SHORT: Record<string, string> = { daily: '매일', weekdays: '평일', weekly_days: '매주', weekly: '매주' };
+
 /** 오늘이면 "09:14", 다른 날이면 "11/21(금) 09:14" */
 export function formatWhen(at: Date, today: string): string {
   const d = kstDate(at);
@@ -22,6 +24,7 @@ export type OccurrenceView = {
   status: TaskStatus;
   lastChange: string | null;
   commentCount: number;
+  repeatLabel: string | null;
 };
 
 export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
@@ -36,6 +39,7 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     status: o.status,
     lastChange: o.lastChange ? `${STATUS_LABEL[o.status]} · ${o.lastChange.userName} ${formatWhen(o.lastChange.at, today)}` : null,
     commentCount: o.commentCount,
+    repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
   };
 }
 

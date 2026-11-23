@@ -4,8 +4,8 @@ import { useState, useTransition } from 'react';
 import {
   addCommentAction, deleteCommentAction, editCommentAction, loadTaskDetails, setStatusAction, type TaskDetails,
 } from '@/app/actions/tasks';
-import type { TaskStatus } from '@/lib/tasks';
-import { STATUSES, STATUS_LABEL, type OccurrenceView } from '@/lib/view';
+import type { OccurrenceView } from '@/lib/view';
+import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { NoteList } from './NoteList';
 
 type Props = { occ: OccurrenceView; me: { id: number; role: 'member' | 'admin' }; showDate?: boolean };
@@ -18,33 +18,29 @@ export function TaskItem({ occ, me, showDate }: Props) {
 
   const reload = () => start(async () => setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey)));
   const toggle = () => { if (!open && !details) reload(); setOpen(!open); };
-  const change = (s: TaskStatus) => start(async () => {
-    const res = await setStatusAction(occ.taskId, occ.occurrenceKey, s);
+  const cycle = () => start(async () => {
+    const res = await setStatusAction(occ.taskId, occ.occurrenceKey, NEXT_STATUS[occ.status]);
     setError(res?.error ?? null);
     if (open) setDetails(await loadTaskDetails(occ.taskId, occ.occurrenceKey));
   });
 
   return (
-    <li className={`task ${occ.status}`}>
-      <div className="task-top">
-        <span className="task-title">{occ.title}</span>
-        <div className="status-group" role="group" aria-label={`${occ.title} 상태`}>
-          {STATUSES.map((s) => (
-            <button key={s} className={`s-${s}`} aria-pressed={occ.status === s} disabled={pending}
-              onClick={() => occ.status !== s && change(s)}>{STATUS_LABEL[s]}</button>
-          ))}
+    <li className={`task-row ${occ.status}`}>
+      <CheckCircle status={occ.status} title={occ.title} onCycle={cycle} disabled={pending} />
+      <div>
+        <div className="task-title">{occ.title}</div>
+        {occ.description && <p className="task-desc">{occ.description}</p>}
+        <div className="meta">
+          {showDate && <span>{occ.dateLabel}</span>}
+          {occ.assignees.length > 0 && <span>담당 {occ.assignees.join(', ')}</span>}
+          {occ.repeatLabel && <span>↻ {occ.repeatLabel}</span>}
+          {occ.lastChange && <span className={`by ${occ.status} last-change`}>{occ.lastChange}</span>}
+          <button className="btn link small memo-n" onClick={toggle} aria-expanded={open}>
+            {occ.commentCount > 0 ? `메모 ${occ.commentCount}` : '메모·기록'}{open ? ' ▴' : ''}
+          </button>
         </div>
+        {error && <p className="msg error" style={{ marginTop: 6 }}>{error}</p>}
       </div>
-      {occ.description && <p className="task-desc">{occ.description}</p>}
-      <div className="task-meta">
-        {showDate && <span>📅 {occ.dateLabel}</span>}
-        {occ.assignees.length > 0 && <span>담당: {occ.assignees.join(', ')}</span>}
-        {occ.lastChange && <span className="last-change">{occ.lastChange}</span>}
-        <button className="btn link small" onClick={toggle} aria-expanded={open}>
-          💬 {occ.commentCount} {open ? '접기' : '메모·기록'}
-        </button>
-      </div>
-      {error && <p className="msg error">{error}</p>}
       {open && (
         <div className="details">
           {!details ? <span className="muted">불러오는 중…</span> : (
