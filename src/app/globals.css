@@ -46,6 +46,8 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+/* 내용 길이와 상관없이 스크롤바 자리를 늘 비워 둬서, 화면을 옮겨도 폭이 바뀌지 않게 */
+html { scrollbar-gutter: stable; }
 body {
   background: var(--bg); color: var(--text); font-family: var(--font);
   font-size: 14px; line-height: 1.5; letter-spacing: -0.01em;
