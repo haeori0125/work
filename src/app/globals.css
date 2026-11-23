@@ -412,7 +412,7 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
 
 /* 검토 반영 */
 .tags.mini { margin-top: 4px; gap: 3px 4px; }
-.tags.mini .tag { padding: 0 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.tags.mini .tag { padding: 1px 7px; max-width: 100%; white-space: normal; word-break: keep-all; overflow-wrap: anywhere; line-height: 1.4; border-radius: 10px; }
 .tag.memo-n { cursor: pointer; font: inherit; font-size: 12px; }
 @media (hover: hover) {
   .tag.reveal { opacity: 0; }
