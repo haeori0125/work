@@ -23,8 +23,10 @@ export function kstWeekday(date: string): number {
   return (new Date(dateToUtcMs(date)).getUTCDay() + 6) % 7;
 }
 
-export function weekStartOf(date: string): string {
-  return addDays(date, -kstWeekday(date));
+/** 그 주의 첫날. start='mon'이면 월요일, 'sun'이면 일요일 */
+export function weekStartOf(date: string, start: 'mon' | 'sun' = 'mon'): string {
+  const offset = start === 'mon' ? kstWeekday(date) : (kstWeekday(date) + 1) % 7;
+  return addDays(date, -offset);
 }
 
 export function weekDates(weekStart: string): string[] {

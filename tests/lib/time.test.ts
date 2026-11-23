@@ -63,3 +63,12 @@ describe('kstDateTime', () => {
     expect(kstDateTime('2026-11-23', '')).toBeNull();
   });
 });
+
+describe('weekStartOf with sunday start', () => {
+  it('returns the Sunday on or before the date', async () => {
+    const { weekStartOf } = await import('@/lib/time');
+    expect(weekStartOf('2026-11-25', 'sun')).toBe('2026-11-22');
+    expect(weekStartOf('2026-11-22', 'sun')).toBe('2026-11-22');
+    expect(weekStartOf('2026-11-21', 'sun')).toBe('2026-11-15');
+  });
+});
