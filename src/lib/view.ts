@@ -63,3 +63,14 @@ export function describeRepeat(def: { kind: 'dated' | 'weekly'; repeat: string; 
     default: return '한 번';
   }
 }
+
+const SCALE_START = 6 * 60;
+const SCALE_END = 24 * 60;
+
+/** 기록 막대용: date(KST)의 06:00~24:00을 0~100%로. 범위 밖은 잘라 낸다. */
+export function pctOfDay(at: Date, date: string): number {
+  const midnight = Date.parse(`${date}T00:00:00+09:00`);
+  const min = (at.getTime() - midnight) / 60e3;
+  const pct = ((min - SCALE_START) / (SCALE_END - SCALE_START)) * 100;
+  return Math.min(100, Math.max(0, Math.round(pct * 100) / 100));
+}

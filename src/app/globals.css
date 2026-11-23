@@ -311,3 +311,47 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
 @media (max-width: 760px) {
   .theme-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
 }
+
+/* 내 기록 */
+.records { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.rec-side { display: flex; flex-direction: column; gap: 18px; }
+.arrows { margin-left: auto; display: flex; gap: 4px; }
+.arrow { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); display: grid; place-items: center; text-decoration: none; font-size: 16px; }
+.arrow.off { opacity: .35; }
+.month-label { margin: 0; padding: 0 18px; color: var(--muted); font-size: 13px; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px 14px 16px; }
+.stat { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.stat .v small { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 2px; }
+.stat.warn .v { color: var(--red); }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; padding: 4px 14px 12px; }
+.cal .wd { font-size: 11px; color: var(--muted); }
+.cal .wd.sun { color: var(--red); }
+.cal .c { aspect-ratio: 1; border-radius: 9px; display: grid; place-items: center; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.cal .c.worked { background: var(--soft); color: var(--text); font-weight: 600; }
+.cal .c.missing { background: var(--red-soft); color: var(--red); font-weight: 700; }
+.cal .c.today { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--ink); font-weight: 800; }
+.cal-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); padding: 0 14px 14px; }
+.cal-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.rec-scale, .rec { display: grid; grid-template-columns: 86px minmax(0, 1fr) 110px; gap: 14px; }
+.rec-scale { padding: 2px 18px 6px; }
+.ticks { position: relative; height: 16px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks span { position: absolute; transform: translateX(-50%); }
+.rec-list { list-style: none; margin: 0; padding: 0 10px 12px; }
+.rec { align-items: center; padding: 11px 8px; border-top: 1px solid var(--line); }
+.rec:first-child { border-top: 0; }
+.rec .date { font-weight: 700; font-variant-numeric: tabular-nums; }
+.rec .date small { display: block; font-size: 12px; font-weight: 500; color: var(--muted); }
+.rec .date.sun { color: var(--red); }
+.tl { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.track { position: relative; height: 20px; border-radius: 7px; background: var(--surface-2); overflow: hidden; }
+.bar { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; background: var(--accent); }
+.bar.open { background: repeating-linear-gradient(45deg, var(--accent) 0 6px, color-mix(in srgb, var(--accent) 50%, var(--surface)) 6px 12px); }
+.bar.missing { background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--red) 55%, var(--surface)) 0 6px, var(--surface-2) 6px 12px); }
+.seg-times { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); }
+.rec .dur { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.rec .dur small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+.rec-foot { margin: 0; padding: 0 18px 16px; color: var(--muted); font-size: 12px; }
+@media (max-width: 1100px) { .records { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) { .rec-scale, .rec { grid-template-columns: 52px minmax(0, 1fr) 92px; gap: 8px; } }
