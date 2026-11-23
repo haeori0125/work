@@ -14,10 +14,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const xmas = isXmasSeason(d);
   return (
     <main className="auth-page">
+      {xmas && <XmasTrees />}
       {xmas && <Snow />}
       <div className="auth-col">
         <LoginForm xmas={xmas} stamp={stamp} notice={out ? '퇴근했습니다. 수고하셨어요! 다시 일할 때 로그인하면 새로 출근이 기록됩니다.' : null} />
-        {xmas && <XmasTrees />}
       </div>
     </main>
   );

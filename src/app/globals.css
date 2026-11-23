@@ -615,6 +615,8 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 }
 @keyframes snowfall { to { transform: translate(var(--drift), 105vh); } }
 .auth-col { position: relative; z-index: 1; width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; }
-.xmas-trees { display: block; width: 100%; margin-top: 14px; filter: drop-shadow(0 2px 3px hsl(var(--h) 30% 30% / .12)); }
+.xmas-forest { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; height: clamp(130px, 24vh, 240px); z-index: 0; pointer-events: none; display: block; }
+html:has(.xmas-forest) { scrollbar-gutter: auto; }
+.auth-page:has(.xmas-forest) { padding-bottom: clamp(90px, 18vh, 190px); }
 .xmas-note { color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .snow { display: none; } }
