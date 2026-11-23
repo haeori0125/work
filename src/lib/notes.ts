@@ -3,18 +3,12 @@ import { notes } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
 
+export { notePreview, noteTitle } from './note-text';
+
 export type Note = { id: number; body: string; pinned: boolean; createdAt: Date; updatedAt: Date };
 
 const MAX_NOTE = 20000;
 const cols = { id: notes.id, body: notes.body, pinned: notes.pinned, createdAt: notes.createdAt, updatedAt: notes.updatedAt };
-
-export function noteTitle(body: string): string {
-  return body.split('\n')[0].trim() || '새로운 메모';
-}
-
-export function notePreview(body: string): string {
-  return body.split('\n').slice(1).map((l) => l.trim()).filter(Boolean).join(' ') || '추가 텍스트 없음';
-}
 
 export function listNotes(db: Db, userId: number, query?: string): Promise<Note[]> {
   const conds = [eq(notes.userId, userId)];
