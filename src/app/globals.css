@@ -528,8 +528,9 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .av-stack .mini-av { box-shadow: 0 0 0 1.5px var(--surface); }
 .av-stack .mini-av + .mini-av { margin-left: -5px; }
 
-.who-tag.compact { padding: 1px 5px 1px 7px; gap: 4px; }
-.tag.who-tag.compact.doing, .tag.who-tag.compact.done { padding: 1px 3px 1px 6px; }
+/* 위클리 사진 태그: 오른쪽 둥근 끝과 사진 원의 중심을 맞춘다(세로·오른쪽 여백 2px = 테두리 반지름 − 사진 반지름) */
+.tags.mini .who-tag.compact { padding: 2px 2px 2px 7px; gap: 4px; line-height: 16px; align-items: center; max-width: none; }
+.tags.mini .tag.who-tag.compact.doing, .tags.mini .tag.who-tag.compact.done { padding: 2px 2px 2px 6px; }
 
 /* 위클리 담당 필터 */
 .wf { margin-left: auto; position: relative; }
