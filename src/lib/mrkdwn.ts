@@ -47,7 +47,10 @@ export function parseInline(src: string): Inline[] {
   return out;
 }
 
-const BULLET = /^(\s*)(?:[•\-*])\s+(.*)$/;
+const BULLET = /^(\s*)(?:[•◦▪\-*])\s+(.*)$/;
+/** 들여쓴 단계마다 노션처럼 다른 글머리표 */
+export const BULLETS = ['•', '◦', '▪'] as const;
+export const markFor = (depth: number) => BULLETS[depth % BULLETS.length];
 const NUMBER = /^(\s*)(\d+)[.)]\s+(.*)$/;
 const QUOTE = /^>\s?(.*)$/;
 const depthOf = (indent: string) => Math.min(4, Math.floor(indent.replace(/\t/g, '  ').length / 2));
@@ -107,14 +110,14 @@ export function autoBullet(value: string, caret: number): { value: string; caret
   const head = value.slice(start, caret);
   const m = head.match(/^(\s*)[*-] $/);
   if (!m) return null;
-  const next = value.slice(0, start) + `${m[1]}• ` + value.slice(caret);
+  const next = value.slice(0, start) + `${m[1]}${markFor(depthOf(m[1]))} ` + value.slice(caret);
   return { value: next, caret: start + m[1].length + 2 };
 }
 
 export function continueList(value: string, caret: number): { value: string; caret: number } | null {
   const start = value.lastIndexOf('\n', caret - 1) + 1;
   const line = value.slice(start, caret);
-  const m = line.match(/^(\s*)(• |\d+[.)] |> )(.*)$/);
+  const m = line.match(/^(\s*)([•◦▪] |\d+[.)] |> )(.*)$/);
   if (!m) return null;
   const [, indent, mark, rest] = m;
   if (!rest.trim()) {
@@ -127,18 +130,23 @@ export function continueList(value: string, caret: number): { value: string; car
   return { value: value.slice(0, caret) + insert + value.slice(caret), caret: caret + insert.length };
 }
 
-/** Tab / Shift+Tab: 목록 줄을 한 단계 들여쓰기·내어쓰기 */
+/** Tab / Shift+Tab: 목록 줄을 한 단계 들여쓰기·내어쓰기(탭 한 칸). 글머리표는 단계에 맞게 •→◦→▪ */
 export function indentLine(value: string, caret: number, out: boolean): { value: string; caret: number } | null {
   const start = value.lastIndexOf('\n', caret - 1) + 1;
   const endIdx = value.indexOf('\n', caret);
-  const line = value.slice(start, endIdx < 0 ? value.length : endIdx);
-  if (!/^\s*(• |\d+[.)] )/.test(line)) return null;
-  if (out) {
-    const cut = line.startsWith('  ') ? 2 : line.startsWith('\t') ? 1 : 0;
-    if (!cut) return null;
-    return { value: value.slice(0, start) + line.slice(cut) + value.slice(start + line.length), caret: Math.max(start, caret - cut) };
-  }
-  return { value: value.slice(0, start) + '  ' + value.slice(start), caret: caret + 2 };
+  const end = endIdx < 0 ? value.length : endIdx;
+  const line = value.slice(start, end);
+  const m = line.match(/^(\s*)([•◦▪] |\d+[.)] )/);
+  if (!m) return null;
+  const depth = depthOf(m[1]);
+  const next = out ? depth - 1 : depth + 1;
+  if (next < 0 || next > 4) return null;
+  const num = m[2].match(/^\d+([.)]) $/);
+  // 한 단계 들어간 번호는 1부터 다시
+  const mark = num ? (out ? m[2] : `1${num[1]} `) : `${markFor(next)} `;
+  const head = '\t'.repeat(next) + mark;
+  const shift = head.length - m[0].length;
+  return { value: value.slice(0, start) + head + line.slice(m[0].length) + value.slice(end), caret: Math.max(start + head.length, caret + shift) };
 }
 
 export type Edit = { value: string; start: number; end: number };
@@ -166,7 +174,7 @@ export function wrapCodeBlock(value: string, s: number, e: number): Edit {
   return { value: `${before}${open}${sel}\n\`\`\`${post}${after}`, start: s + open.length, end: s + open.length + sel.length };
 }
 
-const PREFIX = /^(\s*)(• |[-*] |\d+[.)] |> )/;
+const PREFIX = /^(\s*)([•◦▪] |[-*] |\d+[.)] |> )/;
 
 /** 고른 줄들을 글머리표·번호·인용으로 바꾸거나, 모두 이미 그렇다면 풀기 */
 export function toggleLines(value: string, s: number, e: number, kind: 'ul' | 'ol' | 'quote'): Edit {
@@ -174,7 +182,7 @@ export function toggleLines(value: string, s: number, e: number, kind: 'ul' | 'o
   const endIdx = value.indexOf('\n', Math.max(e - (e > s && value[e - 1] === '\n' ? 1 : 0), s));
   const to = endIdx < 0 ? value.length : endIdx;
   const lines = value.slice(from, to).split('\n');
-  const is = (l: string) => kind === 'ul' ? /^\s*• /.test(l) : kind === 'ol' ? /^\s*\d+[.)] /.test(l) : /^\s*> /.test(l);
+  const is = (l: string) => kind === 'ul' ? /^\s*[•◦▪] /.test(l) : kind === 'ol' ? /^\s*\d+[.)] /.test(l) : /^\s*> /.test(l);
   const filled = lines.filter((l) => l.trim());
   const remove = filled.length > 0 && filled.every(is);
   let k = 0;
@@ -185,7 +193,18 @@ export function toggleLines(value: string, s: number, e: number, kind: 'ul' | 'o
     const indent = m ? m[1] : '';
     const rest = m ? l.slice(m[0].length) : l;
     k += 1;
-    return indent + (kind === 'ul' ? '• ' : kind === 'ol' ? `${k}. ` : '> ') + rest;
+    return indent + (kind === 'ul' ? `${markFor(depthOf(indent))} ` : kind === 'ol' ? `${k}. ` : '> ') + rest;
   }).join('\n');
   return { value: value.slice(0, from) + out + value.slice(to), start: lines.length === 1 && !remove ? from + out.length : from, end: from + out.length };
+}
+
+/** 노션처럼 "->" 를 치면 →, "<-" 는 ← (코드 `...` 안에서는 그대로) */
+export function autoArrow(value: string, caret: number): { value: string; caret: number } | null {
+  const two = value.slice(caret - 2, caret);
+  const arrow = two === '->' ? '→' : two === '<-' ? '←' : null;
+  if (!arrow) return null;
+  const line = value.slice(value.lastIndexOf('\n', caret - 1) + 1, caret);
+  if ((line.match(/`/g)?.length ?? 0) % 2 === 1) return null;
+  if (/^\s*```/.test(line)) return null;
+  return { value: value.slice(0, caret - 2) + arrow + value.slice(caret), caret: caret - 1 };
 }

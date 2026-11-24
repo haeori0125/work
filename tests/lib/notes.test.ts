@@ -73,4 +73,22 @@ describe('shared notes', () => {
     expect(await codeOf(setNotesShared(db, a, [], true, at('2026-11-24T00:00:00Z')))).toBe('invalid');
     expect(n3.shared).toBe(false);
   });
+
+  it('shares only with the people I pick', async () => {
+    const c = await makeUser(db, '민수');
+    const n1 = await createNote(db, a, at('2026-11-20T00:00:00Z'));
+    await setNotesShared(db, a, [n1.id], true, at('2026-11-24T00:00:00Z'), [b]);
+    expect((await listSharedNotes(db, b)).map((n) => n.id)).toEqual([n1.id]);
+    expect(await listSharedNotes(db, c)).toEqual([]);
+    expect((await listNotes(db, a))[0].sharedTo).toEqual([b]);
+    // 다시 모두에게
+    await setNotesShared(db, a, [n1.id], true, at('2026-11-24T01:00:00Z'));
+    expect((await listSharedNotes(db, c)).map((n) => n.id)).toEqual([n1.id]);
+    expect((await listNotes(db, a))[0].sharedTo).toEqual([]);
+    // 공유를 풀면 받는 사람도 지워진다
+    await setNotesShared(db, a, [n1.id], true, at('2026-11-24T02:00:00Z'), [c]);
+    await setNotesShared(db, a, [n1.id], false, at('2026-11-24T03:00:00Z'));
+    expect(await listSharedNotes(db, c)).toEqual([]);
+    expect(await codeOf(setNotesShared(db, a, [n1.id], true, at('2026-11-24T00:00:00Z'), [9999]))).toBe('invalid');
+  });
 });

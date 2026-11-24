@@ -395,7 +395,7 @@ td input[type="time"] { width: auto; padding: 4px 6px; }
 .note-editor { display: flex; flex-direction: column; min-width: 0; }
 .ne-top { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .ne-back { display: none; border: 0; background: none; color: var(--ink); font-weight: 700; padding: 0; }
-.note-editor textarea { flex: 1; min-height: 440px; border: 0; border-radius: 0; resize: none; padding: 16px 22px; font-size: 15px; line-height: 1.75; background: transparent; }
+.note-editor textarea { tab-size: 6; flex: 1; min-height: 440px; border: 0; border-radius: 0; resize: none; padding: 16px 22px; font-size: 15px; line-height: 1.75; background: transparent; }
 .note-editor textarea:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--soft); }
 .ne-foot { display: flex; gap: 12px; padding: 10px 22px 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
 @media (max-width: 760px) {
@@ -1141,6 +1141,10 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .rt ul, .rt ol { margin: 2px 0; padding-left: 20px; }
 .rt li { margin: 1px 0; white-space: pre-wrap; }
 .rt ul li::marker { color: var(--ink); }
+/* 들여쓴 단계마다 노션처럼 다른 글머리표 */
+.rt ul li.d0 { list-style-type: disc; }
+.rt ul li.d1 { list-style-type: circle; }
+.rt ul li.d2 { list-style-type: square; }
 .rt blockquote { margin: 2px 0; padding: 2px 0 2px 10px; border-left: 3px solid color-mix(in srgb, var(--accent) 70%, var(--line)); color: var(--text); }
 .rt-code { padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--red) 8%, var(--surface-2)); color: color-mix(in srgb, var(--red) 75%, var(--text)); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
 .rt-pre { margin: 4px 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); overflow-x: auto; font-size: 12.5px; line-height: 1.5; }
@@ -1157,3 +1161,11 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .fmt-btn:hover { background: var(--surface-2); color: var(--ink); }
 .fmt-btn:active { background: var(--soft); }
 .fmt-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; }
+/* 메모 보기: 편집할 때와 같은 자리·모양으로 글머리표와 번호를 글자로 그린다 */
+.ne-view .rt ul, .ne-view .rt ol { list-style: none; padding-left: 0; margin: 0; }
+.ne-view .rt li { margin: 0; list-style: none; }
+.ne-view .rt ul li.d0::before { content: '• '; }
+.ne-view .rt ul li.d1::before { content: '◦ '; }
+.ne-view .rt ul li.d2::before { content: '▪ '; }
+.ne-view .rt ol li::before { content: attr(value) '. '; }
+.ne-view .rt ul li.d0, .ne-view .rt ul li.d1, .ne-view .rt ul li.d2 { list-style: none; }

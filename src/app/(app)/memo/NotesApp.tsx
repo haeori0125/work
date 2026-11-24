@@ -1,14 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   createNoteAction, deleteNoteAction, setNotePinnedAction, setNotesSharedAction, updateNoteAction, type NoteDto, type SharedNoteDto,
 } from '@/app/actions/notes';
 import { useToast } from '@/app/_ui/Toast';
 import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
-import { autoBullet, continueList, indentLine, toggleLines, wrapCodeBlock, wrapInline, type Edit } from '@/lib/mrkdwn';
+import { autoArrow, autoBullet, continueList, indentLine, toggleLines, wrapCodeBlock, wrapInline, type Edit } from '@/lib/mrkdwn';
 import { RichText } from '@/app/_ui/RichText';
+import { ShareDialog } from './ShareDialog';
 
 const SAVE_DELAY = 800;
 const RETRY_DELAY = 3000;
@@ -19,16 +20,47 @@ function sortNotes(list: NoteDto[]): NoteDto[] {
   return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt) || b.id - a.id);
 }
 
-export function NotesApp({ initial, others }: { initial: NoteDto[]; others: SharedNoteDto[] }) {
+export function NotesApp({ initial, others, people }: { initial: NoteDto[]; others: SharedNoteDto[]; people: { id: number; name: string }[] }) {
   const [notes, setNotes] = useState(() => sortNotes(initial));
   const [currentId, setCurrentId] = useState<number | null>(initial[0]?.id ?? others[0]?.id ?? null);
   // 여러 개 골라 공유/공유 해제
   const [picking, setPicking] = useState(false);
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const toast = useToast();
+  // 공유할 사람 고르는 창(어떤 메모들을)
+  const [sharing, setSharing] = useState<number[] | null>(null);
   // 쓰는 중이 아니면 서식이 적용된 모습으로 보여 주고, 누르면 편집
   const [writing, setWriting] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
+  // 보기 화면을 눌러 편집으로 넘어갈 때: 누른 줄에 커서를 두고 스크롤도 그대로(화면이 튀지 않게)
+  const enter = useRef<{ line: number; scrollTop: number } | null>(null);
+  const openAt = (e: React.MouseEvent<HTMLDivElement> | null) => {
+    const v = e?.currentTarget;
+    if (v && e) {
+      const lh = parseFloat(getComputedStyle(v).lineHeight) || 26;
+      const y = e.clientY - v.getBoundingClientRect().top + v.scrollTop - parseFloat(getComputedStyle(v).paddingTop);
+      enter.current = { line: Math.max(0, Math.floor(y / lh)), scrollTop: v.scrollTop };
+    } else enter.current = { line: Infinity, scrollTop: 0 };
+    setWriting(true);
+  };
+  useLayoutEffect(() => {
+    const el = area.current, at = enter.current;
+    if (!writing || !el || !at) return;
+    enter.current = null;
+    const lines = el.value.split('\n');
+    const line = Math.min(at.line, lines.length - 1);
+    const pos = lines.slice(0, line + 1).join('\n').length; // 그 줄 끝
+    el.focus({ preventScroll: true });
+    el.setSelectionRange(pos, pos);
+    el.scrollTop = at.scrollTop;
+  }, [writing]);
+  // 글을 바꾼 뒤 커서 자리 잡기. 그사이 더 입력했으면(글이 달라졌으면) 건드리지 않는다
+  const placeCaret = (value: string, start: number, end: number, focus = false) => requestAnimationFrame(() => {
+    const el = area.current;
+    if (!el || el.value !== value) return;
+    if (focus) el.focus();
+    el.setSelectionRange(start, end);
+  });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving' | 'error'>('saved');
@@ -136,12 +168,12 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
     setNotes(rest); setCurrentId(rest[0]?.id ?? null); setArmed(false); setMobileOpen(false); setSaveState('saved');
   };
 
-  const share = async (ids: number[], shared: boolean) => {
+  const share = async (ids: number[], shared: boolean, to: number[] = []) => {
     if (!ids.length) return;
     if (!(await flush())) return;
-    const res = await setNotesSharedAction(ids, shared);
+    const res = await setNotesSharedAction(ids, shared, to);
     if (res?.error) { setError(res.error); return; }
-    setNotes((list) => list.map((n) => (ids.includes(n.id) ? { ...n, shared } : n)));
+    setNotes((list) => list.map((n) => (ids.includes(n.id) ? { ...n, shared, sharedTo: shared ? to : [] } : n)));
     setPicked(new Set()); setPicking(false);
     if (res?.ok) toast(res.ok);
   };
@@ -157,8 +189,15 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
   const pinned = visible.filter((n) => n.pinned && !n.shared);
   const rest = visible.filter((n) => !n.pinned && !n.shared);
   const pickedMine = notes.filter((n) => picked.has(n.id));
+  const shareList = sharing ? notes.filter((n) => sharing.includes(n.id)) : [];
 
-  type Row = { id: number; body: string; updatedAt: string; shared?: boolean; author?: string | null };
+  type Row = { id: number; body: string; updatedAt: string; shared?: boolean; sharedTo?: number[]; author?: string | null };
+  const nameOf = new Map(people.map((m) => [m.id, m.name]));
+  const toLabel = (ids: number[]) => {
+    if (!ids.length) return '모두';
+    const names = ids.map((x) => nameOf.get(x)).filter(Boolean) as string[];
+    return names.length > 2 ? `${names.slice(0, 2).join(', ')} 외 ${names.length - 2}명` : names.join(', ');
+  };
   const group = (label: string, items: Row[]) => items.length > 0 && (
     <>
       <div className="nl-group">{label}</div>
@@ -176,7 +215,7 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
                 onClick={() => { if (picking && mine) { const s = new Set(picked); if (on) s.delete(n.id); else s.add(n.id); setPicked(s); } else void select(n.id); }}>
                 <b>{noteTitle(n.body)}</b>
                 <span><em>{dayFmt.format(new Date(n.updatedAt))}</em> {notePreview(n.body)}</span>
-                {n.shared && <span className="nl-by">{n.author ? `${n.author} 님이 공유` : '내가 공유함'}</span>}
+                {n.shared && <span className="nl-by">{n.author ? `${n.author} 님이 공유` : `내가 공유함 · ${toLabel(n.sharedTo ?? [])}`}</span>}
               </button>
             </li>
           );
@@ -203,8 +242,8 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
             <span>{pickedMine.length ? `${pickedMine.length}개 선택` : '공유할 메모를 고르세요'}</span>
             <button className="btn small" type="button" disabled={!pickedMine.some((n) => n.shared)}
               onClick={() => share(pickedMine.filter((n) => n.shared).map((n) => n.id), false)}>공유 해제</button>
-            <button className="btn small primary" type="button" disabled={!pickedMine.some((n) => !n.shared)}
-              onClick={() => share(pickedMine.filter((n) => !n.shared).map((n) => n.id), true)}>공유</button>
+            <button className="btn small primary" type="button" disabled={!pickedMine.length}
+              onClick={() => setSharing(pickedMine.map((n) => n.id))}>공유…</button>
           </div>
         )}
       </section>
@@ -215,21 +254,22 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
           <span className="spacer" />
           {viewing && <span className="muted">{viewing.authorName} 님이 공유한 메모 · 읽기 전용</span>}
           {current && <>
-            <button className="btn small" type="button" onClick={() => share([current.id], !current.shared)}>{current.shared ? '공유 해제' : '공유'}</button>
+            <button className={`btn small${current.shared ? ' soft' : ''}`} type="button" onClick={() => setSharing([current.id])}
+              title={current.shared ? `공유 중 · ${toLabel(current.sharedTo)}` : '공유할 사람 고르기'}>{current.shared ? '공유 중' : '공유'}</button>
             <button className="btn small" type="button" onClick={togglePin}>{current.pinned ? '고정 해제' : '고정'}</button>
             <button className="btn small danger" type="button" onClick={remove}>{armed ? '한 번 더 누르면 삭제' : '삭제'}</button>
           </>}
         </div>
         {current ? (
           writing || !current.body ? (
-            <textarea id="note-text" ref={area} value={current.body} autoFocus={writing}
+            <textarea id="note-text" ref={area} value={current.body}
               onFocus={() => setWriting(true)}
               onChange={(e) => {
-                // 줄 맨 앞 "* "·"- " → "• "
-                const r = autoBullet(e.target.value, e.target.selectionStart);
+                // 줄 맨 앞 "* "·"- " → "• ", "->" → "→"
+                const r = autoBullet(e.target.value, e.target.selectionStart) ?? autoArrow(e.target.value, e.target.selectionStart);
                 if (!r) { edit(e.target.value); return; }
                 edit(r.value);
-                requestAnimationFrame(() => area.current?.setSelectionRange(r.caret, r.caret));
+                placeCaret(r.value, r.caret, r.caret);
               }}
               onKeyDown={(e) => {
                 const t = e.currentTarget;
@@ -239,14 +279,14 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
                 if (!r) return;
                 e.preventDefault();
                 edit(r.value);
-                requestAnimationFrame(() => area.current?.setSelectionRange(r.caret, r.caret));
+                placeCaret(r.value, r.caret, r.caret);
               }}
               onBlur={() => { void flush(); if (current.body) setWriting(false); }}
               placeholder={'첫 줄이 메모 제목이 됩니다\n* 글머리표  1. 번호  `코드`  *굵게*  _기울임_  ~취소선~  > 인용  ```코드 블록```'}
               aria-label="메모 내용" maxLength={20000} />
           ) : (
             <div className="ne-view" role="button" tabIndex={0} aria-label="메모 편집하기" title="눌러서 편집"
-              onClick={() => setWriting(true)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setWriting(true); } }}>
+              onClick={(e) => openAt(e)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openAt(null); } }}>
               <RichText text={current.body} />
             </div>
           )
@@ -260,7 +300,7 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
           const r = fn(current.body, t ? t.selectionStart : end, t ? t.selectionEnd : end);
           edit(r.value);
           setWriting(true);
-          requestAnimationFrame(() => { area.current?.focus(); area.current?.setSelectionRange(r.start, r.end); });
+          placeCaret(r.value, r.start, r.end, true);
         }} />}
         <div className="ne-foot">
           <span className="muted" role="status">
@@ -270,6 +310,11 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
           {error && saveState !== 'error' && <span className="err">{error}</span>}
         </div>
       </section>
+      {sharing && (
+        <ShareDialog count={shareList.length} people={people} initial={shareList.length === 1 ? shareList[0].sharedTo : []}
+          wasShared={shareList.some((n) => n.shared)} onClose={() => setSharing(null)}
+          onShare={(to) => { void share(sharing, true, to); }} onUnshare={() => { void share(sharing, false); }} />
+      )}
     </div>
   );
 }

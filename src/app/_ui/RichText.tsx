@@ -70,10 +70,10 @@ export function RichText({ text, className }: { text: string; className?: string
           case 'pre': return <pre key={i} className="rt-pre"><code>{b.v}</code></pre>;
           case 'quote': return <blockquote key={i}>{b.lines.map((l, j) => <p key={j}><Inlines items={l} /></p>)}</blockquote>;
           case 'ul': return (
-            <ul key={i}>{b.items.map((it, j) => <li key={j} style={{ marginLeft: it.depth * 18 }}><Inlines items={it.c} /></li>)}</ul>
+            <ul key={i}>{b.items.map((it, j) => <li key={j} className={`d${it.depth % 3}`} style={{ marginLeft: it.depth * 24 }}><Inlines items={it.c} /></li>)}</ul>
           );
           case 'ol': return (
-            <ol key={i}>{b.items.map((it, j) => <li key={j} value={it.n} style={{ marginLeft: it.depth * 18 }}><Inlines items={it.c} /></li>)}</ol>
+            <ol key={i}>{b.items.map((it, j) => <li key={j} value={it.n} style={{ marginLeft: it.depth * 24 }}><Inlines items={it.c} /></li>)}</ol>
           );
         }
       })}

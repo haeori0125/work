@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autoBullet, continueList, indentLine, parseBlocks, parseInline, toggleLines, wrapCodeBlock, wrapInline } from '@/lib/mrkdwn';
+import { autoArrow, autoBullet, continueList, indentLine, parseBlocks, parseInline, toggleLines, wrapCodeBlock, wrapInline } from '@/lib/mrkdwn';
 
 describe('parseInline', () => {
   it('reads slack-style marks and code', () => {
@@ -30,7 +30,7 @@ describe('parseBlocks', () => {
 describe('editor helpers', () => {
   it('turns "* " or "- " at line start into a bullet', () => {
     expect(autoBullet('메모\n* ', 6)).toEqual({ value: '메모\n• ', caret: 5 });
-    expect(autoBullet('  - ', 4)).toEqual({ value: '  • ', caret: 4 });
+    expect(autoBullet('  - ', 4)).toEqual({ value: '  ◦ ', caret: 4 });
     expect(autoBullet('a * ', 4)).toBeNull();
   });
   it('continues and ends lists on Enter', () => {
@@ -40,8 +40,15 @@ describe('editor helpers', () => {
     expect(continueList('그냥 글', 4)).toBeNull();
   });
   it('indents and outdents list lines', () => {
-    expect(indentLine('• 하나', 4, false)).toEqual({ value: '  • 하나', caret: 6 });
+    // 노션처럼 단계마다 글머리표가 바뀐다
+    expect(indentLine('• 하나', 4, false)).toEqual({ value: '\t◦ 하나', caret: 5 });
+    expect(indentLine('\t◦ 하나', 5, false)).toEqual({ value: '\t\t▪ 하나', caret: 6 });
+    expect(indentLine('\t◦ 하나', 5, true)).toEqual({ value: '• 하나', caret: 4 });
     expect(indentLine('  • 하나', 6, true)).toEqual({ value: '• 하나', caret: 4 });
+    expect(indentLine('3. 셋', 4, false)).toEqual({ value: '\t1. 셋', caret: 5 });
+    expect(continueList('\t◦ 둘', 4)).toEqual({ value: '\t◦ 둘\n\t◦ ', caret: 8 });
+    expect(parseBlocks('• a\n\t◦ b\n\t\t▪ c')).toEqual([{ t: 'ul', items: [
+      { depth: 0, c: [{ t: 'text', v: 'a' }] }, { depth: 1, c: [{ t: 'text', v: 'b' }] }, { depth: 2, c: [{ t: 'text', v: 'c' }] }] }]);
     expect(indentLine('글', 1, false)).toBeNull();
   });
 });
@@ -61,5 +68,14 @@ describe('toolbar edits', () => {
     expect(toggleLines('• a\n• b', 0, 7, 'ul').value).toBe('a\nb');
     expect(toggleLines('• a\nb', 0, 5, 'ol').value).toBe('1. a\n2. b');
     expect(toggleLines('hi', 1, 1, 'quote')).toEqual({ value: '> hi', start: 4, end: 4 });
+  });
+});
+
+describe('autoArrow', () => {
+  it('turns -> and <- into arrows, but not inside code', () => {
+    expect(autoArrow('a ->', 4)).toEqual({ value: 'a →', caret: 3 });
+    expect(autoArrow('<-x', 2)).toEqual({ value: '←x', caret: 1 });
+    expect(autoArrow('`a ->', 5)).toBeNull();
+    expect(autoArrow('a -', 3)).toBeNull();
   });
 });

@@ -135,12 +135,18 @@ export const notes = pgTable('notes', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   body: text('body').notNull().default(''),
   pinned: boolean('pinned').notNull().default(false),
-  /** 모두에게 공유(읽기 전용) */
+  /** 공유(읽기 전용). 받는 사람은 note_shares, 없으면 모두 */
   shared: boolean('shared').notNull().default(false),
   sharedAt: ts('shared_at'),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 }, (t) => [index('notes_user').on(t.userId)]);
+
+/** 메모를 받을 사람. 공유한 메모에 줄이 없으면 모두에게 공유 */
+export const noteShares = pgTable('note_shares', {
+  noteId: integer('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ columns: [t.noteId, t.userId] }), index('note_shares_user').on(t.userId)]);
 
 export const userPrefs = pgTable('user_prefs', {
   userId: integer('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
