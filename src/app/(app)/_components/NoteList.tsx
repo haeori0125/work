@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
+import { RichText } from '@/app/_ui/RichText';
 import { useToast } from '@/app/_ui/Toast';
 import type { NoteView } from '@/lib/view';
 
@@ -59,7 +60,7 @@ export function NoteList({ notes, me, placeholder, onAdd, onEdit, onDelete, onCh
                     </div>
                   ) : (
                     <div className="chat-line">
-                      <div className="chat-bubble">{n.body}</div>
+                      <RichText className="chat-bubble" text={n.body} />
                       <span className="chat-meta">
                         {n.edited && <span>수정됨</span>}
                         <span>{n.when}</span>

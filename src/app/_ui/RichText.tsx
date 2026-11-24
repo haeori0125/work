@@ -1,5 +1,6 @@
-// 설명 글: 링크는 눌러 열 수 있게, 슬랙 링크는 카드로 보여 준다
+// 글 보여 주기: 슬랙식 서식 + 링크는 눌러 열 수 있게, 슬랙 링크는 카드로
 import { describeSlackLink, splitLinks } from '@/lib/links';
+import { parseBlocks, type Inline } from '@/lib/mrkdwn';
 
 function ChatIcon() {
   return (
@@ -18,9 +19,9 @@ function shortUrl(url: string): string {
   } catch { return url; }
 }
 
-export function RichText({ text, className }: { text: string; className?: string }) {
+function Links({ text }: { text: string }) {
   return (
-    <p className={className}>
+    <>
       {splitLinks(text).map((s, i) => {
         if (s.type === 'text') return <span key={i}>{s.text}</span>;
         const slack = describeSlackLink(s.url);
@@ -41,6 +42,41 @@ export function RichText({ text, className }: { text: string; className?: string
             onClick={(e) => e.stopPropagation()}>{shortUrl(s.url)}</a>
         );
       })}
-    </p>
+    </>
+  );
+}
+
+function Inlines({ items }: { items: Inline[] }) {
+  return (
+    <>
+      {items.map((x, i) => {
+        if (x.t === 'text') return <Links key={i} text={x.v} />;
+        if (x.t === 'code') return <code key={i} className="rt-code">{x.v}</code>;
+        const Tag = x.t === 'b' ? 'strong' : x.t === 'i' ? 'em' : 's';
+        return <Tag key={i}><Inlines items={x.c} /></Tag>;
+      })}
+    </>
+  );
+}
+
+/** 슬랙처럼 쓴 글을 보여 준다: 굵게·기울임·취소선·코드·코드 블록·인용·글머리표·번호 목록 + 링크(슬랙 링크는 카드) */
+export function RichText({ text, className }: { text: string; className?: string }) {
+  return (
+    <div className={`rt${className ? ` ${className}` : ''}`}>
+      {parseBlocks(text).map((b, i) => {
+        switch (b.t) {
+          case 'p': return <p key={i}><Inlines items={b.c} /></p>;
+          case 'gap': return <div key={i} className="rt-gap" />;
+          case 'pre': return <pre key={i} className="rt-pre"><code>{b.v}</code></pre>;
+          case 'quote': return <blockquote key={i}>{b.lines.map((l, j) => <p key={j}><Inlines items={l} /></p>)}</blockquote>;
+          case 'ul': return (
+            <ul key={i}>{b.items.map((it, j) => <li key={j} style={{ marginLeft: it.depth * 18 }}><Inlines items={it.c} /></li>)}</ul>
+          );
+          case 'ol': return (
+            <ol key={i}>{b.items.map((it, j) => <li key={j} value={it.n} style={{ marginLeft: it.depth * 18 }}><Inlines items={it.c} /></li>)}</ol>
+          );
+        }
+      })}
+    </div>
   );
 }

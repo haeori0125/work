@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  createNoteAction, deleteNoteAction, setNotePinnedAction, updateNoteAction, type NoteDto,
+  createNoteAction, deleteNoteAction, setNotePinnedAction, setNotesSharedAction, updateNoteAction, type NoteDto, type SharedNoteDto,
 } from '@/app/actions/notes';
+import { useToast } from '@/app/_ui/Toast';
 import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
+import { autoBullet, continueList, indentLine } from '@/lib/mrkdwn';
+import { RichText } from '@/app/_ui/RichText';
 
 const SAVE_DELAY = 800;
 const RETRY_DELAY = 3000;
@@ -16,9 +19,16 @@ function sortNotes(list: NoteDto[]): NoteDto[] {
   return [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt.localeCompare(a.updatedAt) || b.id - a.id);
 }
 
-export function NotesApp({ initial }: { initial: NoteDto[] }) {
+export function NotesApp({ initial, others }: { initial: NoteDto[]; others: SharedNoteDto[] }) {
   const [notes, setNotes] = useState(() => sortNotes(initial));
-  const [currentId, setCurrentId] = useState<number | null>(initial[0]?.id ?? null);
+  const [currentId, setCurrentId] = useState<number | null>(initial[0]?.id ?? others[0]?.id ?? null);
+  // 여러 개 골라 공유/공유 해제
+  const [picking, setPicking] = useState(false);
+  const [picked, setPicked] = useState<Set<number>>(new Set());
+  const toast = useToast();
+  // 쓰는 중이 아니면 서식이 적용된 모습으로 보여 주고, 누르면 편집
+  const [writing, setWriting] = useState(false);
+  const area = useRef<HTMLTextAreaElement>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving' | 'error'>('saved');
@@ -29,6 +39,8 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const current = notes.find((n) => n.id === currentId) ?? null;
+  // 다른 사람이 공유한 메모는 읽기만
+  const viewing = current ? null : others.find((n) => n.id === currentId) ?? null;
 
   const saving = useRef(false);
 
@@ -88,7 +100,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
   const select = async (id: number) => {
     if (!(await flush())) return; // 저장 못 한 글이 있으면 다른 메모로 넘어가지 않는다
     setNotes((list) => sortNotes(list));
-    setCurrentId(id); setArmed(false); setMobileOpen(true); setError(null);
+    setCurrentId(id); setArmed(false); setMobileOpen(true); setError(null); setWriting(false);
   };
 
   const create = async () => {
@@ -100,7 +112,7 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
     setCreating(false);
     if ('error' in res) { setError(res.error); return; }
     setNotes((list) => sortNotes([res, ...list]));
-    setCurrentId(res.id); setQuery(''); setArmed(false); setMobileOpen(true);
+    setCurrentId(res.id); setQuery(''); setArmed(false); setMobileOpen(true); setWriting(true);
     requestAnimationFrame(() => document.getElementById('note-text')?.focus());
   };
 
@@ -124,25 +136,51 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
     setNotes(rest); setCurrentId(rest[0]?.id ?? null); setArmed(false); setMobileOpen(false); setSaveState('saved');
   };
 
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? notes.filter((n) => n.body.toLowerCase().includes(q)) : notes;
-  }, [notes, query]);
-  const pinned = visible.filter((n) => n.pinned);
-  const others = visible.filter((n) => !n.pinned);
+  const share = async (ids: number[], shared: boolean) => {
+    if (!ids.length) return;
+    if (!(await flush())) return;
+    const res = await setNotesSharedAction(ids, shared);
+    if (res?.error) { setError(res.error); return; }
+    setNotes((list) => list.map((n) => (ids.includes(n.id) ? { ...n, shared } : n)));
+    setPicked(new Set()); setPicking(false);
+    if (res?.ok) toast(res.ok);
+  };
 
-  const group = (label: string, items: NoteDto[]) => items.length > 0 && (
+  const q = query.trim().toLowerCase();
+  const visible = useMemo(() => (q ? notes.filter((n) => n.body.toLowerCase().includes(q)) : notes), [notes, q]);
+  const visibleOthers = q ? others.filter((n) => n.body.toLowerCase().includes(q)) : others;
+  // 공유된 메모(내 것 + 다른 사람 것)는 맨 위에 모아서
+  const sharedRows = [
+    ...visible.filter((n) => n.shared).map((n) => ({ ...n, author: null as string | null })),
+    ...visibleOthers.map((n) => ({ ...n, pinned: false, shared: true, author: n.authorName })),
+  ].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const pinned = visible.filter((n) => n.pinned && !n.shared);
+  const rest = visible.filter((n) => !n.pinned && !n.shared);
+  const pickedMine = notes.filter((n) => picked.has(n.id));
+
+  type Row = { id: number; body: string; updatedAt: string; shared?: boolean; author?: string | null };
+  const group = (label: string, items: Row[]) => items.length > 0 && (
     <>
       <div className="nl-group">{label}</div>
       <ul className="nl">
-        {items.map((n) => (
-          <li key={n.id}>
-            <button type="button" aria-current={n.id === currentId} onClick={() => select(n.id)}>
-              <b>{noteTitle(n.body)}</b>
-              <span><em>{dayFmt.format(new Date(n.updatedAt))}</em> {notePreview(n.body)}</span>
-            </button>
-          </li>
-        ))}
+        {items.map((n) => {
+          const mine = !n.author;
+          const on = picked.has(n.id);
+          return (
+            <li key={n.id} className={picking && mine ? 'picking' : undefined}>
+              {picking && mine && (
+                <input type="checkbox" className="nl-check" checked={on} aria-label={`${noteTitle(n.body)} 고르기`}
+                  onChange={() => { const s = new Set(picked); if (on) s.delete(n.id); else s.add(n.id); setPicked(s); }} />
+              )}
+              <button type="button" aria-current={n.id === currentId}
+                onClick={() => { if (picking && mine) { const s = new Set(picked); if (on) s.delete(n.id); else s.add(n.id); setPicked(s); } else void select(n.id); }}>
+                <b>{noteTitle(n.body)}</b>
+                <span><em>{dayFmt.format(new Date(n.updatedAt))}</em> {notePreview(n.body)}</span>
+                {n.shared && <span className="nl-by">{n.author ? `${n.author} 님이 공유` : '내가 공유함'}</span>}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </>
   );
@@ -153,26 +191,67 @@ export function NotesApp({ initial }: { initial: NoteDto[] }) {
         <div className="nl-head">
           <h2>개인 메모</h2>
           <button className="btn primary small" type="button" onClick={create} disabled={creating}><PlusIcon size={10} /> 새 메모</button>
-          <span className="lock">🔒 나만 볼 수 있습니다</span>
+          <button className="btn small" type="button" onClick={() => { setPicking(!picking); setPicked(new Set()); }}>{picking ? '취소' : '선택'}</button>
+          <span className="lock">🔒 공유하지 않은 메모는 나만 볼 수 있어요</span>
         </div>
         <input className="nl-search" type="search" placeholder="검색" aria-label="메모 검색" value={query} onChange={(e) => setQuery(e.target.value)} />
-        {notes.length === 0 ? <p className="nl-empty">메모가 없습니다. &lsquo;새 메모&rsquo;를 눌러 시작하세요.</p>
-          : visible.length === 0 ? <p className="nl-empty">검색 결과가 없습니다</p>
-            : <>{group('📌 고정됨', pinned)}{group('메모', others)}</>}
+        {notes.length === 0 && others.length === 0 ? <p className="nl-empty">메모가 없습니다. &lsquo;새 메모&rsquo;를 눌러 시작하세요.</p>
+          : visible.length === 0 && visibleOthers.length === 0 ? <p className="nl-empty">검색 결과가 없습니다</p>
+            : <>{group('🔗 공유된 메모', sharedRows)}{group('📌 고정됨', pinned)}{group('메모', rest)}</>}
+        {picking && (
+          <div className="nl-bar">
+            <span>{pickedMine.length ? `${pickedMine.length}개 선택` : '공유할 메모를 고르세요'}</span>
+            <button className="btn small" type="button" disabled={!pickedMine.some((n) => n.shared)}
+              onClick={() => share(pickedMine.filter((n) => n.shared).map((n) => n.id), false)}>공유 해제</button>
+            <button className="btn small primary" type="button" disabled={!pickedMine.some((n) => !n.shared)}
+              onClick={() => share(pickedMine.filter((n) => !n.shared).map((n) => n.id), true)}>공유</button>
+          </div>
+        )}
       </section>
       <section className="panel note-editor" aria-label="메모 편집">
         <div className="ne-top">
           <button className="ne-back" type="button" onClick={async () => { if (await flush()) setMobileOpen(false); }}>‹ 메모</button>
-          <span className="muted">{current ? fullFmt.format(new Date(current.updatedAt)) : ''}</span>
+          <span className="muted">{current ? fullFmt.format(new Date(current.updatedAt)) : viewing ? fullFmt.format(new Date(viewing.updatedAt)) : ''}</span>
           <span className="spacer" />
+          {viewing && <span className="muted">{viewing.authorName} 님이 공유한 메모 · 읽기 전용</span>}
           {current && <>
+            <button className="btn small" type="button" onClick={() => share([current.id], !current.shared)}>{current.shared ? '공유 해제' : '공유'}</button>
             <button className="btn small" type="button" onClick={togglePin}>{current.pinned ? '고정 해제' : '고정'}</button>
             <button className="btn small danger" type="button" onClick={remove}>{armed ? '한 번 더 누르면 삭제' : '삭제'}</button>
           </>}
         </div>
         {current ? (
-          <textarea id="note-text" value={current.body} onChange={(e) => edit(e.target.value)} onBlur={() => { void flush(); }}
-            placeholder="첫 줄이 메모 제목이 됩니다" aria-label="메모 내용" maxLength={20000} />
+          writing || !current.body ? (
+            <textarea id="note-text" ref={area} value={current.body} autoFocus={writing}
+              onFocus={() => setWriting(true)}
+              onChange={(e) => {
+                // 줄 맨 앞 "* "·"- " → "• "
+                const r = autoBullet(e.target.value, e.target.selectionStart);
+                if (!r) { edit(e.target.value); return; }
+                edit(r.value);
+                requestAnimationFrame(() => area.current?.setSelectionRange(r.caret, r.caret));
+              }}
+              onKeyDown={(e) => {
+                const t = e.currentTarget;
+                if (t.selectionStart !== t.selectionEnd || e.nativeEvent.isComposing) return;
+                const r = e.key === 'Enter' && !e.shiftKey ? continueList(t.value, t.selectionStart)
+                  : e.key === 'Tab' ? indentLine(t.value, t.selectionStart, e.shiftKey) : null;
+                if (!r) return;
+                e.preventDefault();
+                edit(r.value);
+                requestAnimationFrame(() => area.current?.setSelectionRange(r.caret, r.caret));
+              }}
+              onBlur={() => { void flush(); if (current.body) setWriting(false); }}
+              placeholder={'첫 줄이 메모 제목이 됩니다\n* 글머리표  1. 번호  `코드`  *굵게*  _기울임_  ~취소선~  > 인용  ```코드 블록```'}
+              aria-label="메모 내용" maxLength={20000} />
+          ) : (
+            <div className="ne-view" role="button" tabIndex={0} aria-label="메모 편집하기" title="눌러서 편집"
+              onClick={() => setWriting(true)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); setWriting(true); } }}>
+              <RichText text={current.body} />
+            </div>
+          )
+        ) : viewing ? (
+          <div className="ne-view readonly" aria-label="공유된 메모 내용"><RichText text={viewing.body} /></div>
         ) : <p className="nl-empty">{creating ? '새 메모를 만드는 중…' : '왼쪽에서 메모를 고르거나 새 메모를 만드세요.'}</p>}
         <div className="ne-foot">
           <span className="muted" role="status">

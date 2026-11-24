@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { addBoardPostAction, deleteBoardPostAction, editBoardPostAction } from '@/app/actions/memos';
 import type { ActionResult } from '@/app/actions/result';
 import { Person } from '@/app/_ui/AvatarContext';
+import { RichText } from '@/app/_ui/RichText';
 import { useToast } from '@/app/_ui/Toast';
 import type { NoteView } from '@/lib/view';
 
@@ -40,7 +41,7 @@ export function MemoPanel({ posts, me }: Props) {
                   </>
                 ) : (
                   <>
-                    <p>{n.body}</p>
+                    <RichText text={n.body} />
                     <div className="note-meta">
                       <span className="meta-who"><Person name={n.authorName} size={18} /><span>· {n.when}{n.edited ? ' (수정됨)' : ''}</span></span>
                       {n.authorId === me.id && <button className="btn link small" onClick={() => setEditing({ id: n.id, body: n.body })}>수정</button>}

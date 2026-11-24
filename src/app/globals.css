@@ -1127,3 +1127,24 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .psel-list { min-width: max(100%, 200px); }
 .os-change-row .field:last-child .psel-list { left: auto; right: 0; }
 .os-change .field > span small { font-weight: 500; opacity: .8; }
+/* 개인 메모: 고르기 · 공유 */
+.nl li.picking { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px; }
+.nl-check { width: 18px; height: 18px; margin-left: 6px; accent-color: var(--accent); }
+.nl-by { display: block; margin-top: 2px; font-size: 11.5px; font-weight: 700; color: var(--ink); }
+.nl-bar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 6px; padding: 10px 12px; margin-top: 8px; border-top: 1px solid var(--line); background: var(--surface); }
+.nl-bar > span { flex: 1; font-size: 13px; color: var(--muted); }
+/* 슬랙식 서식 글 */
+.rt { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.rt p { margin: 0; white-space: pre-wrap; }
+.rt-gap { height: 6px; }
+.rt ul, .rt ol { margin: 2px 0; padding-left: 20px; }
+.rt li { margin: 1px 0; white-space: pre-wrap; }
+.rt ul li::marker { color: var(--ink); }
+.rt blockquote { margin: 2px 0; padding: 2px 0 2px 10px; border-left: 3px solid color-mix(in srgb, var(--accent) 70%, var(--line)); color: var(--text); }
+.rt-code { padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--red) 8%, var(--surface-2)); color: color-mix(in srgb, var(--red) 75%, var(--text)); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+.rt-pre { margin: 4px 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); overflow-x: auto; font-size: 12.5px; line-height: 1.5; }
+.rt-pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
+.ne-view { flex: 1; min-height: 440px; padding: 16px 22px; overflow-y: auto; cursor: text; font-size: 15px; line-height: 1.65; border-radius: 8px; }
+.ne-view:hover:not(.readonly) { background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+.ne-view.readonly { cursor: default; }
+.ne-view .rt > p:first-child { font-size: 18px; font-weight: 800; color: var(--ink); }

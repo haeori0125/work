@@ -135,6 +135,9 @@ export const notes = pgTable('notes', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   body: text('body').notNull().default(''),
   pinned: boolean('pinned').notNull().default(false),
+  /** 모두에게 공유(읽기 전용) */
+  shared: boolean('shared').notNull().default(false),
+  sharedAt: ts('shared_at'),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 }, (t) => [index('notes_user').on(t.userId)]);
