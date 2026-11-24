@@ -35,6 +35,11 @@ export function shiftTerm(term: string, d: number): string {
 export type Person = { id: number; name: string };
 /** 기본 스케줄: weekday(0=월) → slot → 사람들 */
 export type BaseWeek = Record<number, Record<Slot, Person[]>>;
+/** 기본 스케줄 칸의 지점명: weekday → slot → 이름(없으면 null) */
+export type BaseTitles = Record<number, Record<Slot, string | null>>;
 export type Change = { id: number; date: string; slot: Slot; user: Person; kind: 'off' | 'on'; note: string | null };
-export type DaySlot = { slot: Slot; staff: (Person & { added: boolean })[]; off: (Person & { note: string | null })[] };
+export type DaySlot = { slot: Slot; title: string | null; staff: (Person & { added: boolean })[]; off: (Person & { note: string | null })[] };
 export type OnsiteDay = { date: string; term: string; slots: DaySlot[] };
+
+/** 막대·제목에 보일 이름: 지점명, 없으면 오후/저녁 */
+export const slotName = (slot: Slot, title: string | null) => title || (slot === 'pm' ? '오후' : '저녁');

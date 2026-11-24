@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
-import { copyBaseWeek, getBaseWeek, getOnsiteDays, listChanges, setBaseCell, setChange, shiftTerm, termOf } from '@/lib/onsite';
+import { copyBaseWeek, getBaseTitles, getBaseWeek, getOnsiteDays, listChanges, setBaseCell, setBaseTitle, setChange, shiftTerm, termOf } from '@/lib/onsite';
 import { createTestDb } from '../helpers/db';
 import { at, makeUser } from '../helpers/fixtures';
 
@@ -51,8 +51,14 @@ describe('onsite schedule', () => {
 
   it('copies a base week to another period', async () => {
     await setBaseCell(db, '2026-4', 0, 'pm', [a]);
+    await setBaseTitle(db, '2026-4', 0, 'pm', ' 고3 수학 ');
     await setBaseCell(db, '2026-5', 1, 'eve', [b]);
+    await setBaseTitle(db, '2026-5', 1, 'eve', '없어질 수업');
     await copyBaseWeek(db, '2026-4', '2026-5');
+    const titles = await getBaseTitles(db, '2026-5');
+    expect([titles[0].pm, titles[1].eve]).toEqual(['고3 수학', null]);
+    // 2026-12-07은 월요일: 달력에도 수업 이름이 실린다
+    expect((await getOnsiteDays(db, '2026-12-07', '2026-12-07'))[0].slots[0]).toMatchObject({ title: '고3 수학', staff: [{ name: '영희' }] });
     const week = await getBaseWeek(db, '2026-5');
     expect(week[0].pm.map((p) => p.name)).toEqual(['영희']);
     expect(week[1].eve).toEqual([]);

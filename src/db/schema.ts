@@ -195,3 +195,11 @@ export const onsiteChanges = pgTable('onsite_changes', {
   createdBy: integer('created_by').notNull().references(() => users.id),
   createdAt: ts('created_at').notNull(),
 }, (t) => [unique('onsite_changes_one').on(t.date, t.slot, t.userId), index('onsite_changes_date').on(t.date)]);
+
+/** 기본 스케줄 칸(기간·요일·시간대)의 지점명 */
+export const onsiteSlotTitles = pgTable('onsite_slot_titles', {
+  term: text('term').notNull(),
+  weekday: integer('weekday').notNull(),
+  slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
+  title: text('title').notNull(),
+}, (t) => [primaryKey({ columns: [t.term, t.weekday, t.slot] })]);

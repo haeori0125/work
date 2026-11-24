@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
-import { copyBaseWeek, setBaseCell, setChange } from '@/lib/onsite';
+import { copyBaseWeek, setBaseCell, setBaseTitle, setChange } from '@/lib/onsite';
 import { requireActionAdmin } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
@@ -10,6 +10,14 @@ export async function setBaseCellAction(term: string, weekday: number, slot: str
   return runAction(async () => {
     await requireActionAdmin();
     await setBaseCell(await getDb(), term, weekday, slot, userIds);
+    revalidatePath('/onsite');
+  });
+}
+
+export async function setBaseTitleAction(term: string, weekday: number, slot: string, title: string): Promise<ActionResult> {
+  return runAction(async () => {
+    await requireActionAdmin();
+    await setBaseTitle(await getDb(), term, weekday, slot, title);
     revalidatePath('/onsite');
   });
 }

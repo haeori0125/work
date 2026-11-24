@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { copyBaseAction, setBaseCellAction, setChangeAction } from '@/app/actions/onsite';
+import { copyBaseAction, setBaseCellAction, setBaseTitleAction, setChangeAction } from '@/app/actions/onsite';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar, Person } from '@/app/_ui/AvatarContext';
 import { useToast } from '@/app/_ui/Toast';
-import { SLOTS, type BaseWeek, type Change, type OnsiteDay, type Slot } from '@/lib/onsite-shared';
+import { SLOTS, slotName, type BaseTitles, type BaseWeek, type Change, type OnsiteDay, type Slot } from '@/lib/onsite-shared';
 import { kstWeekday } from '@/lib/time';
 
 type Day = OnsiteDay & { inMonth: boolean; label: string };
@@ -14,8 +14,8 @@ type Props = {
   me: { id: number; role: 'member' | 'admin' };
   view: 'cal' | 'changes' | 'base'; today: string;
   month: string; monthTitle: string; prevMonth: string; nextMonth: string; isThisMonth: boolean;
-  weekdays: string[]; days: Day[]; changes: (Change & { label: string })[]; members: { id: number; name: string }[];
-  term: string; termTitle: string; prevTerm: string; nextTerm: string; prevTermTitle: string; base: BaseWeek;
+  weekdays: string[]; days: Day[]; changes: (Change & { label: string; title: string | null })[]; members: { id: number; name: string }[];
+  term: string; termTitle: string; prevTerm: string; nextTerm: string; prevTermTitle: string; base: BaseWeek; titles: BaseTitles;
 };
 
 const SLOT = Object.fromEntries(SLOTS.map((s) => [s.key, s])) as Record<Slot, (typeof SLOTS)[number]>;
@@ -110,10 +110,10 @@ function CalendarView(p: ViewProps) {
             return (
               <button key={d.date} type="button" role="gridcell" onClick={() => setPicked(d.date)}
                 className={`mc-cell os-cell${d.inMonth ? '' : ' out'}${d.date === p.today ? ' today' : ''}${d.date === shown ? ' picked' : ''}${mine(d) ? ' mine' : ''}`}
-                aria-label={`${d.label} ${d.slots.map((s) => `${SLOT[s.slot].label} ${s.staff.length}명`).join(', ')}`}>
+                aria-label={`${d.label} ${d.slots.filter((s) => s.staff.length).map((s) => `${slotName(s.slot, s.title)} ${s.staff.length}명`).join(', ')}`}>
                 <span className={`mc-num${wd === 6 ? ' sun' : wd === 5 ? ' sat' : ''}`}>{Number(d.date.slice(8))}{changed && <i className="os-dot" aria-hidden />}</span>
                 {d.slots.map((s) => s.staff.length > 0 && (
-                  <span key={s.slot} className={`os-line ${s.slot}`}><span className="os-k">{SLOT[s.slot].label}</span><Faces people={s.staff} /></span>
+                  <span key={s.slot} className={`os-line ${s.slot}`}><span className="os-k">{slotName(s.slot, s.title)}</span><Faces people={s.staff} /></span>
                 ))}
               </button>
             );
@@ -143,7 +143,7 @@ function DayPanel({ day, members, isAdmin, me }: { day: Day; members: { id: numb
         const base = new Set([...s.staff.filter((x) => !x.added).map((x) => x.id), ...s.off.map((x) => x.id)]);
         return (
           <div key={s.slot} className={`os-slot ${s.slot}`}>
-            <div className="os-slot-head"><span className={`os-slotname ${s.slot}`}>{SLOT[s.slot].label}</span><span className="muted">{SLOT[s.slot].time}</span></div>
+            <div className="os-slot-head"><span className={`os-slotname ${s.slot}`}>{slotName(s.slot, s.title)}</span><span className="muted">{s.title ? `${SLOT[s.slot].label} ` : ''}{SLOT[s.slot].time}</span></div>
             {!editing && (
               <>
                 {s.staff.length === 0 && s.off.length === 0 && <p className="muted os-none">수업 없음</p>}
@@ -215,7 +215,7 @@ function ChangesView(p: ViewProps) {
           {list.map((c) => (
             <li key={c.id}>
               <span className="os-c-date">{c.label}</span>
-              <span className={`os-slotname ${c.slot}`}>{SLOT[c.slot].label}</span>
+              <span className={`os-slotname ${c.slot}`}>{slotName(c.slot, c.title)}</span>
               <Person name={c.user.name} size={20} />
               <span className={`os-badge ${c.kind}`}>{c.kind === 'off' ? '빠짐' : '추가'}</span>
               {c.note && <span className="muted os-note">{c.note}</span>}
@@ -274,11 +274,12 @@ function BaseView(p: ViewProps) {
                     <td key={w} className={on ? 'on' : undefined}>
                       {p.isAdmin ? (
                         <button type="button" className="os-base-cell" onClick={() => setCell(on ? null : { wd, slot: s.key })} aria-pressed={on}
-                          aria-label={`${w}요일 ${s.label} ${list.map((x) => x.name).join(', ') || '없음'}`}>
+                          aria-label={`${w}요일 ${s.label} ${p.titles[wd][s.key] ?? ''} ${list.map((x) => x.name).join(', ') || '없음'}`}>
+                          {p.titles[wd][s.key] && <b className={`os-title ${s.key}`}>{p.titles[wd][s.key]}</b>}
                           {list.length ? list.map((x) => <Person key={x.id} name={x.name} size={18} />) : <span className="muted">—</span>}
                         </button>
                       ) : (
-                        <div className="os-base-cell">{list.length ? list.map((x) => <Person key={x.id} name={x.name} size={18} />) : <span className="muted">—</span>}</div>
+                        <div className="os-base-cell">{p.titles[wd][s.key] && <b className={`os-title ${s.key}`}>{p.titles[wd][s.key]}</b>}{list.length ? list.map((x) => <Person key={x.id} name={x.name} size={18} />) : <span className="muted">—</span>}</div>
                       )}
                     </td>
                   );
@@ -290,7 +291,15 @@ function BaseView(p: ViewProps) {
       </div>
       {cell && p.isAdmin && (
         <div className="os-cell-edit">
-          <b>{WD_MON[cell.wd]}요일 {SLOT[cell.slot].label}</b> <span className="muted">{SLOT[cell.slot].time} · 누를 때마다 바로 저장돼요</span>
+          <b>{WD_MON[cell.wd]}요일 {SLOT[cell.slot].label}</b> <span className="muted">{SLOT[cell.slot].time} · 사람은 누를 때마다 바로 저장돼요</span>
+          <form key={`${cell.wd}-${cell.slot}`} className="os-title-form" onSubmit={(e) => {
+            e.preventDefault();
+            const v = String(new FormData(e.currentTarget).get('title') ?? '');
+            run(() => setBaseTitleAction(p.term, cell.wd, cell.slot, v), '지점명을 저장했습니다');
+          }}>
+            <input name="title" defaultValue={p.titles[cell.wd][cell.slot] ?? ''} maxLength={30} placeholder={`지점명 (예: 강남점, 비우면 '${SLOT[cell.slot].label}')`} aria-label="지점명" />
+            <button className="btn small primary" disabled={pending}>지점명 저장</button>
+          </form>
           <div className="os-pick">
             {p.members.map((m) => {
               const sel = people.some((x) => x.id === m.id);

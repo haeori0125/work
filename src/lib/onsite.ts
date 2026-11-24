@@ -1,13 +1,13 @@
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
-import { onsiteBase, onsiteChanges, users } from '@/db/schema';
+import { onsiteBase, onsiteChanges, onsiteSlotTitles, users } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
 import { addDays, kstWeekday } from './time';
 
-export { SLOTS, TERMS, shiftTerm, termLabel, termOf } from './onsite-shared';
+export { SLOTS, TERMS, shiftTerm, slotName, termLabel, termOf } from './onsite-shared';
 export type { Slot } from './onsite-shared';
-import { SLOTS, termOf, type BaseWeek, type Change, type OnsiteDay, type Slot } from './onsite-shared';
-export type { BaseWeek, Change, DaySlot, OnsiteDay, Person } from './onsite-shared';
+import { SLOTS, termOf, type BaseTitles, type BaseWeek, type Change, type OnsiteDay, type Slot } from './onsite-shared';
+export type { BaseTitles, BaseWeek, Change, DaySlot, OnsiteDay, Person } from './onsite-shared';
 
 const TERM_RE = /^\d{4}-[1-5]$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,6 +24,25 @@ export async function getBaseWeek(db: Db, term: string): Promise<BaseWeek> {
   for (const r of rows) week[r.weekday][r.slot].push(person(r));
   for (let w = 0; w < 7; w++) for (const s of SLOTS) week[w][s.key].sort(byName);
   return week;
+}
+
+export async function getBaseTitles(db: Db, term: string): Promise<BaseTitles> {
+  const rows = await db.select().from(onsiteSlotTitles).where(eq(onsiteSlotTitles.term, term));
+  const t: BaseTitles = {};
+  for (let w = 0; w < 7; w++) t[w] = { pm: null, eve: null };
+  for (const r of rows) t[r.weekday][r.slot] = r.title;
+  return t;
+}
+
+/** 기본 스케줄 칸의 지점명을 정한다(빈 값이면 지움) */
+export async function setBaseTitle(db: Db, term: string, weekday: number, slot: string, title: string | null): Promise<void> {
+  if (!TERM_RE.test(term) || !Number.isInteger(weekday) || weekday < 0 || weekday > 6 || !isSlot(slot)) {
+    throw new AppError('invalid', '스케줄 칸이 올바르지 않습니다');
+  }
+  const t = title?.trim() || null;
+  if (t && t.length > 30) throw new AppError('invalid', '지점명은 30자 이하로 입력하세요');
+  await db.delete(onsiteSlotTitles).where(and(eq(onsiteSlotTitles.term, term), eq(onsiteSlotTitles.weekday, weekday), eq(onsiteSlotTitles.slot, slot)));
+  if (t) await db.insert(onsiteSlotTitles).values({ term, weekday, slot, title: t });
 }
 
 /** 기본 스케줄 한 칸(기간·요일·시간대)의 사람을 통째로 정한다 */
@@ -43,6 +62,9 @@ export async function copyBaseWeek(db: Db, fromTerm: string, toTerm: string): Pr
   const rows = await db.select().from(onsiteBase).where(eq(onsiteBase.term, fromTerm));
   await db.delete(onsiteBase).where(eq(onsiteBase.term, toTerm));
   if (rows.length) await db.insert(onsiteBase).values(rows.map((r) => ({ ...r, term: toTerm })));
+  const titles = await db.select().from(onsiteSlotTitles).where(eq(onsiteSlotTitles.term, fromTerm));
+  await db.delete(onsiteSlotTitles).where(eq(onsiteSlotTitles.term, toTerm));
+  if (titles.length) await db.insert(onsiteSlotTitles).values(titles.map((r) => ({ ...r, term: toTerm })));
 }
 
 async function checkUsers(db: Db, ids: number[]) {
@@ -88,12 +110,13 @@ export async function listChanges(db: Db, from: string, to: string): Promise<Cha
 /** 기간 안 날짜마다 실제 출근(기본 − 빠짐 + 추가) */
 export async function getOnsiteDays(db: Db, from: string, to: string): Promise<OnsiteDay[]> {
   const changes = await listChanges(db, from, to);
-  const terms = new Map<string, BaseWeek>();
+  const terms = new Map<string, { week: BaseWeek; titles: BaseTitles }>();
   const days: OnsiteDay[] = [];
   for (let d = from; d <= to; d = addDays(d, 1)) {
     const term = termOf(d);
-    if (!terms.has(term)) terms.set(term, await getBaseWeek(db, term));
-    const base = terms.get(term)![kstWeekday(d)];
+    if (!terms.has(term)) terms.set(term, { week: await getBaseWeek(db, term), titles: await getBaseTitles(db, term) });
+    const base = terms.get(term)!.week[kstWeekday(d)];
+    const titles = terms.get(term)!.titles[kstWeekday(d)];
     days.push({
       date: d, term,
       slots: SLOTS.map(({ key }) => {
@@ -104,7 +127,7 @@ export async function getOnsiteDays(db: Db, from: string, to: string): Promise<O
           ...here.filter((c) => c.kind === 'on').map((c) => ({ ...c.user, added: true })),
         ].sort(byName);
         const off = here.filter((c) => c.kind === 'off').map((c) => ({ ...c.user, note: c.note }));
-        return { slot: key, staff, off };
+        return { slot: key, title: titles[key], staff, off };
       }),
     });
   }
