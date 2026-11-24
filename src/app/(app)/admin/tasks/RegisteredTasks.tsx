@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Person } from '@/app/_ui/AvatarContext';
+import { MiniAvatar, Person } from '@/app/_ui/AvatarContext';
 import { DeleteTaskButton } from './DeleteTaskButton';
 import { DragScroll } from './DragScroll';
 
@@ -71,8 +71,16 @@ export function RegisteredTasks({ items }: { items: RegisteredItem[] }) {
                 </div>
                 <div className="tags">
                   {d.tags.map((t) => <span key={t} className="tag line">{t}</span>)}
-                  {d.assignees.length > 0 && (
+                  {d.assignees.length > 0 && d.assignees.length <= 2 && (
                     <span className="tag line who-tag">담당 {d.assignees.map((n) => <Person key={n} name={n} size={16} />)}</span>
+                  )}
+                  {/* 3명 이상이면 사진만 겹쳐서(이름은 눌러 두면 보임) */}
+                  {d.assignees.length > 2 && (
+                    <span className="tag line who-tag" title={`담당 ${d.assignees.join(', ')}`} aria-label={`담당 ${d.assignees.join(', ')}`}>
+                      담당
+                      <span className="av-stack">{d.assignees.slice(0, 5).map((n) => <MiniAvatar key={n} name={n} size={16} />)}</span>
+                      <span className="muted">{d.assignees.length}명</span>
+                    </span>
                   )}
                 </div>
               </li>

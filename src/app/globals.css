@@ -933,3 +933,7 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .tag.who-tag { display: inline-flex; align-items: center; gap: 6px; }
 .tag.who-tag .person { gap: 4px; }
 .panel-head .count + .wf { margin-left: 4px; }
+.drag-scroll { overflow-x: hidden; }
+.list-card > li { min-width: 0; }
+.list-card .tags { flex-wrap: wrap; min-width: 0; }
+.tag.who-tag .av-stack { display: inline-flex; }
