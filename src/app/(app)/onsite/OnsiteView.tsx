@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { saveChangeAction, setChangeAction } from '@/app/actions/onsite';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar, Person } from '@/app/_ui/AvatarContext';
+import { PersonMultiSelect } from '@/app/_ui/PersonMultiSelect';
 import { PersonSelect } from '@/app/_ui/PersonSelect';
 import { useToast } from '@/app/_ui/Toast';
 import { SLOTS, SLOT_INFO, type Change, type DayLecture, type OnsiteDay } from '@/lib/onsite-shared';
@@ -172,18 +173,18 @@ function ChangeForm({ date, lec, members }: { date: string; lec: DayLecture; mem
   const { pending, error, run } = useRun();
   const [mode, setMode] = useState<(typeof MODES)[number][0]>('swap');
   const [off, setOff] = useState<number | null>(null);
-  const [on, setOn] = useState<number | null>(null);
+  const [on, setOn] = useState<number[]>([]);
   const [note, setNote] = useState('');
   const working = new Set(lec.staff.map((x) => x.id));
   const offOptions = lec.staff.filter((x) => !x.added);
   const onOptions = members.filter((m) => !working.has(m.id) && !lec.off.some((x) => x.id === m.id));
   const needOff = mode !== 'on', needOn = mode !== 'off';
-  const ready = (!needOff || off) && (!needOn || on);
+  const ready = (!needOff || off) && (!needOn || on.length > 0);
   return (
     <form className="os-change" onSubmit={(e) => {
       e.preventDefault();
-      run(() => saveChangeAction({ lectureId: lec.lectureId, date, offUserId: needOff ? off : null, onUserId: needOn ? on : null, note }), '변동을 저장했습니다');
-      setOff(null); setOn(null); setNote('');
+      run(() => saveChangeAction({ lectureId: lec.lectureId, date, offUserId: needOff ? off : null, onUserIds: needOn ? on : [], note }), '변동을 저장했습니다');
+      setOff(null); setOn([]); setNote('');
     }}>
       <div className="os-modes" role="radiogroup" aria-label={`${lec.title} 변동 종류`}>
         {MODES.map(([k, label]) => (
@@ -198,8 +199,8 @@ function ChangeForm({ date, lec, members }: { date: string; lec: DayLecture; mem
         )}
         {needOff && needOn && <span className="os-arrow" aria-hidden>→</span>}
         {needOn && (
-          <div className="field"><span>{mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'}</span>
-            <PersonSelect value={on} options={onOptions} onChange={setOn} label={`${lec.title} ${mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'}`} emptyLabel="고르기" />
+          <div className="field"><span>{mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'} <small>여러 명 가능</small></span>
+            <PersonMultiSelect value={on} options={onOptions} onChange={setOn} label={`${lec.title} ${mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'}`} emptyLabel="고르기" />
           </div>
         )}
       </div>

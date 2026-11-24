@@ -1119,3 +1119,11 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .mc-onsite .mc-who { margin-left: auto; }
 .mc-dots i.onsite { background: var(--ink); border-radius: 2px; }
 @media (max-width: 760px) { .mc-list .mc-onsite { font-size: 14px; padding: 7px 8px; } }
+.psel-box { flex: none; width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--line); display: grid; place-items: center; color: var(--on-accent); background: var(--surface); }
+.psel-box.on { background: var(--accent); border-color: var(--accent); }
+.psel-list li.psel-done { justify-content: flex-end; padding: 6px 4px 2px; cursor: default; }
+.psel-list li.psel-done:hover { background: none; }
+.psel-btn .av-stack { display: inline-flex; flex: none; }
+.psel-list { min-width: max(100%, 200px); }
+.os-change-row .field:last-child .psel-list { left: auto; right: 0; }
+.os-change .field > span small { font-weight: 500; opacity: .8; }

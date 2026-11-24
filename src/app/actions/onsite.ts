@@ -36,14 +36,14 @@ export async function setChangeAction(input: { lectureId: number; date: string; 
 }
 
 /** 변동 한 번에: 빠지는 사람 · 대신 나오는 사람(둘 중 하나만 있어도 됨) · 사유 */
-export async function saveChangeAction(input: { lectureId: number; date: string; offUserId: number | null; onUserId: number | null; note: string }): Promise<ActionResult> {
+export async function saveChangeAction(input: { lectureId: number; date: string; offUserId: number | null; onUserIds: number[]; note: string }): Promise<ActionResult> {
   return runAction(async () => {
     const admin = await requireActionAdmin();
-    if (!input.offUserId && !input.onUserId) throw new AppError('invalid', '빠지는 사람이나 대신 나오는 사람을 골라 주세요');
+    if (!input.offUserId && !input.onUserIds.length) throw new AppError('invalid', '빠지는 사람이나 대신 나오는 사람을 골라 주세요');
     const db = await getDb();
     const now = new Date();
     if (input.offUserId) await setChange(db, admin.id, { lectureId: input.lectureId, date: input.date, userId: input.offUserId, kind: 'off', note: input.note }, now);
-    if (input.onUserId) await setChange(db, admin.id, { lectureId: input.lectureId, date: input.date, userId: input.onUserId, kind: 'on', note: input.note }, now);
+    for (const id of new Set(input.onUserIds)) await setChange(db, admin.id, { lectureId: input.lectureId, date: input.date, userId: id, kind: 'on', note: input.note }, now);
     done();
   });
 }
