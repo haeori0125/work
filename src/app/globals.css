@@ -1083,3 +1083,26 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .os-guide { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); font-size: 13px; line-height: 1.55; }
 .os-guide p { margin: 0; }
 .os-guide b { color: var(--ink); }
+/* 현장 변동: 입력 폼 · 묶어 보기 */
+.os-change { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: var(--surface-2); }
+.os-change-row { display: flex; align-items: flex-end; gap: 8px; }
+.os-change-row .field { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); }
+.os-change-row input { flex: 1; min-width: 0; padding: 7px 10px; }
+.os-arrow { flex: none; color: var(--muted); font-weight: 800; padding-bottom: 9px; }
+.os-undo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.os-undo li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.os-groups { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.os-group { padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+.os-g-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.os-g-head b { font-size: 15px; color: var(--ink); }
+.os-g-head .muted { font-size: 12.5px; }
+.os-g-body { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.os-g-side { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.os-g-body .os-arrow { padding: 0; }
+.os-who { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; }
+.os-who.off .person { color: var(--muted); text-decoration: line-through; }
+.os-x { width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: var(--muted); font-size: 11px; cursor: pointer; }
+.os-x:hover { background: var(--surface-2); color: var(--red); }
+.os-g-note { flex-basis: 100%; font-size: 13px; color: var(--muted); padding-left: 2px; }
+.os-g-note::before { content: "사유 · "; font-weight: 700; }
+@media (max-width: 760px) { .os-change-row { flex-wrap: wrap; } .os-change-row .os-arrow { display: none; } .os-change-row .field { flex-basis: 100%; } }

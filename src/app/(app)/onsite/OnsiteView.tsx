@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { setChangeAction } from '@/app/actions/onsite';
+import { saveChangeAction, setChangeAction } from '@/app/actions/onsite';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar, Person } from '@/app/_ui/AvatarContext';
+import { PersonSelect } from '@/app/_ui/PersonSelect';
 import { useToast } from '@/app/_ui/Toast';
 import { SLOTS, SLOT_INFO, type Change, type DayLecture, type OnsiteDay } from '@/lib/onsite-shared';
 import { kstWeekday } from '@/lib/time';
@@ -131,61 +132,41 @@ function DayPanel({ day, members, isAdmin, me }: { day: Day; members: { id: numb
       </div>
       {day.lectures.length === 0 && <p className="muted os-none">이 날은 현장 강의가 없어요</p>}
       {day.lectures.map((l) => <LectureDay key={l.lectureId} date={day.date} lec={l} members={members} editing={editing} me={me} />)}
-      {editing && <p className="help">담당인 사람을 누르면 빠짐, 아닌 사람을 누르면 추가 출근이 돼요. 한 번 더 누르면 되돌려요.</p>}
+      {editing && <p className="help">빠지는 사람만 고르면 빠짐, 대신 나오는 사람만 고르면 추가 출근으로 남아요.</p>}
     </aside>
   );
 }
 
 function LectureDay({ date, lec, members, editing, me }: { date: string; lec: DayLecture; members: { id: number; name: string }[]; editing: boolean; me: { id: number } }) {
   const { pending, error, run } = useRun();
-  const [draft, setDraft] = useState<Record<number, string>>(Object.fromEntries(lec.off.map((o) => [o.id, o.note ?? ''])));
-  const change = (userId: number, kind: 'off' | 'on' | null, note?: string | null, ok = '저장되었습니다') =>
-    run(() => setChangeAction({ lectureId: lec.lectureId, date, userId, kind, note }), ok);
-  const base = new Set([...lec.staff.filter((x) => !x.added).map((x) => x.id), ...lec.off.map((x) => x.id)]);
   const slot = SLOT_INFO[lec.slot];
+  const added = lec.staff.filter((x) => x.added);
   return (
     <div className="os-slot">
       <div className="os-slot-head"><b>{lec.title}</b><span className="muted">{slot.label} {slot.time}</span></div>
-      {!editing && (
-        <>
-          {lec.staff.length === 0 && lec.off.length === 0 && <p className="muted os-none">아직 출근할 사람이 없어요</p>}
-          <ul className="os-people">
-            {lec.staff.map((x) => (
-              <li key={x.id} className={x.id === me.id ? 'me' : undefined}><Person name={x.name} size={20} />{x.added && <span className="os-badge on">추가</span>}</li>
-            ))}
-            {lec.off.map((x) => (
-              <li key={x.id} className="off"><Person name={x.name} size={20} /><span className="os-badge off">빠짐</span>{x.note && <span className="muted os-note">{x.note}</span>}</li>
-            ))}
-          </ul>
-        </>
-      )}
+      {lec.staff.length === 0 && lec.off.length === 0 && <p className="muted os-none">아직 출근할 사람이 없어요</p>}
+      <ul className="os-people">
+        {lec.staff.map((x) => (
+          <li key={x.id} className={x.id === me.id ? 'me' : undefined}><Person name={x.name} size={20} />{x.added && <span className="os-badge on">추가</span>}</li>
+        ))}
+        {lec.off.map((x) => (
+          <li key={x.id} className="off"><Person name={x.name} size={20} /><span className="os-badge off">빠짐</span>{x.note && <span className="muted os-note">{x.note}</span>}</li>
+        ))}
+      </ul>
       {editing && (
         <>
-          <div className="os-pick">
-            {members.map((m) => {
-              const inBase = base.has(m.id);
-              const isOff = lec.off.some((x) => x.id === m.id);
-              const isOn = lec.staff.some((x) => x.id === m.id && x.added);
-              const state = inBase ? (isOff ? 'off' : 'base') : isOn ? 'on' : 'none';
-              const next = state === 'base' ? 'off' : state === 'none' ? 'on' : null;
-              return (
-                <button key={m.id} type="button" className={`os-chip ${state}`} disabled={pending}
-                  title={{ base: '누르면 빠짐', off: '누르면 다시 출근', on: '누르면 추가 취소', none: '누르면 추가 출근' }[state]}
-                  onClick={() => change(m.id, next, null, next === 'off' ? '빠짐으로 바꿨습니다' : next === 'on' ? '추가 출근으로 바꿨습니다' : '기본대로 돌렸습니다')}>
-                  <Person name={m.name} size={18} />
-                  {state === 'off' && <span className="os-badge off">빠짐</span>}
-                  {state === 'on' && <span className="os-badge on">추가</span>}
-                </button>
-              );
-            })}
-          </div>
-          {[...lec.off.map((x) => ({ ...x, kind: 'off' as const })), ...lec.staff.filter((x) => x.added).map((x) => ({ ...x, kind: 'on' as const }))].map((x) => (
-            <form key={x.id} className="os-memo" onSubmit={(e) => { e.preventDefault(); change(x.id, x.kind, draft[x.id] ?? ''); }}>
-              <span>{x.name} {x.kind === 'off' ? '빠짐' : '추가'}</span>
-              <input value={draft[x.id] ?? ''} onChange={(e) => setDraft({ ...draft, [x.id]: e.target.value })} placeholder="사유 (선택)" maxLength={100} aria-label={`${x.name} 사유`} />
-              <button className="btn small" disabled={pending}>저장</button>
-            </form>
-          ))}
+          {(lec.off.length > 0 || added.length > 0) && (
+            <ul className="os-undo">
+              {[...lec.off.map((x) => ({ ...x, kind: 'off' as const })), ...added.map((x) => ({ ...x, kind: 'on' as const }))].map((x) => (
+                <li key={`${x.kind}-${x.id}`}>
+                  <span>{x.name} {x.kind === 'off' ? '빠짐' : '추가'}</span>
+                  <button type="button" className="btn link small" disabled={pending}
+                    onClick={() => run(() => setChangeAction({ lectureId: lec.lectureId, date, userId: x.id, kind: null }), '되돌렸습니다')}>되돌리기</button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <ChangeForm date={date} lec={lec} members={members} />
         </>
       )}
       {error && <p className="msg error">{error}</p>}
@@ -193,32 +174,83 @@ function LectureDay({ date, lec, members, editing, me }: { date: string; lec: Da
   );
 }
 
+/** 변동 입력: 빠지는 사람 ▾ · 대신 나오는 사람 ▾ · 사유 */
+function ChangeForm({ date, lec, members }: { date: string; lec: DayLecture; members: { id: number; name: string }[] }) {
+  const { pending, error, run } = useRun();
+  const [off, setOff] = useState<number | null>(null);
+  const [on, setOn] = useState<number | null>(null);
+  const [note, setNote] = useState('');
+  const working = new Set(lec.staff.map((x) => x.id));
+  const offOptions = lec.staff.filter((x) => !x.added);
+  const onOptions = members.filter((m) => !working.has(m.id) && !lec.off.some((x) => x.id === m.id));
+  return (
+    <form className="os-change" onSubmit={(e) => {
+      e.preventDefault();
+      run(() => saveChangeAction({ lectureId: lec.lectureId, date, offUserId: off, onUserId: on, note }), '변동을 저장했습니다');
+      setOff(null); setOn(null); setNote('');
+    }}>
+      <div className="os-change-row">
+        <div className="field"><span>빠지는 사람</span><PersonSelect value={off} options={offOptions} onChange={setOff} label={`${lec.title} 빠지는 사람`} emptyLabel="없음" /></div>
+        <span className="os-arrow" aria-hidden>→</span>
+        <div className="field"><span>대신 나오는 사람</span><PersonSelect value={on} options={onOptions} onChange={setOn} label={`${lec.title} 대신 나오는 사람`} emptyLabel="없음" /></div>
+      </div>
+      <div className="os-change-row">
+        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="사유 (선택)" maxLength={100} aria-label={`${lec.title} 사유`} />
+        <button className="btn small primary" disabled={pending || (!off && !on)}>저장</button>
+      </div>
+      {error && <p className="msg error">{error}</p>}
+    </form>
+  );
+}
+
+type Group = { key: string; date: string; label: string; lectureId: number; title: string; slot: Change['slot']; off: (Change & { label: string })[]; on: (Change & { label: string })[] };
+
 function ChangesView(p: ViewProps) {
   const { pending, error, run } = useRun();
   const [onlyMine, setOnlyMine] = useState(false);
   const list = p.changes.filter((c) => !onlyMine || c.user.id === p.me.id);
+  // 날짜·강의별로 묶는다(빠진 사람 → 대신 나온 사람)
+  const groups: Group[] = [];
+  for (const c of list) {
+    const key = `${c.date}-${c.lectureId}`;
+    let g = groups.find((x) => x.key === key);
+    if (!g) { g = { key, date: c.date, label: c.label, lectureId: c.lectureId, title: c.title, slot: c.slot, off: [], on: [] }; groups.push(g); }
+    (c.kind === 'off' ? g.off : g.on).push(c);
+  }
+  const undo = (c: Change) => run(() => setChangeAction({ lectureId: c.lectureId, date: c.date, userId: c.user.id, kind: null }), '되돌렸습니다');
+  const Who = ({ c }: { c: Change }) => (
+    <span className={`os-who ${c.kind}`}>
+      <Person name={c.user.name} size={20} />
+      {p.isAdmin && <button type="button" className="os-x" disabled={pending} aria-label={`${c.user.name} ${c.kind === 'off' ? '빠짐' : '추가'} 되돌리기`} title="되돌리기" onClick={() => undo(c)}>✕</button>}
+    </span>
+  );
   return (
     <div className="os-body">
       <div className="os-bar">
         <MonthNav {...p} />
         <label className="os-only"><input type="checkbox" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} /> 내 것만</label>
       </div>
-      <p className="help">담당과 다르게 빠지거나 추가로 나오는 날만 모아서 보여요.</p>
-      {list.length === 0 ? <p className="empty">이번 달 변동 사항이 없습니다</p> : (
-        <ul className="os-changes">
-          {list.map((c) => (
-            <li key={c.id}>
-              <span className="os-c-date">{c.label}</span>
-              <b>{c.title}</b><span className="muted">{SLOT_INFO[c.slot].label}</span>
-              <Person name={c.user.name} size={20} />
-              <span className={`os-badge ${c.kind}`}>{c.kind === 'off' ? '빠짐' : '추가'}</span>
-              {c.note && <span className="muted os-note">{c.note}</span>}
-              {p.isAdmin && (
-                <button type="button" className="btn small" disabled={pending}
-                  onClick={() => run(() => setChangeAction({ lectureId: c.lectureId, date: c.date, userId: c.user.id, kind: null }), '기본대로 돌렸습니다')}>되돌리기</button>
-              )}
-            </li>
-          ))}
+      <p className="help">담당과 다르게 빠지거나 대신 나오는 날만 모아서 보여요.</p>
+      {groups.length === 0 ? <p className="empty">이번 달 변동 사항이 없습니다</p> : (
+        <ul className="os-groups">
+          {groups.map((g) => {
+            const notes = [...new Set([...g.off, ...g.on].map((c) => c.note).filter(Boolean))];
+            return (
+              <li key={g.key} className="os-group">
+                <div className="os-g-head">
+                  <span className="os-c-date">{g.label}</span>
+                  <b>{g.title}</b>
+                  <span className="muted">{SLOT_INFO[g.slot].label} {SLOT_INFO[g.slot].time}</span>
+                </div>
+                <div className="os-g-body">
+                  {g.off.length > 0 && <span className="os-g-side"><span className="os-badge off">빠짐</span>{g.off.map((c) => <Who key={c.id} c={c} />)}</span>}
+                  {g.off.length > 0 && g.on.length > 0 && <span className="os-arrow" aria-hidden>→</span>}
+                  {g.on.length > 0 && <span className="os-g-side"><span className="os-badge on">{g.off.length ? '대신' : '추가'}</span>{g.on.map((c) => <Who key={c.id} c={c} />)}</span>}
+                  {notes.length > 0 && <span className="os-g-note">{notes.join(' · ')}</span>}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       {error && <p className="msg error">{error}</p>}

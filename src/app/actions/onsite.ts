@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
 import { createLecture, deleteLecture, setChange, updateLecture, type LectureInput } from '@/lib/onsite';
+import { AppError } from '@/lib/errors';
 import { requireActionAdmin } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
@@ -30,6 +31,19 @@ export async function setChangeAction(input: { lectureId: number; date: string; 
   return runAction(async () => {
     const admin = await requireActionAdmin();
     await setChange(await getDb(), admin.id, input, new Date());
+    done();
+  });
+}
+
+/** 변동 한 번에: 빠지는 사람 · 대신 나오는 사람(둘 중 하나만 있어도 됨) · 사유 */
+export async function saveChangeAction(input: { lectureId: number; date: string; offUserId: number | null; onUserId: number | null; note: string }): Promise<ActionResult> {
+  return runAction(async () => {
+    const admin = await requireActionAdmin();
+    if (!input.offUserId && !input.onUserId) throw new AppError('invalid', '빠지는 사람이나 대신 나오는 사람을 골라 주세요');
+    const db = await getDb();
+    const now = new Date();
+    if (input.offUserId) await setChange(db, admin.id, { lectureId: input.lectureId, date: input.date, userId: input.offUserId, kind: 'off', note: input.note }, now);
+    if (input.onUserId) await setChange(db, admin.id, { lectureId: input.lectureId, date: input.date, userId: input.onUserId, kind: 'on', note: input.note }, now);
     done();
   });
 }
