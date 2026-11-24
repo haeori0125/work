@@ -16,6 +16,10 @@ export type Block =
 
 const MARKS: [string, 'b' | 'i' | 's'][] = [['*', 'b'], ['_', 'i'], ['~', 's']];
 
+// 기호 앞뒤가 영문·숫자에 붙어 있으면 서식이 아님(snake_case, 1~3 같은 것).
+// 한글은 조사가 바로 붙으니(*중요*한) 붙어 있어도 서식으로 본다.
+const WORDY = /[A-Za-z0-9]/;
+
 /** 한 줄 안의 서식. 코드(`)가 먼저이고, 그 밖에서 * _ ~ 를 찾는다(앞뒤가 글자에 붙은 기호는 서식이 아님) */
 export function parseInline(src: string): Inline[] {
   const out: Inline[] = [];
@@ -38,7 +42,7 @@ export function parseInline(src: string): Inline[] {
       const inner = end > i + 1 ? src.slice(i + 1, end) : '';
       const after = end >= 0 && end + 1 < src.length ? src[end + 1] : ' ';
       const ok = inner && !/\s/.test(inner[0]) && !/\s/.test(inner[inner.length - 1])
-        && !/[\p{L}\p{N}]/u.test(before) && !/[\p{L}\p{N}]/u.test(after);
+        && !WORDY.test(before) && !WORDY.test(after);
       if (ok) { out.push({ t: mark[1], c: parseInline(inner) }); i = end + 1; continue; }
     }
     push(ch);
@@ -207,4 +211,48 @@ export function autoArrow(value: string, caret: number): { value: string; caret:
   if ((line.match(/`/g)?.length ?? 0) % 2 === 1) return null;
   if (/^\s*```/.test(line)) return null;
   return { value: value.slice(0, caret - 2) + arrow + value.slice(caret), caret: caret - 1 };
+}
+
+// ── 메모 편집기(보이는 그대로 편집)용: 저장된 글 → 편집기 HTML ──
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const TAG = { b: 'b', i: 'i', s: 's' } as const;
+function inlineHtml(items: Inline[]): string {
+  return items.map((x) => x.t === 'text' ? esc(x.v) : x.t === 'code' ? `<code>${esc(x.v)}</code>` : `<${TAG[x.t]}>${inlineHtml(x.c)}</${TAG[x.t]}>`).join('');
+}
+const lineHtml = (items: Inline[]) => inlineHtml(items) || '<br>';
+
+/** 저장된 글(슬랙식 표시)을 편집기에 넣을 HTML로. 목록은 단계대로 중첩한다 */
+export function toEditorHtml(text: string): string {
+  const blocks = parseBlocks(text);
+  let html = '';
+  let k = 0;
+  while (k < blocks.length) {
+    const b = blocks[k];
+    if (b.t === 'ul' || b.t === 'ol') {
+      // 이어지는 목록(글머리표·번호 섞여도)을 한 덩어리로 중첩
+      const items: { kind: 'ul' | 'ol'; depth: number; c: Inline[] }[] = [];
+      while (k < blocks.length && (blocks[k].t === 'ul' || blocks[k].t === 'ol')) {
+        const lb = blocks[k] as Extract<Block, { t: 'ul' | 'ol' }>;
+        for (const it of lb.items) items.push({ kind: lb.t, depth: it.depth, c: it.c });
+        k += 1;
+      }
+      const stack: ('ul' | 'ol')[] = [];
+      for (const it of items) {
+        const d = Math.min(it.depth, stack.length);
+        while (stack.length > d + 1) html += `</li></${stack.pop()}>`;
+        if (stack.length === d + 1 && stack[d] !== it.kind) html += `</li></${stack.pop()}>`;
+        if (stack.length === d + 1) html += '</li><li>';
+        else { html += `<${it.kind}><li>`; stack.push(it.kind); }
+        html += lineHtml(it.c);
+      }
+      while (stack.length) html += `</li></${stack.pop()}>`;
+      continue;
+    }
+    if (b.t === 'p') html += `<div>${lineHtml(b.c)}</div>`;
+    else if (b.t === 'gap') html += '<div><br></div>';
+    else if (b.t === 'pre') html += `<pre>${esc(b.v) || '<br>'}</pre>`;
+    else if (b.t === 'quote') html += `<blockquote>${b.lines.map((l) => `<div>${lineHtml(l)}</div>`).join('')}</blockquote>`;
+    k += 1;
+  }
+  return html || '<div><br></div>';
 }

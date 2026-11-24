@@ -1,14 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
   createNoteAction, deleteNoteAction, setNotePinnedAction, setNotesSharedAction, updateNoteAction, type NoteDto, type SharedNoteDto,
 } from '@/app/actions/notes';
 import { useToast } from '@/app/_ui/Toast';
 import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
-import { autoArrow, autoBullet, continueList, indentLine, toggleLines, wrapCodeBlock, wrapInline, type Edit } from '@/lib/mrkdwn';
+import { RichEditor, SHORTCUTS, type FormatKey, type RichEditorHandle } from '@/app/_ui/RichEditor';
 import { RichText } from '@/app/_ui/RichText';
+import { MiniAvatar } from '@/app/_ui/AvatarContext';
 import { ShareDialog } from './ShareDialog';
 
 const SAVE_DELAY = 800;
@@ -29,38 +30,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   const toast = useToast();
   // 공유할 사람 고르는 창(어떤 메모들을)
   const [sharing, setSharing] = useState<number[] | null>(null);
-  // 쓰는 중이 아니면 서식이 적용된 모습으로 보여 주고, 누르면 편집
-  const [writing, setWriting] = useState(false);
-  const area = useRef<HTMLTextAreaElement>(null);
-  // 보기 화면을 눌러 편집으로 넘어갈 때: 누른 줄에 커서를 두고 스크롤도 그대로(화면이 튀지 않게)
-  const enter = useRef<{ line: number; scrollTop: number } | null>(null);
-  const openAt = (e: React.MouseEvent<HTMLDivElement> | null) => {
-    const v = e?.currentTarget;
-    if (v && e) {
-      const lh = parseFloat(getComputedStyle(v).lineHeight) || 26;
-      const y = e.clientY - v.getBoundingClientRect().top + v.scrollTop - parseFloat(getComputedStyle(v).paddingTop);
-      enter.current = { line: Math.max(0, Math.floor(y / lh)), scrollTop: v.scrollTop };
-    } else enter.current = { line: Infinity, scrollTop: 0 };
-    setWriting(true);
-  };
-  useLayoutEffect(() => {
-    const el = area.current, at = enter.current;
-    if (!writing || !el || !at) return;
-    enter.current = null;
-    const lines = el.value.split('\n');
-    const line = Math.min(at.line, lines.length - 1);
-    const pos = lines.slice(0, line + 1).join('\n').length; // 그 줄 끝
-    el.focus({ preventScroll: true });
-    el.setSelectionRange(pos, pos);
-    el.scrollTop = at.scrollTop;
-  }, [writing]);
-  // 글을 바꾼 뒤 커서 자리 잡기. 그사이 더 입력했으면(글이 달라졌으면) 건드리지 않는다
-  const placeCaret = (value: string, start: number, end: number, focus = false) => requestAnimationFrame(() => {
-    const el = area.current;
-    if (!el || el.value !== value) return;
-    if (focus) el.focus();
-    el.setSelectionRange(start, end);
-  });
+  const editor = useRef<RichEditorHandle>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving' | 'error'>('saved');
@@ -132,7 +102,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   const select = async (id: number) => {
     if (!(await flush())) return; // 저장 못 한 글이 있으면 다른 메모로 넘어가지 않는다
     setNotes((list) => sortNotes(list));
-    setCurrentId(id); setArmed(false); setMobileOpen(true); setError(null); setWriting(false);
+    setCurrentId(id); setArmed(false); setMobileOpen(true); setError(null);
   };
 
   const create = async () => {
@@ -144,8 +114,8 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
     setCreating(false);
     if ('error' in res) { setError(res.error); return; }
     setNotes((list) => sortNotes([res, ...list]));
-    setCurrentId(res.id); setQuery(''); setArmed(false); setMobileOpen(true); setWriting(true);
-    requestAnimationFrame(() => document.getElementById('note-text')?.focus());
+    setCurrentId(res.id); setQuery(''); setArmed(false); setMobileOpen(true);
+    requestAnimationFrame(() => editor.current?.focus());
   };
 
   const togglePin = async () => {
@@ -250,10 +220,19 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
       <section className="panel note-editor" aria-label="메모 편집">
         <div className="ne-top">
           <button className="ne-back" type="button" onClick={async () => { if (await flush()) setMobileOpen(false); }}>‹ 메모</button>
-          <span className="muted">{current ? fullFmt.format(new Date(current.updatedAt)) : viewing ? fullFmt.format(new Date(viewing.updatedAt)) : ''}</span>
+          <span className="muted ne-date">{current ? fullFmt.format(new Date(current.updatedAt)) : viewing ? fullFmt.format(new Date(viewing.updatedAt)) : ''}</span>
           <span className="spacer" />
           {viewing && <span className="muted">{viewing.authorName} 님이 공유한 메모 · 읽기 전용</span>}
           {current && <>
+            {current.shared && (
+              <button type="button" className="ne-shared-with av-stack" onClick={() => setSharing([current.id])}
+                title={`공유 중 · ${toLabel(current.sharedTo)}`} aria-label={`공유 받는 사람: ${toLabel(current.sharedTo)}`}>
+                {current.sharedTo.length === 0 ? <span className="ne-all">👥 모두</span> : <>
+                  {current.sharedTo.slice(0, 3).map((id) => <MiniAvatar key={id} name={nameOf.get(id) ?? '?'} size={22} />)}
+                  {current.sharedTo.length > 3 && <span className="mc-extra">+{current.sharedTo.length - 3}</span>}
+                </>}
+              </button>
+            )}
             <button className={`btn small${current.shared ? ' soft' : ''}`} type="button" onClick={() => setSharing([current.id])}
               title={current.shared ? `공유 중 · ${toLabel(current.sharedTo)}` : '공유할 사람 고르기'}>{current.shared ? '공유 중' : '공유'}</button>
             <button className="btn small" type="button" onClick={togglePin}>{current.pinned ? '고정 해제' : '고정'}</button>
@@ -261,47 +240,12 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
           </>}
         </div>
         {current ? (
-          writing || !current.body ? (
-            <textarea id="note-text" ref={area} value={current.body}
-              onFocus={() => setWriting(true)}
-              onChange={(e) => {
-                // 줄 맨 앞 "* "·"- " → "• ", "->" → "→"
-                const r = autoBullet(e.target.value, e.target.selectionStart) ?? autoArrow(e.target.value, e.target.selectionStart);
-                if (!r) { edit(e.target.value); return; }
-                edit(r.value);
-                placeCaret(r.value, r.caret, r.caret);
-              }}
-              onKeyDown={(e) => {
-                const t = e.currentTarget;
-                if (t.selectionStart !== t.selectionEnd || e.nativeEvent.isComposing) return;
-                const r = e.key === 'Enter' && !e.shiftKey ? continueList(t.value, t.selectionStart)
-                  : e.key === 'Tab' ? indentLine(t.value, t.selectionStart, e.shiftKey) : null;
-                if (!r) return;
-                e.preventDefault();
-                edit(r.value);
-                placeCaret(r.value, r.caret, r.caret);
-              }}
-              onBlur={() => { void flush(); if (current.body) setWriting(false); }}
-              placeholder={'첫 줄이 메모 제목이 됩니다\n* 글머리표  1. 번호  `코드`  *굵게*  _기울임_  ~취소선~  > 인용  ```코드 블록```'}
-              aria-label="메모 내용" maxLength={20000} />
-          ) : (
-            <div className="ne-view" role="button" tabIndex={0} aria-label="메모 편집하기" title="눌러서 편집"
-              onClick={(e) => openAt(e)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); openAt(null); } }}>
-              <RichText text={current.body} />
-            </div>
-          )
+          <RichEditor id="note-text" key={current.id} ref={editor} initial={current.body} onChange={edit} onBlur={() => { void flush(); }}
+            placeholder="첫 줄이 메모 제목이 됩니다" ariaLabel="메모 내용" />
         ) : viewing ? (
           <div className="ne-view readonly" aria-label="공유된 메모 내용"><RichText text={viewing.body} /></div>
         ) : <p className="nl-empty">{creating ? '새 메모를 만드는 중…' : '왼쪽에서 메모를 고르거나 새 메모를 만드세요.'}</p>}
-        {current && <FormatBar onApply={(fn) => {
-          // 편집 중이면 고른 곳에, 아니면 글 끝에 적용하고 편집으로 넘어간다
-          const t = area.current;
-          const end = current.body.length;
-          const r = fn(current.body, t ? t.selectionStart : end, t ? t.selectionEnd : end);
-          edit(r.value);
-          setWriting(true);
-          placeCaret(r.value, r.start, r.end, true);
-        }} />}
+        {current && <FormatBar onApply={(k) => editor.current?.apply(k)} />}
         <div className="ne-foot">
           <span className="muted" role="status">
             {saveState === 'saving' ? '저장 중…' : saveState === 'dirty' ? '입력 중…' : saveState === 'error' ? `저장하지 못했습니다 · ${error ?? ''}` : '자동 저장됨'}
@@ -319,40 +263,49 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   );
 }
 
-type Apply = (value: string, s: number, e: number) => Edit;
-const TOOLS: { key: string; label: string; icon: React.ReactNode; fn: Apply }[] = [
-  { key: 'b', label: '굵게', icon: <b>B</b>, fn: (v, s, e) => wrapInline(v, s, e, '*') },
-  { key: 'i', label: '기울임', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i>, fn: (v, s, e) => wrapInline(v, s, e, '_') },
-  { key: 's', label: '취소선', icon: <s>S</s>, fn: (v, s, e) => wrapInline(v, s, e, '~') },
-  { key: 'code', label: '코드', icon: <span className="fb-mono">&lt;/&gt;</span>, fn: (v, s, e) => wrapInline(v, s, e, '`') },
+const TOOLS: { key: FormatKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'b', label: '굵게', icon: <b>B</b> },
+  { key: 'i', label: '기울임', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i> },
+  { key: 's', label: '취소선', icon: <s>S</s> },
+  { key: 'code', label: '코드', icon: <span className="fmt-mono">&lt;/&gt;</span> },
   { key: 'ol', label: '번호 목록', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
       <path d="M7 4h7M7 8h7M7 12h7" /><text x="1" y="6" fontSize="5.5" fill="currentColor" stroke="none" fontWeight="700">1</text>
       <text x="1" y="14" fontSize="5.5" fill="currentColor" stroke="none" fontWeight="700">2</text></svg>
-  ), fn: (v, s, e) => toggleLines(v, s, e, 'ol') },
+  ) },
   { key: 'ul', label: '글머리표', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
       <path d="M7 4h7M7 8h7M7 12h7" /><g fill="currentColor" stroke="none"><circle cx="2.8" cy="4" r="1.3" /><circle cx="2.8" cy="8" r="1.3" /><circle cx="2.8" cy="12" r="1.3" /></g></svg>
-  ), fn: (v, s, e) => toggleLines(v, s, e, 'ul') },
+  ) },
   { key: 'q', label: '인용', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
       <path d="M3 2.5v11M7 5h7M7 8h7M7 11h5" /></svg>
-  ), fn: (v, s, e) => toggleLines(v, s, e, 'quote') },
+  ) },
   { key: 'pre', label: '코드 블록', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
       <rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M6 6.5 4.5 8 6 9.5M10 6.5 11.5 8 10 9.5" strokeLinecap="round" /></svg>
-  ), fn: wrapCodeBlock },
+  ) },
 ];
 
+const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+const noSub = () => () => {};
+const keyLabel = (key: FormatKey, mac: boolean) => {
+  const k = SHORTCUTS.find((x) => x.key === key)!;
+  const c = k.code.replace(/^Key|^Digit/, '');
+  return mac ? `${k.alt ? '⌥' : ''}${k.shift ? '⇧' : ''}⌘${c}` : `Ctrl+${k.alt ? 'Alt+' : ''}${k.shift ? 'Shift+' : ''}${c}`;
+};
+
 /** 슬랙처럼 편집 칸 아래의 서식 버튼 줄. 누르는 동안 편집 칸 포커스를 뺏지 않는다 */
-function FormatBar({ onApply }: { onApply: (fn: Apply) => void }) {
+function FormatBar({ onApply }: { onApply: (key: FormatKey) => void }) {
+  // 맥이면 ⌘, 아니면 Ctrl로 안내(서버에서는 Ctrl로 그렸다가 브라우저에서 맞춘다)
+  const mac = useSyncExternalStore(noSub, isMac, () => false);
   return (
     <div className="fmt-bar" role="toolbar" aria-label="서식">
       {TOOLS.map((t, i) => (
         <span key={t.key} className="fmt-wrap">
           {(i === 4 || i === 6) && <span className="fmt-sep" aria-hidden />}
-          <button type="button" className="fmt-btn" aria-label={t.label} title={t.label}
-            onPointerDown={(e) => e.preventDefault()} onMouseDown={(e) => e.preventDefault()} onClick={() => onApply(t.fn)}>{t.icon}</button>
+          <button type="button" className="fmt-btn" aria-label={t.label} title={`${t.label} (${keyLabel(t.key, mac)})`}
+            onPointerDown={(e) => e.preventDefault()} onMouseDown={(e) => e.preventDefault()} onClick={() => onApply(t.key)}>{t.icon}</button>
         </span>
       ))}
     </div>

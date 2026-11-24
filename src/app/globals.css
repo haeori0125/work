@@ -1169,3 +1169,23 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .ne-view .rt ul li.d2::before { content: '▪ '; }
 .ne-view .rt ol li::before { content: attr(value) '. '; }
 .ne-view .rt ul li.d0, .ne-view .rt ul li.d1, .ne-view .rt ul li.d2 { list-style: none; }
+/* 메모 편집기(보이는 그대로 편집) */
+.rich-ed { flex: 1; min-height: 440px; padding: 16px 22px; font-size: 15px; line-height: 1.75; color: var(--text); outline: none; overflow-wrap: anywhere; white-space: pre-wrap; position: relative; }
+.rich-ed:focus, .rich-ed:focus-visible { outline: none; box-shadow: none; }
+.rich-ed.empty::before { content: attr(data-ph); position: absolute; left: 22px; top: 16px; color: var(--muted); pointer-events: none; }
+.rich-ed ul, .rich-ed ol { margin: 0; padding-left: 24px; }
+.rich-ed ul { list-style: disc; }
+.rich-ed ul ul { list-style: circle; }
+.rich-ed ul ul ul { list-style: square; }
+.rich-ed ul ul ul ul { list-style: disc; }
+.rich-ed li::marker { color: var(--ink); }
+.rich-ed blockquote { margin: 2px 0; padding: 0 0 0 12px; border-left: 3px solid color-mix(in srgb, var(--accent) 70%, var(--line)); }
+.rich-ed pre { margin: 4px 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+.rich-ed code { padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--red) 8%, var(--surface-2)); color: color-mix(in srgb, var(--red) 75%, var(--text)); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
+.rich-ed pre code { background: none; color: inherit; padding: 0; }
+@media (max-width: 720px) { .rich-ed { min-height: 320px; } }
+.ne-shared-with { display: inline-flex; align-items: center; border: 0; background: none; padding: 2px 4px; cursor: pointer; border-radius: 999px; }
+.ne-shared-with:hover { background: var(--surface-2); }
+.ne-all { font-size: 12px; font-weight: 700; color: var(--muted); }
+.ne-back { white-space: nowrap; }
+@media (max-width: 720px) { .ne-date { display: none; } }

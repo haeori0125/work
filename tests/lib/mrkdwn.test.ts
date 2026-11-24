@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autoArrow, autoBullet, continueList, indentLine, parseBlocks, parseInline, toggleLines, wrapCodeBlock, wrapInline } from '@/lib/mrkdwn';
+import { autoArrow, toEditorHtml, autoBullet, continueList, indentLine, parseBlocks, parseInline, toggleLines, wrapCodeBlock, wrapInline } from '@/lib/mrkdwn';
 
 describe('parseInline', () => {
   it('reads slack-style marks and code', () => {
@@ -77,5 +77,24 @@ describe('autoArrow', () => {
     expect(autoArrow('<-x', 2)).toEqual({ value: '←x', caret: 1 });
     expect(autoArrow('`a ->', 5)).toBeNull();
     expect(autoArrow('a -', 3)).toBeNull();
+  });
+});
+
+describe('korean', () => {
+  it('formats marks glued to korean words but not inside english words or numbers', () => {
+    expect(parseInline('*중요*한 말')).toEqual([{ t: 'b', c: [{ t: 'text', v: '중요' }] }, { t: 'text', v: '한 말' }]);
+    expect(parseInline('정말~취소~했어')).toEqual([{ t: 'text', v: '정말' }, { t: 's', c: [{ t: 'text', v: '취소' }] }, { t: 'text', v: '했어' }]);
+    expect(parseInline('snake_case_name')).toEqual([{ t: 'text', v: 'snake_case_name' }]);
+    expect(parseInline('1~3시 5~6시')).toEqual([{ t: 'text', v: '1~3시 5~6시' }]);
+  });
+});
+
+describe('toEditorHtml', () => {
+  it('turns saved text into editor html with nested lists', () => {
+    expect(toEditorHtml('제목\n\n*굵게* `c` <x>')).toBe('<div>제목</div><div><br></div><div><b>굵게</b> <code>c</code> &lt;x&gt;</div>');
+    expect(toEditorHtml('• a\n\t◦ b\n\t\t▪ c\n• d')).toBe('<ul><li>a<ul><li>b<ul><li>c</li></ul></li></ul></li><li>d</li></ul>');
+    expect(toEditorHtml('1. a\n2. b\n\t• c')).toBe('<ol><li>a</li><li>b<ul><li>c</li></ul></li></ol>');
+    expect(toEditorHtml('> 인용\n```\nx\n```')).toBe('<blockquote><div>인용</div></blockquote><pre>x</pre>');
+    expect(toEditorHtml('')).toBe('<div><br></div>');
   });
 });
