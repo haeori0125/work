@@ -1197,7 +1197,7 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .ne-sw-av { display: inline-flex; border-radius: 50%; margin-left: -5px; box-shadow: 0 0 0 2px var(--surface); }
 .ne-sw-av:first-child, .ne-all + .ne-sw-av { margin-left: 0; }
 .ne-all + .ne-sw-av { margin-left: 6px; }
-.ne-sw-av.live { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #2fb36b; z-index: 1; }
+.ne-sw-av.live { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px color-mix(in srgb, var(--accent) 65%, var(--ink)); z-index: 1; }
 .rich-ed.readonly { cursor: default; }
 @media (max-width: 720px) { .ne-from { display: none; } }
 /* 체크리스트 */
