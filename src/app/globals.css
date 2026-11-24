@@ -1080,3 +1080,6 @@ button.os-base-cell:hover { background: var(--surface-2); }
   .os-lec { grid-template-columns: minmax(0, 1fr) auto; }
   .os-lec-staff { grid-column: 1 / -1; grid-row: 2; }
 }
+.os-guide { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); font-size: 13px; line-height: 1.55; }
+.os-guide p { margin: 0; }
+.os-guide b { color: var(--ink); }

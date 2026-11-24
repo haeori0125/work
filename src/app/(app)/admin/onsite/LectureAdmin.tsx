@@ -45,7 +45,11 @@ export function LectureAdmin(p: Props) {
           <PlusIcon size={10} />강의 등록
         </button>
       </div>
-      <p className="help">강의마다 지점명·요일·시간대·기간을 정하면, 그 기간 동안 매주 그 요일 달력에 들어가요. 이 달에 열리는 강의만 보여요.</p>
+      <div className="os-guide">
+        <p>강의마다 지점명·요일·시간대·기간을 정하면, 그 기간 동안 매주 그 요일 달력에 들어가요. 이 달에 열리는 강의만 보여요.</p>
+        <p><b>담당이 바뀔 때도 새 강의로 등록하세요.</b> 기존 강의는 바뀌기 전날까지로 종료일을 줄이고, 바뀌는 날부터 새 담당으로 강의를 하나 더 등록하면 지난 기록이 그대로 남아요.</p>
+        <p className="muted">하루만 빠지거나 대신 나가는 건 강의를 고치지 말고, 현장 수업 달력에서 그날을 눌러 <b>변동 입력</b>으로 남겨 주세요.</p>
+      </div>
 
       {editing === 'new' && (
         <LectureForm members={p.members} start={p.defaultStart} end={p.defaultEnd} onDone={() => setEditing(null)} />
