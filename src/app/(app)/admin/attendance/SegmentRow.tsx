@@ -7,6 +7,8 @@ import { useToast } from '@/app/_ui/Toast';
 
 type Props = {
   id: number; dateLabel: string; name: string; index: number; count: number;
+  /** 그 사람·그 날의 첫 줄(날짜·이름·합계를 보여 줌) */
+  lead: boolean;
   clockIn: string; clockOut: string; missing: boolean; working: boolean; edited: boolean;
   dayTotal: string | null;
 };
@@ -27,9 +29,9 @@ export function SegmentRow(p: Props) {
   const dirty = inT !== p.clockIn || outT !== p.clockOut;
   const label = `${p.name} ${p.dateLabel}${p.count > 1 ? ` ${p.index + 1}번째` : ''}`;
   return (
-    <tr className={p.index === 0 ? 'seg-first' : undefined}>
-      <td className="c-date">{p.index === 0 ? p.dateLabel : ''}</td>
-      <td className="c-name">{p.index === 0 ? <Person name={p.name} size={20} /> : ''}</td>
+    <tr className={p.lead ? 'seg-first' : undefined}>
+      <td className="c-date">{p.lead ? p.dateLabel : ''}</td>
+      <td className="c-name">{p.lead ? <Person name={p.name} size={20} /> : ''}</td>
       <td className="c-seg muted">{p.count > 1 ? `${p.index + 1}/${p.count}` : ''}</td>
       <td className="c-in"><input type="time" value={inT} onChange={(e) => setIn(e.target.value)} aria-label={`${label} 출근`} /></td>
       <td className="c-out">

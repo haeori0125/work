@@ -932,3 +932,4 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 }
 .tag.who-tag { display: inline-flex; align-items: center; gap: 6px; }
 .tag.who-tag .person { gap: 4px; }
+.panel-head .count + .wf { margin-left: 4px; }
