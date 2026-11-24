@@ -1217,3 +1217,18 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .rt-todo li.done .rt-box { background: var(--accent); border-color: var(--accent); color: var(--ink); }
 .rich-ed { padding-left: 28px; }
 .rich-ed.empty::before { left: 28px; }
+/* 메모가 길어도 화면 높이에 맞추고 안에서 스크롤(목록·편집 칸 따로) */
+.notes-app { height: max(560px, calc(100dvh - 230px)); }
+.note-list { overflow-y: auto; overscroll-behavior: contain; }
+.note-editor { min-height: 0; overflow: hidden; }
+.rich-wrap { overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.rich-ed { flex: 1 0 auto; min-height: 100%; box-sizing: border-box; }
+@media (max-width: 720px) {
+  .notes-app { height: max(420px, calc(100dvh - 275px)); }
+  .rich-ed { min-height: 100%; }
+}
+@media (max-width: 720px) {
+  .fmt-bar { padding: 6px 8px; justify-content: space-between; }
+  .fmt-btn { width: 28px; height: 30px; }
+  .fmt-sep { margin: 0 1px; }
+}
