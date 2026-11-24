@@ -28,7 +28,7 @@ export type PartView = {
   /** "영희 10:12" — 화면에서 상태 아이콘(✓/◐)을 앞에 붙인다 */
   tag: string | null;
   by: string | null;
-  /** 목록에서 보이는 체크 시각 "09:14" */
+  /** 목록에서 보이는 체크 시각: 오늘이면 "09:14", 다른 날이면 날짜 포함 */
   at: string | null;
   /** 팝업 안에서 보이는 체크 날짜·시각 "11/21(금) 09:14" */
   atFull: string | null;
@@ -47,7 +47,7 @@ export type OccurrenceView = {
   lastChange: string | null;
   /** 위클리 칸용 짧은 상태 태그 글자: "민수" */
   lastBy: string | null;
-  /** 목록에서 보이는 시각 "09:14" */
+  /** 목록에서 보이는 시각: 오늘이면 "09:14", 다른 날이면 "11/21(금) 09:14" */
   lastAt: string | null;
   /** 팝업 안에서 보이는 날짜·시각 "11/21(금) 09:14" */
   lastAtFull: string | null;
@@ -82,8 +82,8 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
     // 파트가 있는 업무는 파트마다 태그가 붙으므로 업무 줄에는 상태 태그를 두지 않는다
     lastChange: o.parts.length ? null : changeTag(o.status, o.lastChange, today),
     lastBy: o.parts.length ? null : changeTag(o.status, o.lastChange, null),
-    // 목록(밖)에서는 시각만, 팝업(안)에서는 날짜와 시각
-    lastAt: o.parts.length || o.status === 'todo' || !o.lastChange ? null : formatKstTime(o.lastChange.at),
+    // 목록(밖): 오늘이면 시각만, 다른 날이면 날짜도 / 팝업(안): 항상 날짜와 시각
+    lastAt: o.parts.length || o.status === 'todo' || !o.lastChange ? null : formatWhen(o.lastChange.at, today),
     lastAtFull: o.parts.length || o.status === 'todo' || !o.lastChange ? null : formatWhenFull(o.lastChange.at),
     commentCount: o.commentCount,
     repeatLabel: REPEAT_SHORT[o.repeat] ?? null,
@@ -94,7 +94,7 @@ export function toOccurrenceView(o: Occurrence, today: string): OccurrenceView {
       id: p.id, title: p.title, assignee: p.assignee?.name ?? null, status: p.status,
       tag: changeTag(p.status, p.lastChange, today),
       by: p.status === 'todo' || !p.lastChange ? null : p.lastChange.userName,
-      at: p.status === 'todo' || !p.lastChange ? null : formatKstTime(p.lastChange.at),
+      at: p.status === 'todo' || !p.lastChange ? null : formatWhen(p.lastChange.at, today),
       atFull: p.status === 'todo' || !p.lastChange ? null : formatWhenFull(p.lastChange.at),
     })),
     partsLabel: o.parts.length ? `파트 ${partsDone}/${o.parts.length}` : null,
