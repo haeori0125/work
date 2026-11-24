@@ -1191,10 +1191,14 @@ button.os-base-cell:hover { background: var(--surface-2); }
 @media (max-width: 720px) { .ne-date { display: none; } }
 /* 같이 편집: 다른 사람이 있는 줄 왼쪽에 프로필 */
 .rich-wrap { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
-.rich-mark { position: absolute; left: 2px; z-index: 1; height: 26px; display: grid; place-items: center; pointer-events: auto; transition: top .25s ease; }
-.rich-mark::after { content: ''; position: absolute; left: 19px; top: 3px; bottom: 3px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
+.rich-mark { position: absolute; right: 12px; width: 20px; z-index: 2; display: grid; place-items: center; transition: top .2s ease; }
+.rich-wrap > .rich-ed { position: relative; z-index: 1; }
+/* 공유 받은 사람 프로필, 지금 보고 있으면 테두리 */
+.ne-sw-av { display: inline-flex; border-radius: 50%; margin-left: -5px; box-shadow: 0 0 0 2px var(--surface); }
+.ne-sw-av:first-child, .ne-all + .ne-sw-av { margin-left: 0; }
+.ne-all + .ne-sw-av { margin-left: 6px; }
+.ne-sw-av.live { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px #2fb36b; z-index: 1; }
 .rich-ed.readonly { cursor: default; }
-.ne-peers { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 999px; background: var(--surface-2); }
 @media (max-width: 720px) { .ne-from { display: none; } }
 /* 체크리스트 */
 .rich-ed ul.todo { list-style: none; padding-left: 26px; }

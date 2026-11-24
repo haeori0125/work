@@ -224,6 +224,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
 
   type Row = { id: number; body: string; updatedAt: string; shared?: boolean; sharedEdit?: boolean; sharedTo?: number[]; author?: string | null };
   const nameOf = new Map(people.map((m) => [m.id, m.name]));
+  const live = new Set(peers.map((x) => x.userId));
   const toLabel = (ids: number[]) => {
     if (!ids.length) return '모두';
     const names = ids.map((x) => nameOf.get(x)).filter(Boolean) as string[];
@@ -283,23 +284,29 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
           <button className="ne-back" type="button" onClick={async () => { if (await flush()) setMobileOpen(false); }}>‹ 메모</button>
           <span className="muted ne-date">{doc ? fullFmt.format(new Date(doc.updatedAt)) : ''}</span>
           <span className="spacer" />
-          {peers.length > 0 && (
-            <span className="ne-peers av-stack" title={`같이 보는 중: ${peers.map((x) => x.name).join(', ')}`} aria-label={`같이 보는 중: ${peers.map((x) => x.name).join(', ')}`}>
-              {peers.slice(0, 4).map((x) => <MiniAvatar key={x.userId} name={x.name} size={22} />)}
-              {peers.length > 4 && <span className="mc-extra">+{peers.length - 4}</span>}
+          {viewing && peers.length > 0 && (
+            <span className="ne-shared-with" title={`지금 보는 중: ${peers.map((x) => x.name).join(', ')}`}>
+              {peers.slice(0, 4).map((x) => <span key={x.userId} className="ne-sw-av live"><MiniAvatar name={x.name} size={22} /></span>)}
             </span>
           )}
           {viewing && <span className="muted ne-from">{viewing.authorName} 님이 공유 · {viewing.sharedEdit ? '함께 편집' : '읽기 전용'}</span>}
           {current && <>
-            {current.shared && (
-              <button type="button" className="ne-shared-with av-stack" onClick={() => setSharing([current.id])}
-                title={`공유 중 · ${toLabel(current.sharedTo)}`} aria-label={`공유 받는 사람: ${toLabel(current.sharedTo)}`}>
-                {current.sharedTo.length === 0 ? <span className="ne-all">👥 모두</span> : <>
-                  {current.sharedTo.slice(0, 3).map((id) => <MiniAvatar key={id} name={nameOf.get(id) ?? '?'} size={22} />)}
-                  {current.sharedTo.length > 3 && <span className="mc-extra">+{current.sharedTo.length - 3}</span>}
-                </>}
-              </button>
-            )}
+            {current.shared && (() => {
+              // 공유 받은 사람 프로필. 지금 메모를 보고 있는 사람은 테두리로 표시(모두에게 공유면 보고 있는 사람만)
+              const ids = current.sharedTo.length ? current.sharedTo : peers.map((x) => x.userId);
+              const shown = [...ids].sort((a, b) => Number(live.has(b)) - Number(live.has(a))).slice(0, 4);
+              return (
+                <button type="button" className="ne-shared-with" onClick={() => setSharing([current.id])}
+                  title={`공유 중 · ${toLabel(current.sharedTo)}${peers.length ? ` · 지금 보는 중: ${peers.map((x) => x.name).join(', ')}` : ''}`}
+                  aria-label={`공유 받는 사람: ${toLabel(current.sharedTo)}`}>
+                  {current.sharedTo.length === 0 && <span className="ne-all">👥 모두</span>}
+                  {shown.map((id) => (
+                    <span key={id} className={`ne-sw-av${live.has(id) ? ' live' : ''}`}><MiniAvatar name={nameOf.get(id) ?? peers.find((x) => x.userId === id)?.name ?? '?'} size={22} /></span>
+                  ))}
+                  {ids.length > 4 && <span className="mc-extra">+{ids.length - 4}</span>}
+                </button>
+              );
+            })()}
             <button className={`btn small${current.shared ? ' soft' : ''}`} type="button" onClick={() => setSharing([current.id])}
               title={current.shared ? `공유 중 · ${toLabel(current.sharedTo)}` : '공유할 사람 고르기'}>{current.shared ? '공유 중' : '공유'}</button>
             <button className="btn small" type="button" onClick={togglePin}>{current.pinned ? '고정 해제' : '고정'}</button>

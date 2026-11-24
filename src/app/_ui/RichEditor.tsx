@@ -133,20 +133,20 @@ export const SHORTCUTS: { key: FormatKey; code: string; shift?: boolean; alt?: b
 
 export const RichEditor = forwardRef<RichEditorHandle, Props>(function RichEditor({ id, autoFocus, readOnly, marks = [], initial, onChange, onBlur, placeholder, ariaLabel }, ref) {
   const box = useRef<HTMLDivElement>(null);
-  const [tops, setTops] = useState<Map<number, number>>(new Map());
+  const [tops, setTops] = useState<Map<number, { top: number; h: number }>>(new Map());
   // 같이 보는 사람 표시 위치(그 줄의 높이)를 잰다
   const measure = () => {
     const el = box.current;
     if (!el) return;
     const lines = lineNodes(el);
     const base = el.getBoundingClientRect().top;
-    const next = new Map<number, number>();
+    const next = new Map<number, { top: number; h: number }>();
     for (const m of marks) {
       const n = lines[Math.min(m.line, lines.length - 1)];
       if (!n) continue;
       const r = document.createRange(); r.selectNodeContents(n);
       const rect = r.getClientRects()[0] ?? (n instanceof Element ? n.getBoundingClientRect() : null);
-      if (rect) next.set(m.key, rect.top - base);
+      if (rect) next.set(m.key, { top: rect.top - base, h: Math.max(rect.height, 22) });
     }
     setTops(next);
   };
@@ -400,11 +400,15 @@ export const RichEditor = forwardRef<RichEditorHandle, Props>(function RichEdito
 
   return (
     <div className="rich-wrap">
-    {marks.map((m) => tops.has(m.key) && (
-      <span key={m.key} className="rich-mark" style={{ top: tops.get(m.key) }} title={`${m.name} 님이 여기에 있어요`}>
-        <MiniAvatar name={m.name} size={18} />
-      </span>
-    ))}
+    {marks.map((m) => {
+      const at = tops.get(m.key);
+      return at && (
+        // 그 사람이 있는 줄 오른쪽 끝에 작은 프로필
+        <span key={m.key} className="rich-mark" style={{ top: at.top, height: at.h }} title={`${m.name} 님이 여기를 편집 중`}>
+          <MiniAvatar name={m.name} size={16} />
+        </span>
+      );
+    })}
     <div ref={box} id={id} className={`rich-ed${readOnly ? ' readonly' : ''}`} contentEditable={!readOnly} suppressContentEditableWarning
       role="textbox" aria-multiline aria-readonly={readOnly || undefined}
       aria-label={ariaLabel} data-ph={placeholder} spellCheck={false}
