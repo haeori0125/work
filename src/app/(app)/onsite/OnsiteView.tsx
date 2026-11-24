@@ -132,7 +132,6 @@ function DayPanel({ day, members, isAdmin, me }: { day: Day; members: { id: numb
       </div>
       {day.lectures.length === 0 && <p className="muted os-none">이 날은 현장 강의가 없어요</p>}
       {day.lectures.map((l) => <LectureDay key={l.lectureId} date={day.date} lec={l} members={members} editing={editing} me={me} />)}
-      {editing && <p className="help">빠지는 사람만 고르면 빠짐, 대신 나오는 사람만 고르면 추가 출근으로 남아요.</p>}
     </aside>
   );
 }
@@ -140,63 +139,73 @@ function DayPanel({ day, members, isAdmin, me }: { day: Day; members: { id: numb
 function LectureDay({ date, lec, members, editing, me }: { date: string; lec: DayLecture; members: { id: number; name: string }[]; editing: boolean; me: { id: number } }) {
   const { pending, error, run } = useRun();
   const slot = SLOT_INFO[lec.slot];
-  const added = lec.staff.filter((x) => x.added);
+  const undo = (userId: number) => run(() => setChangeAction({ lectureId: lec.lectureId, date, userId, kind: null }), '되돌렸습니다');
+  const X = ({ id, name }: { id: number; name: string }) => (editing
+    ? <button type="button" className="os-x" disabled={pending} aria-label={`${name} 변동 되돌리기`} title="되돌리기" onClick={() => undo(id)}>✕</button>
+    : null);
   return (
     <div className="os-slot">
       <div className="os-slot-head"><b>{lec.title}</b><span className="muted">{slot.label} {slot.time}</span></div>
       {lec.staff.length === 0 && lec.off.length === 0 && <p className="muted os-none">아직 출근할 사람이 없어요</p>}
       <ul className="os-people">
         {lec.staff.map((x) => (
-          <li key={x.id} className={x.id === me.id ? 'me' : undefined}><Person name={x.name} size={20} />{x.added && <span className="os-badge on">추가</span>}</li>
+          <li key={x.id} className={x.id === me.id ? 'me' : undefined}>
+            <Person name={x.name} size={20} />{x.added && <><span className="os-badge on">추가</span><X id={x.id} name={x.name} /></>}
+          </li>
         ))}
         {lec.off.map((x) => (
-          <li key={x.id} className="off"><Person name={x.name} size={20} /><span className="os-badge off">빠짐</span>{x.note && <span className="muted os-note">{x.note}</span>}</li>
+          <li key={x.id} className="off">
+            <Person name={x.name} size={20} /><span className="os-badge off">빠짐</span>{x.note && <span className="muted os-note">{x.note}</span>}<X id={x.id} name={x.name} />
+          </li>
         ))}
       </ul>
-      {editing && (
-        <>
-          {(lec.off.length > 0 || added.length > 0) && (
-            <ul className="os-undo">
-              {[...lec.off.map((x) => ({ ...x, kind: 'off' as const })), ...added.map((x) => ({ ...x, kind: 'on' as const }))].map((x) => (
-                <li key={`${x.kind}-${x.id}`}>
-                  <span>{x.name} {x.kind === 'off' ? '빠짐' : '추가'}</span>
-                  <button type="button" className="btn link small" disabled={pending}
-                    onClick={() => run(() => setChangeAction({ lectureId: lec.lectureId, date, userId: x.id, kind: null }), '되돌렸습니다')}>되돌리기</button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <ChangeForm date={date} lec={lec} members={members} />
-        </>
-      )}
+      {editing && <ChangeForm date={date} lec={lec} members={members} />}
       {error && <p className="msg error">{error}</p>}
     </div>
   );
 }
 
-/** 변동 입력: 빠지는 사람 ▾ · 대신 나오는 사람 ▾ · 사유 */
+const MODES = [['swap', '대신 나옴'], ['off', '빠짐만'], ['on', '추가만']] as const;
+
+/** 변동 입력: 대신 나옴(빠지는 사람 → 대신 나오는 사람) · 빠짐만 · 추가만 */
 function ChangeForm({ date, lec, members }: { date: string; lec: DayLecture; members: { id: number; name: string }[] }) {
   const { pending, error, run } = useRun();
+  const [mode, setMode] = useState<(typeof MODES)[number][0]>('swap');
   const [off, setOff] = useState<number | null>(null);
   const [on, setOn] = useState<number | null>(null);
   const [note, setNote] = useState('');
   const working = new Set(lec.staff.map((x) => x.id));
   const offOptions = lec.staff.filter((x) => !x.added);
   const onOptions = members.filter((m) => !working.has(m.id) && !lec.off.some((x) => x.id === m.id));
+  const needOff = mode !== 'on', needOn = mode !== 'off';
+  const ready = (!needOff || off) && (!needOn || on);
   return (
     <form className="os-change" onSubmit={(e) => {
       e.preventDefault();
-      run(() => saveChangeAction({ lectureId: lec.lectureId, date, offUserId: off, onUserId: on, note }), '변동을 저장했습니다');
+      run(() => saveChangeAction({ lectureId: lec.lectureId, date, offUserId: needOff ? off : null, onUserId: needOn ? on : null, note }), '변동을 저장했습니다');
       setOff(null); setOn(null); setNote('');
     }}>
+      <div className="os-modes" role="radiogroup" aria-label={`${lec.title} 변동 종류`}>
+        {MODES.map(([k, label]) => (
+          <button key={k} type="button" role="radio" aria-checked={mode === k} onClick={() => setMode(k)}>{label}</button>
+        ))}
+      </div>
       <div className="os-change-row">
-        <div className="field"><span>빠지는 사람</span><PersonSelect value={off} options={offOptions} onChange={setOff} label={`${lec.title} 빠지는 사람`} emptyLabel="없음" /></div>
-        <span className="os-arrow" aria-hidden>→</span>
-        <div className="field"><span>대신 나오는 사람</span><PersonSelect value={on} options={onOptions} onChange={setOn} label={`${lec.title} 대신 나오는 사람`} emptyLabel="없음" /></div>
+        {needOff && (
+          <div className="field"><span>빠지는 사람</span>
+            <PersonSelect value={off} options={offOptions} onChange={setOff} label={`${lec.title} 빠지는 사람`} emptyLabel="고르기" />
+          </div>
+        )}
+        {needOff && needOn && <span className="os-arrow" aria-hidden>→</span>}
+        {needOn && (
+          <div className="field"><span>{mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'}</span>
+            <PersonSelect value={on} options={onOptions} onChange={setOn} label={`${lec.title} ${mode === 'swap' ? '대신 나오는 사람' : '추가로 나오는 사람'}`} emptyLabel="고르기" />
+          </div>
+        )}
       </div>
       <div className="os-change-row">
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="사유 (선택)" maxLength={100} aria-label={`${lec.title} 사유`} />
-        <button className="btn small primary" disabled={pending || (!off && !on)}>저장</button>
+        <button className="btn small primary" disabled={pending || !ready}>저장</button>
       </div>
       {error && <p className="msg error">{error}</p>}
     </form>

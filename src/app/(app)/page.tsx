@@ -10,6 +10,7 @@ import { requireUser } from '@/server/session';
 import { MemoPanel } from './_components/MemoPanel';
 import { MonthPanel } from './_components/MonthPanel';
 import { monthRange, shiftMonth } from '@/lib/month';
+import { getOnsiteDays } from '@/lib/onsite';
 import { TodayPanel } from './_components/TodayPanel';
 import { WeekPanel } from './_components/WeekPanel';
 
@@ -37,7 +38,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const gridStart = weekStartOf(range.from, prefs.weekStart);
   const gridWeeks: string[] = [];
   for (let w = gridStart; w <= range.to; w = addDays(w, 7)) gridWeeks.push(w);
-  const [past, day, weekly, week, posts, members, mine, ...monthWeeks] = await Promise.all([
+  const gridLast = addDays(gridWeeks.at(-1)!, 6);
+  const [onsite, past, day, weekly, week, posts, members, mine, ...monthWeeks] = await Promise.all([
+    getOnsiteDays(db, gridStart, gridLast),
     getPastOccurrences(db, today),
     getDayOccurrences(db, today),
     getWeeklyOccurrences(db, goalsWeek),
@@ -69,6 +72,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const monthDays = monthWeeks.flatMap((wk) => Object.entries(wk)).map(([date, items]) => ({
     date, dayNum: Number(date.slice(8)), inMonth: date.slice(0, 7) === month, isToday: date === today,
     isSun: kstWeekday(date) === 6, isSat: kstWeekday(date) === 5, items: v(items),
+    // 현장 강의 출근도 같은 달력에
+    onsite: onsite.find((o) => o.date === date)?.lectures ?? [],
   }));
   const weekdayNames = (prefs.weekStart === 'sun' ? [6, 0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]).map((i) => WD[i]);
   const dateLabel = `${md(today)} ${WD[kstWeekday(today)]}요일`;

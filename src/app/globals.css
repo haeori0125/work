@@ -1106,3 +1106,16 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .os-g-note { flex-basis: 100%; font-size: 13px; color: var(--muted); padding-left: 2px; }
 .os-g-note::before { content: "사유 · "; font-weight: 700; }
 @media (max-width: 760px) { .os-change-row { flex-wrap: wrap; } .os-change-row .os-arrow { display: none; } .os-change-row .field { flex-basis: 100%; } }
+.os-modes { display: grid; grid-template-columns: repeat(3, 1fr); padding: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.os-modes button { border: 0; border-radius: 999px; background: none; padding: 5px 6px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.os-modes button[aria-checked="true"] { background: var(--soft); color: var(--ink); }
+.os-change .field > span { font-size: 12px; font-weight: 600; color: var(--muted); }
+.os-people .os-x { margin-left: -2px; }
+/* 전체 업무 달력 안의 현장 강의 막대 */
+.mc-onsite { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; border-radius: 6px; background: var(--soft); color: var(--ink); text-decoration: none; font-size: 12.5px; line-height: 1.35; font-weight: 600; }
+.mc-onsite:hover { background: color-mix(in srgb, var(--accent) 35%, var(--surface)); }
+.mc-pin { flex: none; font-size: 10px; font-weight: 800; padding: 0 5px; border-radius: 4px; background: var(--surface); color: var(--ink); }
+.mc-unset { flex: none; margin-left: auto; font-size: 11px; font-weight: 500; color: var(--muted); }
+.mc-onsite .mc-who { margin-left: auto; }
+.mc-dots i.onsite { background: var(--ink); border-radius: 2px; }
+@media (max-width: 760px) { .mc-list .mc-onsite { font-size: 14px; padding: 7px 8px; } }
