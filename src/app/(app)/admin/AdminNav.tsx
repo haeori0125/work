@@ -7,6 +7,7 @@ const LINKS = [
   { href: '/admin/tasks', label: '업무 관리' },
   { href: '/admin/members', label: '멤버 관리' },
   { href: '/admin/attendance', label: '출퇴근 기록' },
+  { href: '/admin/onsite', label: '현장 스케줄' },
 ];
 
 export function AdminNav() {

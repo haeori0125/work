@@ -173,17 +173,6 @@ export const taskRequests = pgTable('task_requests', {
   taskId: integer('task_id').references(() => tasks.id, { onDelete: 'set null' }),
 }, (t) => [index('task_requests_status').on(t.status), index('task_requests_requester').on(t.requesterId)]);
 
-/**
- * 현장 수업 기본 스케줄: 기간(1–2월·3–6월·7–8월·9–11월·12월)마다 요일·시간대별로 출근할 사람.
- * term = "2026-2" 처럼 연도-기간번호, weekday 0=월 … 6=일, slot 'pm'(13:30–17:00) | 'eve'(18:30–22:00)
- */
-export const onsiteBase = pgTable('onsite_base', {
-  term: text('term').notNull(),
-  weekday: integer('weekday').notNull(),
-  slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-}, (t) => [primaryKey({ columns: [t.term, t.weekday, t.slot, t.userId] })]);
-
 /** 기본 스케줄에서 벗어난 날(개인 스케줄): 그날 그 시간대에 빠짐(off) 또는 추가 출근(on) */
 export const onsiteChanges = pgTable('onsite_changes', {
   id: serial('id').primaryKey(),
@@ -196,10 +185,27 @@ export const onsiteChanges = pgTable('onsite_changes', {
   createdAt: ts('created_at').notNull(),
 }, (t) => [unique('onsite_changes_one').on(t.date, t.slot, t.userId), index('onsite_changes_date').on(t.date)]);
 
-/** 기본 스케줄 칸(기간·요일·시간대)의 지점명 */
-export const onsiteSlotTitles = pgTable('onsite_slot_titles', {
-  term: text('term').notNull(),
+/** 현장 수업 기간(관리자가 이름·시작일·종료일을 정함). 날짜가 속한 기간의 기본 스케줄이 적용된다 */
+export const onsitePeriods = pgTable('onsite_periods', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  createdAt: ts('created_at').notNull(),
+});
+
+/** 기간마다 요일·시간대별 출근할 사람. weekday 0=월 … 6=일, slot 'pm'(13:30–17:00) | 'eve'(18:30–22:00) */
+export const onsitePeriodStaff = pgTable('onsite_period_staff', {
+  periodId: integer('period_id').notNull().references(() => onsitePeriods.id, { onDelete: 'cascade' }),
+  weekday: integer('weekday').notNull(),
+  slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ columns: [t.periodId, t.weekday, t.slot, t.userId] })]);
+
+/** 기간마다 요일·시간대 칸의 지점명 */
+export const onsitePeriodTitles = pgTable('onsite_period_titles', {
+  periodId: integer('period_id').notNull().references(() => onsitePeriods.id, { onDelete: 'cascade' }),
   weekday: integer('weekday').notNull(),
   slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
   title: text('title').notNull(),
-}, (t) => [primaryKey({ columns: [t.term, t.weekday, t.slot] })]);
+}, (t) => [primaryKey({ columns: [t.periodId, t.weekday, t.slot] })]);

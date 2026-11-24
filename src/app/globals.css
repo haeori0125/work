@@ -1046,3 +1046,21 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .os-title-form { display: flex; gap: 6px; max-width: 420px; }
 .os-title-form input { padding: 6px 10px; }
 .os-k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+.os-line.empty { background: color-mix(in srgb, var(--soft) 45%, var(--surface)); box-shadow: inset 0 0 0 1px var(--line); }
+.os-unset { margin-left: auto; font-size: 11px; color: var(--muted); }
+@media (max-width: 760px) { .os-unset { display: none; } }
+/* 현장 기본 스케줄: 기간 고르기 */
+.os-periods { display: flex; gap: 8px; flex-wrap: wrap; }
+.os-period {
+  display: inline-flex; flex-direction: column; gap: 1px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); color: var(--text); text-decoration: none; font: inherit; font-size: 13px; cursor: pointer; position: relative;
+}
+.os-period b { font-size: 14px; }
+.os-period span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.os-period em { position: absolute; top: -8px; right: 8px; font-style: normal; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: var(--accent); color: var(--on-accent); }
+.os-period[aria-current="true"] { background: var(--soft); border-color: color-mix(in srgb, var(--accent) 75%, var(--line)); color: var(--ink); }
+.os-period.add { flex-direction: row; align-items: center; gap: 6px; color: var(--ink); font-weight: 700; border-style: dashed; }
+.os-period-form { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; padding: 14px; border-radius: var(--radius); background: var(--surface-2); }
+.os-picked { font-size: 15px; }
+.os-copy { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); }
+@media (max-width: 760px) { .os-period-form { grid-template-columns: minmax(0, 1fr); } }

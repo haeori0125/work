@@ -2,33 +2,30 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { copyBaseAction, setBaseCellAction, setBaseTitleAction, setChangeAction } from '@/app/actions/onsite';
+import { setChangeAction } from '@/app/actions/onsite';
 import type { ActionResult } from '@/app/actions/result';
 import { MiniAvatar, Person } from '@/app/_ui/AvatarContext';
 import { useToast } from '@/app/_ui/Toast';
-import { SLOTS, slotName, type BaseTitles, type BaseWeek, type Change, type OnsiteDay, type Slot } from '@/lib/onsite-shared';
+import { SLOTS, slotName, type Change, type OnsiteDay, type Slot } from '@/lib/onsite-shared';
 import { kstWeekday } from '@/lib/time';
 
 type Day = OnsiteDay & { inMonth: boolean; label: string };
 type Props = {
   me: { id: number; role: 'member' | 'admin' };
-  view: 'cal' | 'changes' | 'base'; today: string;
+  view: 'cal' | 'changes'; today: string;
   month: string; monthTitle: string; prevMonth: string; nextMonth: string; isThisMonth: boolean;
   weekdays: string[]; days: Day[]; changes: (Change & { label: string; title: string | null })[]; members: { id: number; name: string }[];
-  term: string; termTitle: string; prevTerm: string; nextTerm: string; prevTermTitle: string; base: BaseWeek; titles: BaseTitles;
 };
 
 const SLOT = Object.fromEntries(SLOTS.map((s) => [s.key, s])) as Record<Slot, (typeof SLOTS)[number]>;
-const WD_MON = ['월', '화', '수', '목', '금', '토', '일'];
 
 /** 현장 수업: 달력(실제 출근) · 변동 사항 · 기본 스케줄 */
 export function OnsiteView(p: Props) {
   const isAdmin = p.me.role === 'admin';
-  const q = (o: { month?: string; term?: string; view?: string }) => {
+  const q = (o: { month?: string; view?: string }) => {
     const s = new URLSearchParams();
-    const month = o.month ?? p.month, term = o.term ?? p.term, view = o.view ?? p.view;
+    const month = o.month ?? p.month, view = o.view ?? p.view;
     if (month) s.set('month', month);
-    if (o.term || p.view === 'base') s.set('term', term);
     if (view !== 'cal') s.set('view', view);
     return `/onsite?${s}`;
   };
@@ -39,18 +36,16 @@ export function OnsiteView(p: Props) {
         <nav className="os-tabs" aria-label="보기">
           <Link href={q({ view: 'cal' })} aria-current={p.view === 'cal' ? 'page' : undefined} scroll={false}>달력</Link>
           <Link href={q({ view: 'changes' })} aria-current={p.view === 'changes' ? 'page' : undefined} scroll={false}>변동 사항</Link>
-          <Link href={q({ view: 'base' })} aria-current={p.view === 'base' ? 'page' : undefined} scroll={false}>기본 스케줄</Link>
         </nav>
         <span className="os-legend">{SLOTS.map((s) => <span key={s.key} className={`os-slotname ${s.key}`}>{s.label} {s.time}</span>)}</span>
       </div>
       {p.view === 'cal' && <CalendarView {...p} isAdmin={isAdmin} q={q} />}
       {p.view === 'changes' && <ChangesView {...p} isAdmin={isAdmin} q={q} />}
-      {p.view === 'base' && <BaseView {...p} isAdmin={isAdmin} q={q} />}
     </section>
   );
 }
 
-type ViewProps = Props & { isAdmin: boolean; q: (o: { month?: string; term?: string; view?: string }) => string };
+type ViewProps = Props & { isAdmin: boolean; q: (o: { month?: string; view?: string }) => string };
 
 function useRun() {
   const [pending, start] = useTransition();
@@ -110,10 +105,13 @@ function CalendarView(p: ViewProps) {
             return (
               <button key={d.date} type="button" role="gridcell" onClick={() => setPicked(d.date)}
                 className={`mc-cell os-cell${d.inMonth ? '' : ' out'}${d.date === p.today ? ' today' : ''}${d.date === shown ? ' picked' : ''}${mine(d) ? ' mine' : ''}`}
-                aria-label={`${d.label} ${d.slots.filter((s) => s.staff.length).map((s) => `${slotName(s.slot, s.title)} ${s.staff.length}명`).join(', ')}`}>
+                aria-label={`${d.label} ${d.slots.filter((s) => s.staff.length || s.title).map((s) => `${slotName(s.slot, s.title)} ${s.staff.length ? `${s.staff.length}명` : '미배정'}`).join(', ')}`}>
                 <span className={`mc-num${wd === 6 ? ' sun' : wd === 5 ? ' sat' : ''}`}>{Number(d.date.slice(8))}{changed && <i className="os-dot" aria-hidden />}</span>
-                {d.slots.map((s) => s.staff.length > 0 && (
-                  <span key={s.slot} className={`os-line ${s.slot}`}><span className="os-k">{slotName(s.slot, s.title)}</span><Faces people={s.staff} /></span>
+                {d.slots.map((s) => (s.staff.length > 0 || s.title) && (
+                  <span key={s.slot} className={`os-line ${s.slot}${s.staff.length ? '' : ' empty'}`}>
+                    <span className="os-k">{slotName(s.slot, s.title)}</span>
+                    {s.staff.length ? <Faces people={s.staff} /> : <span className="os-unset">미배정</span>}
+                  </span>
                 ))}
               </button>
             );
@@ -146,7 +144,7 @@ function DayPanel({ day, members, isAdmin, me }: { day: Day; members: { id: numb
             <div className="os-slot-head"><span className={`os-slotname ${s.slot}`}>{slotName(s.slot, s.title)}</span><span className="muted">{s.title ? `${SLOT[s.slot].label} ` : ''}{SLOT[s.slot].time}</span></div>
             {!editing && (
               <>
-                {s.staff.length === 0 && s.off.length === 0 && <p className="muted os-none">수업 없음</p>}
+                {s.staff.length === 0 && s.off.length === 0 && <p className="muted os-none">{s.title ? '아직 출근할 사람이 없어요' : '수업 없음'}</p>}
                 <ul className="os-people">
                   {s.staff.map((x) => (
                     <li key={x.id} className={x.id === me.id ? 'me' : undefined}><Person name={x.name} size={20} />{x.added && <span className="os-badge on">추가</span>}</li>
@@ -226,91 +224,6 @@ function ChangesView(p: ViewProps) {
             </li>
           ))}
         </ul>
-      )}
-      {error && <p className="msg error">{error}</p>}
-    </div>
-  );
-}
-
-function BaseView(p: ViewProps) {
-  const { pending, error, run } = useRun();
-  const [cell, setCell] = useState<{ wd: number; slot: Slot } | null>(null);
-  const empty = Object.values(p.base).every((w) => SLOTS.every((s) => w[s.key].length === 0));
-  const people = cell ? p.base[cell.wd][cell.slot] : [];
-  const toggle = (id: number) => {
-    if (!cell) return;
-    const ids = people.some((x) => x.id === id) ? people.filter((x) => x.id !== id).map((x) => x.id) : [...people.map((x) => x.id), id];
-    run(() => setBaseCellAction(p.term, cell.wd, cell.slot, ids));
-  };
-  return (
-    <div className="os-body">
-      <div className="os-bar">
-        <div className="nav-group">
-          <div className="week-nav">
-            <Link className="arrow" href={p.q({ term: p.prevTerm })} scroll={false} aria-label="이전 기간">‹</Link>
-            <span className="sub">{p.termTitle}</span>
-            <Link className="arrow" href={p.q({ term: p.nextTerm })} scroll={false} aria-label="다음 기간">›</Link>
-          </div>
-        </div>
-        {p.isAdmin && (
-          <button type="button" className="btn small" disabled={pending}
-            onClick={() => { if (empty || confirm(`${p.termTitle} 기본 스케줄을 ${p.prevTermTitle} 것으로 바꿀까요?`)) run(() => copyBaseAction(p.prevTerm, p.term), '복사했습니다'); }}>
-            {p.prevTermTitle} 복사해 오기
-          </button>
-        )}
-      </div>
-      <p className="help">이 기간 동안 매주 반복되는 출근이에요. {p.isAdmin ? '칸을 누르면 사람을 고를 수 있어요.' : ''}</p>
-      <div className="os-base-wrap">
-        <table className="os-base">
-          <thead><tr><th />{WD_MON.map((w, i) => <th key={w} className={i === 6 ? 'sun' : i === 5 ? 'sat' : undefined}>{w}</th>)}</tr></thead>
-          <tbody>
-            {SLOTS.map((s) => (
-              <tr key={s.key}>
-                <th><span className={`os-slotname ${s.key}`}>{s.label}</span><small>{s.time}</small></th>
-                {WD_MON.map((w, wd) => {
-                  const list = p.base[wd][s.key];
-                  const on = cell?.wd === wd && cell.slot === s.key;
-                  return (
-                    <td key={w} className={on ? 'on' : undefined}>
-                      {p.isAdmin ? (
-                        <button type="button" className="os-base-cell" onClick={() => setCell(on ? null : { wd, slot: s.key })} aria-pressed={on}
-                          aria-label={`${w}요일 ${s.label} ${p.titles[wd][s.key] ?? ''} ${list.map((x) => x.name).join(', ') || '없음'}`}>
-                          {p.titles[wd][s.key] && <b className={`os-title ${s.key}`}>{p.titles[wd][s.key]}</b>}
-                          {list.length ? list.map((x) => <Person key={x.id} name={x.name} size={18} />) : <span className="muted">—</span>}
-                        </button>
-                      ) : (
-                        <div className="os-base-cell">{p.titles[wd][s.key] && <b className={`os-title ${s.key}`}>{p.titles[wd][s.key]}</b>}{list.length ? list.map((x) => <Person key={x.id} name={x.name} size={18} />) : <span className="muted">—</span>}</div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {cell && p.isAdmin && (
-        <div className="os-cell-edit">
-          <b>{WD_MON[cell.wd]}요일 {SLOT[cell.slot].label}</b> <span className="muted">{SLOT[cell.slot].time} · 사람은 누를 때마다 바로 저장돼요</span>
-          <form key={`${cell.wd}-${cell.slot}`} className="os-title-form" onSubmit={(e) => {
-            e.preventDefault();
-            const v = String(new FormData(e.currentTarget).get('title') ?? '');
-            run(() => setBaseTitleAction(p.term, cell.wd, cell.slot, v), '지점명을 저장했습니다');
-          }}>
-            <input name="title" defaultValue={p.titles[cell.wd][cell.slot] ?? ''} maxLength={30} placeholder={`지점명 (예: 강남점, 비우면 '${SLOT[cell.slot].label}')`} aria-label="지점명" />
-            <button className="btn small primary" disabled={pending}>지점명 저장</button>
-          </form>
-          <div className="os-pick">
-            {p.members.map((m) => {
-              const sel = people.some((x) => x.id === m.id);
-              return (
-                <button key={m.id} type="button" className={`os-chip ${sel ? 'base' : 'none'}`} aria-pressed={sel} disabled={pending} onClick={() => toggle(m.id)}>
-                  <Person name={m.name} size={18} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
       {error && <p className="msg error">{error}</p>}
     </div>
