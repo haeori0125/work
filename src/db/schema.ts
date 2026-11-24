@@ -138,6 +138,10 @@ export const notes = pgTable('notes', {
   /** 공유(읽기 전용). 받는 사람은 note_shares, 없으면 모두 */
   shared: boolean('shared').notNull().default(false),
   sharedAt: ts('shared_at'),
+  /** 받는 사람도 같이 고칠 수 있음 */
+  sharedEdit: boolean('shared_edit').notNull().default(false),
+  /** 저장할 때마다 1씩. 동시에 고친 글을 합칠 때 기준 */
+  version: integer('version').notNull().default(0),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 }, (t) => [index('notes_user').on(t.userId)]);
@@ -147,6 +151,14 @@ export const noteShares = pgTable('note_shares', {
   noteId: integer('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 }, (t) => [primaryKey({ columns: [t.noteId, t.userId] }), index('note_shares_user').on(t.userId)]);
+
+/** 지금 메모를 보고 있는 사람과 커서가 있는 줄(몇 초마다 갱신, 오래된 건 무시) */
+export const notePresence = pgTable('note_presence', {
+  noteId: integer('note_id').notNull().references(() => notes.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  line: integer('line'),
+  at: ts('at').notNull(),
+}, (t) => [primaryKey({ columns: [t.noteId, t.userId] })]);
 
 export const userPrefs = pgTable('user_prefs', {
   userId: integer('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),

@@ -98,3 +98,27 @@ describe('toEditorHtml', () => {
     expect(toEditorHtml('')).toBe('<div><br></div>');
   });
 });
+
+describe('escapes', () => {
+  it('keeps typed marks as plain characters', () => {
+    expect(parseInline('가\\*나\\*다')).toEqual([{ t: 'text', v: '가*나*다' }]);
+    expect(parseInline('C:\\path \\\\')).toEqual([{ t: 'text', v: 'C:\\path \\' }]);
+    expect(toEditorHtml('\\*별\\*')).toBe('<div>*별*</div>');
+  });
+});
+
+describe('underline', () => {
+  it('reads ++underline++ and keeps a+b or 1++ as text', () => {
+    expect(parseInline('정말 ++중요++해')).toEqual([{ t: 'text', v: '정말 ' }, { t: 'u', c: [{ t: 'text', v: '중요' }] }, { t: 'text', v: '해' }]);
+    expect(parseInline('c++ 와 a+b')).toEqual([{ t: 'text', v: 'c++ 와 a+b' }]);
+    expect(toEditorHtml('++밑줄++')).toBe('<div><u>밑줄</u></div>');
+  });
+});
+
+describe('todo', () => {
+  it('reads [ ] and [x] lines as a checklist', () => {
+    expect(parseBlocks('[ ] 우유\n[x] 빵')).toEqual([{ t: 'todo', items: [
+      { depth: 0, done: false, c: [{ t: 'text', v: '우유' }] }, { depth: 0, done: true, c: [{ t: 'text', v: '빵' }] }] }]);
+    expect(toEditorHtml('[ ] 우유\n\t[x] 빵\n• 기타')).toBe('<ul class="todo"><li>우유<ul class="todo"><li data-done="1">빵</li></ul></li></ul><ul><li>기타</li></ul>');
+  });
+});

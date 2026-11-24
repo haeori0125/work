@@ -52,7 +52,7 @@ function Inlines({ items }: { items: Inline[] }) {
       {items.map((x, i) => {
         if (x.t === 'text') return <Links key={i} text={x.v} />;
         if (x.t === 'code') return <code key={i} className="rt-code">{x.v}</code>;
-        const Tag = x.t === 'b' ? 'strong' : x.t === 'i' ? 'em' : 's';
+        const Tag = x.t === 'b' ? 'strong' : x.t === 'i' ? 'em' : x.t === 'u' ? 'u' : 's';
         return <Tag key={i}><Inlines items={x.c} /></Tag>;
       })}
     </>
@@ -71,6 +71,13 @@ export function RichText({ text, className }: { text: string; className?: string
           case 'quote': return <blockquote key={i}>{b.lines.map((l, j) => <p key={j}><Inlines items={l} /></p>)}</blockquote>;
           case 'ul': return (
             <ul key={i}>{b.items.map((it, j) => <li key={j} className={`d${it.depth % 3}`} style={{ marginLeft: it.depth * 24 }}><Inlines items={it.c} /></li>)}</ul>
+          );
+          case 'todo': return (
+            <ul key={i} className="rt-todo">{b.items.map((it, j) => (
+              <li key={j} className={it.done ? 'done' : undefined} style={{ marginLeft: it.depth * 24 }}>
+                <span className="rt-box" aria-label={it.done ? '완료' : '할 일'} role="img">{it.done ? '✓' : ''}</span><Inlines items={it.c} />
+              </li>
+            ))}</ul>
           );
           case 'ol': return (
             <ol key={i}>{b.items.map((it, j) => <li key={j} value={it.n} style={{ marginLeft: it.depth * 24 }}><Inlines items={it.c} /></li>)}</ol>

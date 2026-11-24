@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createNote, deleteNote, listNotes, listSharedNotes, notePreview, noteTitle, setNotePinned, setNotesShared, updateNote,
+  createNote, deleteNote, leaveNote, listNotes, listSharedNotes, syncNote, notePreview, noteTitle, setNotePinned, setNotesShared, updateNote,
 } from '@/lib/notes';
 import { createTestDb } from '../helpers/db';
 import { at, makeUser } from '../helpers/fixtures';
@@ -90,5 +90,40 @@ describe('shared notes', () => {
     await setNotesShared(db, a, [n1.id], false, at('2026-11-24T03:00:00Z'));
     expect(await listSharedNotes(db, c)).toEqual([]);
     expect(await codeOf(setNotesShared(db, a, [n1.id], true, at('2026-11-24T00:00:00Z'), [9999]))).toBe('invalid');
+  });
+
+  it('lets people edit together when shared for editing, merging their lines', async () => {
+    const n = await createNote(db, a, at('2026-11-20T00:00:00Z'));
+    const v1 = await updateNote(db, a, n.id, '장보기\n우유\n빵', at('2026-11-20T00:01:00Z'));
+    // 읽기만 공유면 못 고친다
+    await setNotesShared(db, a, [n.id], true, at('2026-11-20T00:02:00Z'), [b]);
+    expect(await codeOf(updateNote(db, b, n.id, 'x', at('2026-11-20T00:03:00Z')))).toBe('not_found');
+    expect((await syncNote(db, b, n.id, null, v1.version, at('2026-11-20T00:03:00Z'))).edit).toBe(false);
+    // 함께 편집으로 공유
+    await setNotesShared(db, a, [n.id], true, at('2026-11-20T00:04:00Z'), [b], true);
+    expect((await listSharedNotes(db, b))[0].sharedEdit).toBe(true);
+    const base = { version: v1.version, body: v1.body };
+    const fromB = await updateNote(db, b, n.id, '장보기\n우유\n빵\n계란', at('2026-11-20T00:05:00Z'), base);
+    expect(fromB.version).toBe(v1.version + 1);
+    // a는 옛 판에서 고쳤다 → 둘 다 남는다
+    const fromA = await updateNote(db, a, n.id, '장보기\n두유\n빵', at('2026-11-20T00:06:00Z'), base);
+    expect(fromA.body).toBe('장보기\n두유\n빵\n계란');
+  });
+
+  it('shows who else has the note open and on which line', async () => {
+    const n = await createNote(db, a, at('2026-11-20T00:00:00Z'));
+    await setNotesShared(db, a, [n.id], true, at('2026-11-20T00:00:00Z'), [], true);
+    await syncNote(db, b, n.id, 2, 0, at('2026-11-20T00:00:00Z'));
+    const s1 = await syncNote(db, a, n.id, 0, 0, at('2026-11-20T00:00:05Z'));
+    expect(s1.others).toEqual([{ userId: b, name: '영희', line: 2 }]);
+    expect(s1.body).toBeNull(); // 판이 같으면 글은 안 보낸다
+    // 오래되면 빠진다
+    expect((await syncNote(db, a, n.id, 0, 0, at('2026-11-20T00:01:00Z'))).others).toEqual([]);
+    await syncNote(db, b, n.id, 1, 0, at('2026-11-20T00:01:00Z'));
+    await leaveNote(db, b, n.id);
+    expect((await syncNote(db, a, n.id, 0, 0, at('2026-11-20T00:01:01Z'))).others).toEqual([]);
+    // 받지 못한 사람은 못 본다
+    await setNotesShared(db, a, [n.id], false, at('2026-11-20T00:02:00Z'));
+    expect(await codeOf(syncNote(db, b, n.id, 0, 0, at('2026-11-20T00:02:00Z')))).toBe('not_found');
   });
 });

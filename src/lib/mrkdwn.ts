@@ -4,7 +4,7 @@
 export type Inline =
   | { t: 'text'; v: string }
   | { t: 'code'; v: string }
-  | { t: 'b' | 'i' | 's'; c: Inline[] };
+  | { t: 'b' | 'i' | 's' | 'u'; c: Inline[] };
 
 export type Block =
   | { t: 'p'; c: Inline[] }
@@ -12,6 +12,7 @@ export type Block =
   | { t: 'pre'; v: string }
   | { t: 'ul'; items: { depth: number; c: Inline[] }[] }
   | { t: 'ol'; items: { depth: number; n: number; c: Inline[] }[] }
+  | { t: 'todo'; items: { depth: number; done: boolean; c: Inline[] }[] }
   | { t: 'gap' };
 
 const MARKS: [string, 'b' | 'i' | 's'][] = [['*', 'b'], ['_', 'i'], ['~', 's']];
@@ -31,9 +32,21 @@ export function parseInline(src: string): Inline[] {
   let i = 0;
   while (i < src.length) {
     const ch = src[i];
+    // \* 처럼 앞에 \ 를 붙인 기호는 글자 그대로
+    if (ch === '\\' && i + 1 < src.length && '\\*_~`+'.includes(src[i + 1])) { push(src[i + 1]); i += 2; continue; }
     if (ch === '`') {
       const end = src.indexOf('`', i + 1);
       if (end > i + 1) { out.push({ t: 'code', v: src.slice(i + 1, end) }); i = end + 1; continue; }
+    }
+    // 밑줄: ++글자++ (슬랙에는 없어서 따로 정함)
+    if (ch === '+' && src[i + 1] === '+') {
+      const end = src.indexOf('++', i + 2);
+      const inner = end > i + 2 ? src.slice(i + 2, end) : '';
+      const before = i === 0 ? ' ' : src[i - 1];
+      const after = end >= 0 && end + 2 < src.length ? src[end + 2] : ' ';
+      if (inner && !/\s/.test(inner[0]) && !/\s/.test(inner[inner.length - 1]) && !WORDY.test(before) && !WORDY.test(after)) {
+        out.push({ t: 'u', c: parseInline(inner) }); i = end + 2; continue;
+      }
     }
     const mark = MARKS.find(([m]) => m === ch);
     if (mark) {
@@ -56,6 +69,8 @@ const BULLET = /^(\s*)(?:[•◦▪\-*])\s+(.*)$/;
 export const BULLETS = ['•', '◦', '▪'] as const;
 export const markFor = (depth: number) => BULLETS[depth % BULLETS.length];
 const NUMBER = /^(\s*)(\d+)[.)]\s+(.*)$/;
+/** 체크리스트: [ ] 할 일 / [x] 한 일 */
+const TODO = /^(\s*)\[( |x|X)\]\s+(.*)$/;
 const QUOTE = /^>\s?(.*)$/;
 const depthOf = (indent: string) => Math.min(4, Math.floor(indent.replace(/\t/g, '  ').length / 2));
 
@@ -84,6 +99,12 @@ export function parseBlocks(text: string): Block[] {
       const q: Inline[][] = [];
       while (i < lines.length && (m = lines[i].match(QUOTE))) { q.push(parseInline(m[1])); i += 1; }
       out.push({ t: 'quote', lines: q });
+      continue;
+    }
+    if (TODO.test(line)) {
+      const items: { depth: number; done: boolean; c: Inline[] }[] = [];
+      while (i < lines.length && (m = lines[i].match(TODO))) { items.push({ depth: depthOf(m[1]), done: m[2] !== ' ', c: parseInline(m[3]) }); i += 1; }
+      out.push({ t: 'todo', items });
       continue;
     }
     if (BULLET.test(line)) {
@@ -215,7 +236,7 @@ export function autoArrow(value: string, caret: number): { value: string; caret:
 
 // ── 메모 편집기(보이는 그대로 편집)용: 저장된 글 → 편집기 HTML ──
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const TAG = { b: 'b', i: 'i', s: 's' } as const;
+const TAG = { b: 'b', i: 'i', s: 's', u: 'u' } as const;
 function inlineHtml(items: Inline[]): string {
   return items.map((x) => x.t === 'text' ? esc(x.v) : x.t === 'code' ? `<code>${esc(x.v)}</code>` : `<${TAG[x.t]}>${inlineHtml(x.c)}</${TAG[x.t]}>`).join('');
 }
@@ -228,24 +249,28 @@ export function toEditorHtml(text: string): string {
   let k = 0;
   while (k < blocks.length) {
     const b = blocks[k];
-    if (b.t === 'ul' || b.t === 'ol') {
-      // 이어지는 목록(글머리표·번호 섞여도)을 한 덩어리로 중첩
-      const items: { kind: 'ul' | 'ol'; depth: number; c: Inline[] }[] = [];
-      while (k < blocks.length && (blocks[k].t === 'ul' || blocks[k].t === 'ol')) {
-        const lb = blocks[k] as Extract<Block, { t: 'ul' | 'ol' }>;
-        for (const it of lb.items) items.push({ kind: lb.t, depth: it.depth, c: it.c });
+    if (b.t === 'ul' || b.t === 'ol' || b.t === 'todo') {
+      // 이어지는 목록(글머리표·번호·체크 섞여도)을 한 덩어리로 중첩
+      type Kind = 'ul' | 'ol' | 'todo';
+      const items: { kind: Kind; depth: number; done: boolean; c: Inline[] }[] = [];
+      while (k < blocks.length && (blocks[k].t === 'ul' || blocks[k].t === 'ol' || blocks[k].t === 'todo')) {
+        const lb = blocks[k] as Extract<Block, { t: Kind }>;
+        for (const it of lb.items) items.push({ kind: lb.t, depth: it.depth, done: 'done' in it && it.done, c: it.c });
         k += 1;
       }
-      const stack: ('ul' | 'ol')[] = [];
+      const open = (kind: Kind) => (kind === 'todo' ? '<ul class="todo">' : `<${kind}>`);
+      const close = (kind: Kind) => `</li></${kind === 'todo' ? 'ul' : kind}>`;
+      const li = (it: { done: boolean }) => (it.done ? '<li data-done="1">' : '<li>');
+      const stack: Kind[] = [];
       for (const it of items) {
         const d = Math.min(it.depth, stack.length);
-        while (stack.length > d + 1) html += `</li></${stack.pop()}>`;
-        if (stack.length === d + 1 && stack[d] !== it.kind) html += `</li></${stack.pop()}>`;
-        if (stack.length === d + 1) html += '</li><li>';
-        else { html += `<${it.kind}><li>`; stack.push(it.kind); }
+        while (stack.length > d + 1) html += close(stack.pop()!);
+        if (stack.length === d + 1 && stack[d] !== it.kind) html += close(stack.pop()!);
+        if (stack.length === d + 1) html += `</li>${li(it)}`;
+        else { html += open(it.kind) + li(it); stack.push(it.kind); }
         html += lineHtml(it.c);
       }
-      while (stack.length) html += `</li></${stack.pop()}>`;
+      while (stack.length) html += close(stack.pop()!);
       continue;
     }
     if (b.t === 'p') html += `<div>${lineHtml(b.c)}</div>`;

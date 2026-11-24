@@ -1189,3 +1189,31 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .ne-all { font-size: 12px; font-weight: 700; color: var(--muted); }
 .ne-back { white-space: nowrap; }
 @media (max-width: 720px) { .ne-date { display: none; } }
+/* 같이 편집: 다른 사람이 있는 줄 왼쪽에 프로필 */
+.rich-wrap { flex: 1; display: flex; flex-direction: column; position: relative; min-width: 0; }
+.rich-mark { position: absolute; left: 2px; z-index: 1; height: 26px; display: grid; place-items: center; pointer-events: auto; transition: top .25s ease; }
+.rich-mark::after { content: ''; position: absolute; left: 19px; top: 3px; bottom: 3px; width: 2px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 85%, var(--ink)); }
+.rich-ed.readonly { cursor: default; }
+.ne-peers { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 999px; background: var(--surface-2); }
+@media (max-width: 720px) { .ne-from { display: none; } }
+/* 체크리스트 */
+.rich-ed ul.todo { list-style: none; padding-left: 26px; }
+.rich-ed ul.todo > li { position: relative; }
+.rich-ed ul.todo > li::before {
+  content: ''; position: absolute; left: -24px; top: .32em; width: 15px; height: 15px; box-sizing: border-box;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 45%, var(--line)); border-radius: 4px; background: var(--surface); cursor: pointer;
+}
+.rich-ed ul.todo > li[data-done]::before { background: var(--accent); border-color: var(--accent); }
+.rich-ed ul.todo > li[data-done]::after {
+  content: ''; position: absolute; left: -19px; top: calc(.32em + 2px); width: 4px; height: 8px;
+  border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none;
+}
+.rich-ed ul.todo > li[data-done] { color: var(--muted); text-decoration: line-through; }
+.rich-ed.readonly ul.todo > li::before { cursor: default; }
+.rt-todo { list-style: none; padding-left: 0; margin: 2px 0; }
+.rt-todo li { display: flex; align-items: baseline; gap: 6px; }
+.rt-todo li.done { color: var(--muted); text-decoration: line-through; }
+.rt-box { flex: none; width: 14px; height: 14px; border: 1.5px solid color-mix(in srgb, var(--ink) 45%, var(--line)); border-radius: 4px; display: inline-grid; place-items: center; font-size: 10px; line-height: 1; transform: translateY(2px); text-decoration: none; }
+.rt-todo li.done .rt-box { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+.rich-ed { padding-left: 28px; }
+.rich-ed.empty::before { left: 28px; }

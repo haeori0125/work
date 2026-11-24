@@ -3,7 +3,8 @@ import { parseInline, type Inline } from './mrkdwn';
 
 /** 서식 표시(*굵게* `코드` …)는 빼고 글자만 */
 const flat = (items: Inline[]): string => items.map((x) => (x.t === 'text' || x.t === 'code' ? x.v : flat(x.c))).join('');
-const plain = (line: string) => flat(parseInline(line.replace(/^(\s*)> ?/, '$1').replace(/^\s*```/, '')));
+const plain = (line: string) => flat(parseInline(line.replace(/^(\s*)> ?/, '$1').replace(/^\s*```/, '')
+  .replace(/^(\s*)\[ \]\s/, '$1☐ ').replace(/^(\s*)\[[xX]\]\s/, '$1☑ ')));
 export function noteTitle(body: string): string {
   return plain(body.split('\n')[0]).trim() || '새로운 메모';
 }

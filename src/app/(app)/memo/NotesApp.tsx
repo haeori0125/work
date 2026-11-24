@@ -2,18 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import {
-  createNoteAction, deleteNoteAction, setNotePinnedAction, setNotesSharedAction, updateNoteAction, type NoteDto, type SharedNoteDto,
+  createNoteAction, deleteNoteAction, leaveNoteAction, setNotePinnedAction, setNotesSharedAction, syncNoteAction, updateNoteAction,
+  type NoteDto, type SharedNoteDto,
 } from '@/app/actions/notes';
+import type { Presence } from '@/lib/notes';
 import { useToast } from '@/app/_ui/Toast';
 import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
 import { RichEditor, SHORTCUTS, type FormatKey, type RichEditorHandle } from '@/app/_ui/RichEditor';
-import { RichText } from '@/app/_ui/RichText';
 import { MiniAvatar } from '@/app/_ui/AvatarContext';
 import { ShareDialog } from './ShareDialog';
 
 const SAVE_DELAY = 800;
 const RETRY_DELAY = 3000;
+/** 같이 보는 사람·바뀐 내용을 확인하는 간격 */
+const SYNC_MS = 2000;
 const dayFmt = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric' });
 const fullFmt = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 
@@ -23,6 +26,12 @@ function sortNotes(list: NoteDto[]): NoteDto[] {
 
 export function NotesApp({ initial, others, people }: { initial: NoteDto[]; others: SharedNoteDto[]; people: { id: number; name: string }[] }) {
   const [notes, setNotes] = useState(() => sortNotes(initial));
+  // 다른 사람이 공유한 메모(같이 고칠 수 있는 것도 있음)
+  const [theirs, setTheirs] = useState(others);
+  // 같이 보고 있는 사람
+  const [peers, setPeers] = useState<Presence[]>([]);
+  // 메모마다 서버와 마지막으로 맞춘 판(동시에 고친 글을 합칠 때 기준)
+  const base = useRef(new Map<number, { version: number; body: string }>());
   const [currentId, setCurrentId] = useState<number | null>(initial[0]?.id ?? others[0]?.id ?? null);
   // 여러 개 골라 공유/공유 해제
   const [picking, setPicking] = useState(false);
@@ -37,12 +46,24 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   const [error, setError] = useState<string | null>(null);
   const [armed, setArmed] = useState(false);
   const [creating, setCreating] = useState(false);
+  // 방금 만든 메모는 열리자마자 입력할 수 있게
+  const [fresh, setFresh] = useState<number | null>(null);
   const pending = useRef<{ id: number; body: string } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const current = notes.find((n) => n.id === currentId) ?? null;
-  // 다른 사람이 공유한 메모는 읽기만
-  const viewing = current ? null : others.find((n) => n.id === currentId) ?? null;
+  // 다른 사람이 공유한 메모: 함께 편집이면 고칠 수 있고, 아니면 읽기만
+  const viewing = current ? null : theirs.find((n) => n.id === currentId) ?? null;
+  const doc = current ?? viewing;
+  const canEdit = !!current || !!viewing?.sharedEdit;
+  const docs = useRef({ notes, theirs, currentId });
+  useEffect(() => { docs.current = { notes, theirs, currentId }; });
+  const findDoc = (id: number) => docs.current.notes.find((n) => n.id === id) ?? docs.current.theirs.find((n) => n.id === id) ?? null;
+  /** 메모 글·판을 내 목록이든 공유받은 목록이든 바꾼다 */
+  const setDoc = useCallback((id: number, patch: { body?: string; version?: number; updatedAt?: string }) => {
+    setNotes((list) => list.map((n) => (n.id === id ? { ...n, ...patch } : n)));
+    setTheirs((list) => list.map((n) => (n.id === id ? { ...n, ...patch } : n)));
+  }, []);
 
   const saving = useRef(false);
 
@@ -55,9 +76,20 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
     saving.current = true;
     setSaveState('saving');
     let failed: string | null = null;
+    let retry = true;
     try {
-      const res = await updateNoteAction(p.id, p.body);
-      if (res?.error) failed = res.error;
+      const res = await updateNoteAction(p.id, p.body, base.current.get(p.id));
+      if ('error' in res) { failed = res.error; retry = res.code !== 'too_long' && res.code !== 'not_found'; }
+      else if (res.body === p.body || pending.current) {
+        // 다른 사람이 고친 게 섞였는데 그사이 내가 또 입력했다면, 다음 저장 때 내 입력 기준으로 다시 합친다
+        base.current.set(p.id, res.body === p.body ? res : { version: -1, body: p.body });
+        setDoc(p.id, { version: res.version });
+      } else {
+        // 다른 사람이 고친 게 합쳐졌다 → 화면도 그 글로
+        base.current.set(p.id, res);
+        setDoc(p.id, { body: res.body, version: res.version });
+        if (docs.current.currentId === p.id) editor.current?.setText(res.body);
+      }
     } catch {
       failed = '저장하지 못했습니다. 인터넷 연결을 확인하세요. 잠시 뒤 다시 저장합니다.';
     }
@@ -66,13 +98,13 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
       pending.current ??= p; // 그사이 새로 입력한 글이 없으면 이 글을 다시 저장 대상으로
       setSaveState('error');
       setError(failed);
-      timer.current = setTimeout(() => { void flush(); }, RETRY_DELAY);
+      if (retry) timer.current = setTimeout(() => { void flush(); }, RETRY_DELAY);
       return false;
     }
     setError(null);
     setSaveState(pending.current ? 'dirty' : 'saved');
     return true;
-  }, []);
+  }, [setDoc]);
 
   useEffect(() => {
     const onHide = () => { void flush(); };
@@ -90,14 +122,43 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   }, [flush]);
 
   const edit = (body: string) => {
-    if (!current) return;
-    const now = new Date().toISOString();
-    setNotes((list) => list.map((n) => (n.id === current.id ? { ...n, body, updatedAt: now } : n)));
-    pending.current = { id: current.id, body };
+    if (!doc || !canEdit) return;
+    // 처음 고칠 때의 글이 합칠 때 기준
+    if (!base.current.has(doc.id)) base.current.set(doc.id, { version: doc.version, body: doc.body });
+    setDoc(doc.id, { body, updatedAt: new Date().toISOString() });
+    pending.current = { id: doc.id, body };
     setSaveState('dirty');
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => { void flush(); }, SAVE_DELAY);
   };
+
+  // 열어 둔 메모: 몇 초마다 내가 어디 있는지 알리고, 같이 보는 사람과 바뀐 내용을 받는다
+  useEffect(() => {
+    if (currentId === null) return;
+    const id = currentId;
+    let stop = false;
+    const tick = async () => {
+      if (document.hidden) return;
+      const d = findDoc(id);
+      if (!d) return;
+      const known = base.current.get(id)?.version ?? d.version;
+      const res = await syncNoteAction(id, editor.current?.caretLine() ?? null, known).catch(() => null);
+      if (stop || !res || 'error' in res) return;
+      setPeers(res.others);
+      // 기다리는 사이 내가 저장했으면 그 판이 더 새로울 수 있다(옛 글로 덮지 않게 다시 확인)
+      const latest = base.current.get(id)?.version ?? findDoc(id)?.version ?? known;
+      if (res.body !== null && !pending.current && !saving.current && res.version > Math.max(known, latest)) {
+        base.current.set(id, { version: res.version, body: res.body });
+        setDoc(id, { body: res.body, version: res.version });
+        editor.current?.setText(res.body);
+      }
+      setTheirs((list) => list.map((n) => (n.id === id && n.sharedEdit !== res.edit ? { ...n, sharedEdit: res.edit } : n)));
+    };
+    void tick();
+    const t = setInterval(tick, SYNC_MS);
+    return () => { stop = true; clearInterval(t); setPeers([]); void leaveNoteAction(id).catch(() => {}); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId]);
 
   const select = async (id: number) => {
     if (!(await flush())) return; // 저장 못 한 글이 있으면 다른 메모로 넘어가지 않는다
@@ -115,7 +176,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
     if ('error' in res) { setError(res.error); return; }
     setNotes((list) => sortNotes([res, ...list]));
     setCurrentId(res.id); setQuery(''); setArmed(false); setMobileOpen(true);
-    requestAnimationFrame(() => editor.current?.focus());
+    setFresh(res.id);
   };
 
   const togglePin = async () => {
@@ -138,19 +199,19 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
     setNotes(rest); setCurrentId(rest[0]?.id ?? null); setArmed(false); setMobileOpen(false); setSaveState('saved');
   };
 
-  const share = async (ids: number[], shared: boolean, to: number[] = []) => {
+  const share = async (ids: number[], shared: boolean, to: number[] = [], canEditToo = false) => {
     if (!ids.length) return;
     if (!(await flush())) return;
-    const res = await setNotesSharedAction(ids, shared, to);
+    const res = await setNotesSharedAction(ids, shared, to, canEditToo);
     if (res?.error) { setError(res.error); return; }
-    setNotes((list) => list.map((n) => (ids.includes(n.id) ? { ...n, shared, sharedTo: shared ? to : [] } : n)));
+    setNotes((list) => list.map((n) => (ids.includes(n.id) ? { ...n, shared, sharedEdit: shared && canEditToo, sharedTo: shared ? to : [] } : n)));
     setPicked(new Set()); setPicking(false);
     if (res?.ok) toast(res.ok);
   };
 
   const q = query.trim().toLowerCase();
   const visible = useMemo(() => (q ? notes.filter((n) => n.body.toLowerCase().includes(q)) : notes), [notes, q]);
-  const visibleOthers = q ? others.filter((n) => n.body.toLowerCase().includes(q)) : others;
+  const visibleOthers = q ? theirs.filter((n) => n.body.toLowerCase().includes(q)) : theirs;
   // 공유된 메모(내 것 + 다른 사람 것)는 맨 위에 모아서
   const sharedRows = [
     ...visible.filter((n) => n.shared).map((n) => ({ ...n, author: null as string | null })),
@@ -161,7 +222,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
   const pickedMine = notes.filter((n) => picked.has(n.id));
   const shareList = sharing ? notes.filter((n) => sharing.includes(n.id)) : [];
 
-  type Row = { id: number; body: string; updatedAt: string; shared?: boolean; sharedTo?: number[]; author?: string | null };
+  type Row = { id: number; body: string; updatedAt: string; shared?: boolean; sharedEdit?: boolean; sharedTo?: number[]; author?: string | null };
   const nameOf = new Map(people.map((m) => [m.id, m.name]));
   const toLabel = (ids: number[]) => {
     if (!ids.length) return '모두';
@@ -185,7 +246,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
                 onClick={() => { if (picking && mine) { const s = new Set(picked); if (on) s.delete(n.id); else s.add(n.id); setPicked(s); } else void select(n.id); }}>
                 <b>{noteTitle(n.body)}</b>
                 <span><em>{dayFmt.format(new Date(n.updatedAt))}</em> {notePreview(n.body)}</span>
-                {n.shared && <span className="nl-by">{n.author ? `${n.author} 님이 공유` : `내가 공유함 · ${toLabel(n.sharedTo ?? [])}`}</span>}
+                {n.shared && <span className="nl-by">{n.author ? `${n.author} 님이 공유` : `내가 공유함 · ${toLabel(n.sharedTo ?? [])}`}{n.sharedEdit ? ' · 함께 편집' : ''}</span>}
               </button>
             </li>
           );
@@ -204,7 +265,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
           <span className="lock">🔒 공유하지 않은 메모는 나만 볼 수 있어요</span>
         </div>
         <input className="nl-search" type="search" placeholder="검색" aria-label="메모 검색" value={query} onChange={(e) => setQuery(e.target.value)} />
-        {notes.length === 0 && others.length === 0 ? <p className="nl-empty">메모가 없습니다. &lsquo;새 메모&rsquo;를 눌러 시작하세요.</p>
+        {notes.length === 0 && theirs.length === 0 ? <p className="nl-empty">메모가 없습니다. &lsquo;새 메모&rsquo;를 눌러 시작하세요.</p>
           : visible.length === 0 && visibleOthers.length === 0 ? <p className="nl-empty">검색 결과가 없습니다</p>
             : <>{group('🔗 공유된 메모', sharedRows)}{group('📌 고정됨', pinned)}{group('메모', rest)}</>}
         {picking && (
@@ -220,9 +281,15 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
       <section className="panel note-editor" aria-label="메모 편집">
         <div className="ne-top">
           <button className="ne-back" type="button" onClick={async () => { if (await flush()) setMobileOpen(false); }}>‹ 메모</button>
-          <span className="muted ne-date">{current ? fullFmt.format(new Date(current.updatedAt)) : viewing ? fullFmt.format(new Date(viewing.updatedAt)) : ''}</span>
+          <span className="muted ne-date">{doc ? fullFmt.format(new Date(doc.updatedAt)) : ''}</span>
           <span className="spacer" />
-          {viewing && <span className="muted">{viewing.authorName} 님이 공유한 메모 · 읽기 전용</span>}
+          {peers.length > 0 && (
+            <span className="ne-peers av-stack" title={`같이 보는 중: ${peers.map((x) => x.name).join(', ')}`} aria-label={`같이 보는 중: ${peers.map((x) => x.name).join(', ')}`}>
+              {peers.slice(0, 4).map((x) => <MiniAvatar key={x.userId} name={x.name} size={22} />)}
+              {peers.length > 4 && <span className="mc-extra">+{peers.length - 4}</span>}
+            </span>
+          )}
+          {viewing && <span className="muted ne-from">{viewing.authorName} 님이 공유 · {viewing.sharedEdit ? '함께 편집' : '읽기 전용'}</span>}
           {current && <>
             {current.shared && (
               <button type="button" className="ne-shared-with av-stack" onClick={() => setSharing([current.id])}
@@ -239,25 +306,26 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
             <button className="btn small danger" type="button" onClick={remove}>{armed ? '한 번 더 누르면 삭제' : '삭제'}</button>
           </>}
         </div>
-        {current ? (
-          <RichEditor id="note-text" key={current.id} ref={editor} initial={current.body} onChange={edit} onBlur={() => { void flush(); }}
-            placeholder="첫 줄이 메모 제목이 됩니다" ariaLabel="메모 내용" />
-        ) : viewing ? (
-          <div className="ne-view readonly" aria-label="공유된 메모 내용"><RichText text={viewing.body} /></div>
+        {doc ? (
+          <RichEditor id="note-text" key={`${doc.id}-${canEdit}`} ref={editor} initial={doc.body} autoFocus={fresh === doc.id} readOnly={!canEdit}
+            onChange={edit} onBlur={() => { void flush(); }}
+            marks={peers.filter((x) => x.line !== null).map((x) => ({ key: x.userId, name: x.name, line: x.line! }))}
+            placeholder={canEdit ? '첫 줄이 메모 제목이 됩니다' : ''} ariaLabel={canEdit ? '메모 내용' : '공유된 메모 내용'} />
         ) : <p className="nl-empty">{creating ? '새 메모를 만드는 중…' : '왼쪽에서 메모를 고르거나 새 메모를 만드세요.'}</p>}
-        {current && <FormatBar onApply={(k) => editor.current?.apply(k)} />}
+        {doc && canEdit && <FormatBar onApply={(k) => editor.current?.apply(k)} />}
         <div className="ne-foot">
           <span className="muted" role="status">
             {saveState === 'saving' ? '저장 중…' : saveState === 'dirty' ? '입력 중…' : saveState === 'error' ? `저장하지 못했습니다 · ${error ?? ''}` : '자동 저장됨'}
           </span>
-          {current && <span className="muted">{current.body.length.toLocaleString()}자</span>}
+          {doc && <span className="muted">{doc.body.length.toLocaleString()}자</span>}
           {error && saveState !== 'error' && <span className="err">{error}</span>}
         </div>
       </section>
       {sharing && (
         <ShareDialog count={shareList.length} people={people} initial={shareList.length === 1 ? shareList[0].sharedTo : []}
+          initialEdit={shareList.length === 1 && shareList[0].sharedEdit}
           wasShared={shareList.some((n) => n.shared)} onClose={() => setSharing(null)}
-          onShare={(to) => { void share(sharing, true, to); }} onUnshare={() => { void share(sharing, false); }} />
+          onShare={(to, canEditToo) => { void share(sharing, true, to, canEditToo); }} onUnshare={() => { void share(sharing, false); }} />
       )}
     </div>
   );
@@ -266,6 +334,7 @@ export function NotesApp({ initial, others, people }: { initial: NoteDto[]; othe
 const TOOLS: { key: FormatKey; label: string; icon: React.ReactNode }[] = [
   { key: 'b', label: '굵게', icon: <b>B</b> },
   { key: 'i', label: '기울임', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i> },
+  { key: 'u', label: '밑줄', icon: <u>U</u> },
   { key: 's', label: '취소선', icon: <s>S</s> },
   { key: 'code', label: '코드', icon: <span className="fmt-mono">&lt;/&gt;</span> },
   { key: 'ol', label: '번호 목록', icon: (
@@ -276,6 +345,10 @@ const TOOLS: { key: FormatKey; label: string; icon: React.ReactNode }[] = [
   { key: 'ul', label: '글머리표', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
       <path d="M7 4h7M7 8h7M7 12h7" /><g fill="currentColor" stroke="none"><circle cx="2.8" cy="4" r="1.3" /><circle cx="2.8" cy="8" r="1.3" /><circle cx="2.8" cy="12" r="1.3" /></g></svg>
+  ) },
+  { key: 'todo', label: '체크리스트', icon: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="2" width="5" height="5" rx="1.2" /><path d="m2.6 4.6 1 1 1.8-2" /><rect x="1.5" y="9" width="5" height="5" rx="1.2" /><path d="M9 4.5h5.5M9 11.5h5.5" /></svg>
   ) },
   { key: 'q', label: '인용', icon: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
@@ -290,7 +363,8 @@ const TOOLS: { key: FormatKey; label: string; icon: React.ReactNode }[] = [
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const noSub = () => () => {};
 const keyLabel = (key: FormatKey, mac: boolean) => {
-  const k = SHORTCUTS.find((x) => x.key === key)!;
+  const k = SHORTCUTS.find((x) => x.key === key);
+  if (!k) return '';
   const c = k.code.replace(/^Key|^Digit/, '');
   return mac ? `${k.alt ? '⌥' : ''}${k.shift ? '⇧' : ''}⌘${c}` : `Ctrl+${k.alt ? 'Alt+' : ''}${k.shift ? 'Shift+' : ''}${c}`;
 };
@@ -303,8 +377,8 @@ function FormatBar({ onApply }: { onApply: (key: FormatKey) => void }) {
     <div className="fmt-bar" role="toolbar" aria-label="서식">
       {TOOLS.map((t, i) => (
         <span key={t.key} className="fmt-wrap">
-          {(i === 4 || i === 6) && <span className="fmt-sep" aria-hidden />}
-          <button type="button" className="fmt-btn" aria-label={t.label} title={`${t.label} (${keyLabel(t.key, mac)})`}
+          {(i === 5 || i === 8) && <span className="fmt-sep" aria-hidden />}
+          <button type="button" className="fmt-btn" aria-label={t.label} title={keyLabel(t.key, mac) ? `${t.label} (${keyLabel(t.key, mac)})` : t.label}
             onPointerDown={(e) => e.preventDefault()} onMouseDown={(e) => e.preventDefault()} onClick={() => onApply(t.key)}>{t.icon}</button>
         </span>
       ))}
