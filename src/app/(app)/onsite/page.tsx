@@ -24,8 +24,6 @@ export default async function OnsitePage({ searchParams }: { searchParams: Promi
   const [days, changes, members] = await Promise.all([
     getOnsiteDays(db, gridStart, gridEnd), listChanges(db, range.from, range.to), listActiveMembers(db),
   ]);
-  // 변동 사항 목록에도 그날 지점명을 붙인다
-  const titleOf = new Map(days.flatMap((d) => d.slots.map((s) => [`${d.date}-${s.slot}`, s.title] as const)));
   const weekdays = (prefs.weekStart === 'sun' ? [6, 0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]).map((i) => WD[i]);
   const view = sp.view === 'changes' ? 'changes' : 'cal';
 
@@ -36,7 +34,7 @@ export default async function OnsitePage({ searchParams }: { searchParams: Promi
       prevMonth={shiftMonth(month, -1)} nextMonth={shiftMonth(month, 1)} isThisMonth={month === thisMonth}
       weekdays={weekdays}
       days={days.map((d) => ({ ...d, inMonth: d.date.slice(0, 7) === month, label: formatDateLabel(d.date) }))}
-      changes={changes.map((c) => ({ ...c, label: formatDateLabel(c.date), title: titleOf.get(`${c.date}-${c.slot}`) ?? null }))}
+      changes={changes.map((c) => ({ ...c, label: formatDateLabel(c.date) }))}
       members={members}
     />
   );

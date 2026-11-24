@@ -679,7 +679,7 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .mc-cell { min-height: 112px; padding: 6px 6px 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; min-width: 0; background: var(--surface); }
 .mc-cell.out { background: var(--surface-2); }
 .mc-cell.out .mc-num, .mc-cell.out .mc-item { opacity: .45; }
-.mc-num { align-self: flex-start; min-width: 24px; height: 24px; padding: 0 6px; border: 0; border-radius: 999px; background: none; font: inherit; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); cursor: pointer; }
+.mc-num { align-self: flex-start; display: inline-grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%; background: none; font: inherit; font-size: 13px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text); cursor: pointer; }
 .mc-num.sun { color: var(--red); }
 .mc-num.sat { color: color-mix(in srgb, #3b6fd8 80%, var(--text)); }
 .mc-cell.today .mc-num { background: var(--accent); color: var(--on-accent); }
@@ -1064,3 +1064,19 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .os-picked { font-size: 15px; }
 .os-copy { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface-2); }
 @media (max-width: 760px) { .os-period-form { grid-template-columns: minmax(0, 1fr); } }
+/* 관리 > 현장 스케줄: 강의 목록 */
+.os-lectures { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.os-lectures > li { border-top: 1px solid var(--line); }
+.os-lectures > li:first-child { border-top: 0; }
+.os-lec { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; }
+.os-lec-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.os-lec-title { font-size: 15px; color: var(--ink); }
+.os-lec-when { font-size: 13px; font-weight: 600; }
+.os-lec-range { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.os-lec-staff { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 13.5px; }
+.os-lec-form { display: flex; flex-direction: column; gap: 14px; padding: 16px; background: var(--surface-2); }
+.os-body > .os-lec-form { border-radius: var(--radius); }
+@media (max-width: 760px) {
+  .os-lec { grid-template-columns: minmax(0, 1fr) auto; }
+  .os-lec-staff { grid-column: 1 / -1; grid-row: 2; }
+}

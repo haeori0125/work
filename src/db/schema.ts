@@ -173,39 +173,34 @@ export const taskRequests = pgTable('task_requests', {
   taskId: integer('task_id').references(() => tasks.id, { onDelete: 'set null' }),
 }, (t) => [index('task_requests_status').on(t.status), index('task_requests_requester').on(t.requesterId)]);
 
-/** 기본 스케줄에서 벗어난 날(개인 스케줄): 그날 그 시간대에 빠짐(off) 또는 추가 출근(on) */
-export const onsiteChanges = pgTable('onsite_changes', {
+/**
+ * 현장 강의: 지점명 · 요일 · 시간대 · 기간(시작일~종료일). 기간 안에서 매주 그 요일에 열린다.
+ * weekday 0=월 … 6=일, slot 'pm'(13:30–17:00) | 'eve'(18:30–22:00)
+ */
+export const onsiteLectures = pgTable('onsite_lectures', {
   id: serial('id').primaryKey(),
-  date: text('date').notNull(),
+  title: text('title').notNull(),
+  weekday: integer('weekday').notNull(),
   slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
+  startDate: text('start_date').notNull(),
+  endDate: text('end_date').notNull(),
+  createdAt: ts('created_at').notNull(),
+}, (t) => [index('onsite_lectures_range').on(t.startDate, t.endDate)]);
+
+/** 강의마다 기본으로 출근하는 사람 */
+export const onsiteLectureStaff = pgTable('onsite_lecture_staff', {
+  lectureId: integer('lecture_id').notNull().references(() => onsiteLectures.id, { onDelete: 'cascade' }),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => [primaryKey({ columns: [t.lectureId, t.userId] })]);
+
+/** 그날 그 강의에서 빠짐(off) 또는 추가 출근(on) — 개인 스케줄 변동 */
+export const onsiteLectureChanges = pgTable('onsite_lecture_changes', {
+  id: serial('id').primaryKey(),
+  lectureId: integer('lecture_id').notNull().references(() => onsiteLectures.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(),
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   kind: text('kind', { enum: ['off', 'on'] }).notNull(),
   note: text('note'),
   createdBy: integer('created_by').notNull().references(() => users.id),
   createdAt: ts('created_at').notNull(),
-}, (t) => [unique('onsite_changes_one').on(t.date, t.slot, t.userId), index('onsite_changes_date').on(t.date)]);
-
-/** 현장 수업 기간(관리자가 이름·시작일·종료일을 정함). 날짜가 속한 기간의 기본 스케줄이 적용된다 */
-export const onsitePeriods = pgTable('onsite_periods', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  startDate: text('start_date').notNull(),
-  endDate: text('end_date').notNull(),
-  createdAt: ts('created_at').notNull(),
-});
-
-/** 기간마다 요일·시간대별 출근할 사람. weekday 0=월 … 6=일, slot 'pm'(13:30–17:00) | 'eve'(18:30–22:00) */
-export const onsitePeriodStaff = pgTable('onsite_period_staff', {
-  periodId: integer('period_id').notNull().references(() => onsitePeriods.id, { onDelete: 'cascade' }),
-  weekday: integer('weekday').notNull(),
-  slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-}, (t) => [primaryKey({ columns: [t.periodId, t.weekday, t.slot, t.userId] })]);
-
-/** 기간마다 요일·시간대 칸의 지점명 */
-export const onsitePeriodTitles = pgTable('onsite_period_titles', {
-  periodId: integer('period_id').notNull().references(() => onsitePeriods.id, { onDelete: 'cascade' }),
-  weekday: integer('weekday').notNull(),
-  slot: text('slot', { enum: ['pm', 'eve'] }).notNull(),
-  title: text('title').notNull(),
-}, (t) => [primaryKey({ columns: [t.periodId, t.weekday, t.slot] })]);
+}, (t) => [unique('onsite_lecture_changes_one').on(t.lectureId, t.date, t.userId), index('onsite_lecture_changes_date').on(t.date)]);

@@ -120,6 +120,27 @@
       "when": 1795516340942,
       "tag": "0016_onsite_seed_winter",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795516650611,
+      "tag": "0017_onsite_drop_periods",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795516651449,
+      "tag": "0018_onsite_lectures",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795516652466,
+      "tag": "0019_onsite_seed_lectures",
+      "breakpoints": true
     }
   ]
 }
