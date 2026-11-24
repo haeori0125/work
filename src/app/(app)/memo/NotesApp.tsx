@@ -7,7 +7,7 @@ import {
 import { useToast } from '@/app/_ui/Toast';
 import { PlusIcon } from '@/app/_ui/icons';
 import { notePreview, noteTitle } from '@/lib/note-text';
-import { autoBullet, continueList, indentLine } from '@/lib/mrkdwn';
+import { autoBullet, continueList, indentLine, toggleLines, wrapCodeBlock, wrapInline, type Edit } from '@/lib/mrkdwn';
 import { RichText } from '@/app/_ui/RichText';
 
 const SAVE_DELAY = 800;
@@ -253,6 +253,15 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
         ) : viewing ? (
           <div className="ne-view readonly" aria-label="공유된 메모 내용"><RichText text={viewing.body} /></div>
         ) : <p className="nl-empty">{creating ? '새 메모를 만드는 중…' : '왼쪽에서 메모를 고르거나 새 메모를 만드세요.'}</p>}
+        {current && <FormatBar onApply={(fn) => {
+          // 편집 중이면 고른 곳에, 아니면 글 끝에 적용하고 편집으로 넘어간다
+          const t = area.current;
+          const end = current.body.length;
+          const r = fn(current.body, t ? t.selectionStart : end, t ? t.selectionEnd : end);
+          edit(r.value);
+          setWriting(true);
+          requestAnimationFrame(() => { area.current?.focus(); area.current?.setSelectionRange(r.start, r.end); });
+        }} />}
         <div className="ne-foot">
           <span className="muted" role="status">
             {saveState === 'saving' ? '저장 중…' : saveState === 'dirty' ? '입력 중…' : saveState === 'error' ? `저장하지 못했습니다 · ${error ?? ''}` : '자동 저장됨'}
@@ -261,6 +270,46 @@ export function NotesApp({ initial, others }: { initial: NoteDto[]; others: Shar
           {error && saveState !== 'error' && <span className="err">{error}</span>}
         </div>
       </section>
+    </div>
+  );
+}
+
+type Apply = (value: string, s: number, e: number) => Edit;
+const TOOLS: { key: string; label: string; icon: React.ReactNode; fn: Apply }[] = [
+  { key: 'b', label: '굵게', icon: <b>B</b>, fn: (v, s, e) => wrapInline(v, s, e, '*') },
+  { key: 'i', label: '기울임', icon: <i style={{ fontFamily: 'Georgia, serif' }}>I</i>, fn: (v, s, e) => wrapInline(v, s, e, '_') },
+  { key: 's', label: '취소선', icon: <s>S</s>, fn: (v, s, e) => wrapInline(v, s, e, '~') },
+  { key: 'code', label: '코드', icon: <span className="fb-mono">&lt;/&gt;</span>, fn: (v, s, e) => wrapInline(v, s, e, '`') },
+  { key: 'ol', label: '번호 목록', icon: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M7 4h7M7 8h7M7 12h7" /><text x="1" y="6" fontSize="5.5" fill="currentColor" stroke="none" fontWeight="700">1</text>
+      <text x="1" y="14" fontSize="5.5" fill="currentColor" stroke="none" fontWeight="700">2</text></svg>
+  ), fn: (v, s, e) => toggleLines(v, s, e, 'ol') },
+  { key: 'ul', label: '글머리표', icon: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M7 4h7M7 8h7M7 12h7" /><g fill="currentColor" stroke="none"><circle cx="2.8" cy="4" r="1.3" /><circle cx="2.8" cy="8" r="1.3" /><circle cx="2.8" cy="12" r="1.3" /></g></svg>
+  ), fn: (v, s, e) => toggleLines(v, s, e, 'ul') },
+  { key: 'q', label: '인용', icon: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M3 2.5v11M7 5h7M7 8h7M7 11h5" /></svg>
+  ), fn: (v, s, e) => toggleLines(v, s, e, 'quote') },
+  { key: 'pre', label: '코드 블록', icon: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+      <rect x="1.5" y="2.5" width="13" height="11" rx="2" /><path d="M6 6.5 4.5 8 6 9.5M10 6.5 11.5 8 10 9.5" strokeLinecap="round" /></svg>
+  ), fn: wrapCodeBlock },
+];
+
+/** 슬랙처럼 편집 칸 아래의 서식 버튼 줄. 누르는 동안 편집 칸 포커스를 뺏지 않는다 */
+function FormatBar({ onApply }: { onApply: (fn: Apply) => void }) {
+  return (
+    <div className="fmt-bar" role="toolbar" aria-label="서식">
+      {TOOLS.map((t, i) => (
+        <span key={t.key} className="fmt-wrap">
+          {(i === 4 || i === 6) && <span className="fmt-sep" aria-hidden />}
+          <button type="button" className="fmt-btn" aria-label={t.label} title={t.label}
+            onPointerDown={(e) => e.preventDefault()} onMouseDown={(e) => e.preventDefault()} onClick={() => onApply(t.fn)}>{t.icon}</button>
+        </span>
+      ))}
     </div>
   );
 }

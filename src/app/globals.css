@@ -1145,7 +1145,15 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .rt-code { padding: 1px 5px; border-radius: 5px; background: color-mix(in srgb, var(--red) 8%, var(--surface-2)); color: color-mix(in srgb, var(--red) 75%, var(--text)); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; }
 .rt-pre { margin: 4px 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); overflow-x: auto; font-size: 12.5px; line-height: 1.5; }
 .rt-pre code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre; }
-.ne-view { flex: 1; min-height: 440px; padding: 16px 22px; overflow-y: auto; cursor: text; font-size: 15px; line-height: 1.65; border-radius: 8px; }
-.ne-view:hover:not(.readonly) { background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+.ne-view { flex: 1; min-height: 320px; padding: 16px 22px; overflow-y: auto; cursor: text; font-size: 15px; line-height: 1.75; color: var(--text); background: transparent; }
+.ne-view .rt { gap: 0; }
 .ne-view.readonly { cursor: default; }
-.ne-view .rt > p:first-child { font-size: 18px; font-weight: 800; color: var(--ink); }
+/* 메모 서식 버튼 줄(슬랙처럼 편집 칸 아래) */
+.fmt-bar { display: flex; align-items: center; gap: 2px; padding: 6px 16px; border-top: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.fmt-bar::-webkit-scrollbar { display: none; }
+.fmt-wrap { display: contents; }
+.fmt-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; flex: none; }
+.fmt-btn { flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 7px; background: none; color: var(--muted); font-size: 15px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.fmt-btn:hover { background: var(--surface-2); color: var(--ink); }
+.fmt-btn:active { background: var(--soft); }
+.fmt-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; }

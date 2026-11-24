@@ -140,3 +140,52 @@ export function indentLine(value: string, caret: number, out: boolean): { value:
   }
   return { value: value.slice(0, start) + '  ' + value.slice(start), caret: caret + 2 };
 }
+
+export type Edit = { value: string; start: number; end: number };
+
+/** 고른 글자를 *·_·~·` 로 감싸거나(이미 감싸져 있으면 풀기), 고른 게 없으면 표시 한 쌍을 넣고 그 사이에 커서 */
+export function wrapInline(value: string, s: number, e: number, mark: string): Edit {
+  const n = mark.length;
+  if (s >= n && value.slice(s - n, s) === mark && value.slice(e, e + n) === mark) {
+    return { value: value.slice(0, s - n) + value.slice(s, e) + value.slice(e + n), start: s - n, end: e - n };
+  }
+  const sel = value.slice(s, e);
+  if (sel.length > 2 * n && sel.startsWith(mark) && sel.endsWith(mark)) {
+    const inner = sel.slice(n, -n);
+    return { value: value.slice(0, s) + inner + value.slice(e), start: s, end: s + inner.length };
+  }
+  return { value: value.slice(0, s) + mark + sel + mark + value.slice(e), start: s + n, end: e + n };
+}
+
+/** ``` 코드 블록: 고른 글자를 블록으로 감싸거나, 빈 블록을 넣는다 */
+export function wrapCodeBlock(value: string, s: number, e: number): Edit {
+  const before = value.slice(0, s), sel = value.slice(s, e), after = value.slice(e);
+  const pre = before && !before.endsWith('\n') ? '\n' : '';
+  const post = after && !after.startsWith('\n') ? '\n' : '';
+  const open = `${pre}\`\`\`\n`;
+  return { value: `${before}${open}${sel}\n\`\`\`${post}${after}`, start: s + open.length, end: s + open.length + sel.length };
+}
+
+const PREFIX = /^(\s*)(• |[-*] |\d+[.)] |> )/;
+
+/** 고른 줄들을 글머리표·번호·인용으로 바꾸거나, 모두 이미 그렇다면 풀기 */
+export function toggleLines(value: string, s: number, e: number, kind: 'ul' | 'ol' | 'quote'): Edit {
+  const from = value.lastIndexOf('\n', s - 1) + 1;
+  const endIdx = value.indexOf('\n', Math.max(e - (e > s && value[e - 1] === '\n' ? 1 : 0), s));
+  const to = endIdx < 0 ? value.length : endIdx;
+  const lines = value.slice(from, to).split('\n');
+  const is = (l: string) => kind === 'ul' ? /^\s*• /.test(l) : kind === 'ol' ? /^\s*\d+[.)] /.test(l) : /^\s*> /.test(l);
+  const filled = lines.filter((l) => l.trim());
+  const remove = filled.length > 0 && filled.every(is);
+  let k = 0;
+  const out = lines.map((l) => {
+    if (remove) return l.replace(PREFIX, '$1');
+    if (!l.trim() && lines.length > 1) return l;
+    const m = l.match(PREFIX);
+    const indent = m ? m[1] : '';
+    const rest = m ? l.slice(m[0].length) : l;
+    k += 1;
+    return indent + (kind === 'ul' ? '• ' : kind === 'ol' ? `${k}. ` : '> ') + rest;
+  }).join('\n');
+  return { value: value.slice(0, from) + out + value.slice(to), start: lines.length === 1 && !remove ? from + out.length : from, end: from + out.length };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { autoBullet, continueList, indentLine, parseBlocks, parseInline } from '@/lib/mrkdwn';
+import { autoBullet, continueList, indentLine, parseBlocks, parseInline, toggleLines, wrapCodeBlock, wrapInline } from '@/lib/mrkdwn';
 
 describe('parseInline', () => {
   it('reads slack-style marks and code', () => {
@@ -43,5 +43,23 @@ describe('editor helpers', () => {
     expect(indentLine('• 하나', 4, false)).toEqual({ value: '  • 하나', caret: 6 });
     expect(indentLine('  • 하나', 6, true)).toEqual({ value: '• 하나', caret: 4 });
     expect(indentLine('글', 1, false)).toBeNull();
+  });
+});
+
+describe('toolbar edits', () => {
+  it('wraps and unwraps inline marks', () => {
+    expect(wrapInline('a bc d', 2, 4, '*')).toEqual({ value: 'a *bc* d', start: 3, end: 5 });
+    expect(wrapInline('a *bc* d', 3, 5, '*')).toEqual({ value: 'a bc d', start: 2, end: 4 });
+    expect(wrapInline('ab', 1, 1, '`')).toEqual({ value: 'a``b', start: 2, end: 2 });
+  });
+  it('makes a code block', () => {
+    expect(wrapCodeBlock('x\ny', 2, 3).value).toBe('x\n```\ny\n```');
+    expect(wrapCodeBlock('', 0, 0)).toEqual({ value: '```\n\n```', start: 4, end: 4 });
+  });
+  it('toggles lists and quotes on lines', () => {
+    expect(toggleLines('a\nb', 0, 3, 'ul').value).toBe('• a\n• b');
+    expect(toggleLines('• a\n• b', 0, 7, 'ul').value).toBe('a\nb');
+    expect(toggleLines('• a\nb', 0, 5, 'ol').value).toBe('1. a\n2. b');
+    expect(toggleLines('hi', 1, 1, 'quote')).toEqual({ value: '> hi', start: 4, end: 4 });
   });
 });
