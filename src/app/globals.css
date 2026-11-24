@@ -485,12 +485,30 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .tag.line.due { border-color: color-mix(in srgb, var(--accent) 70%, var(--ink)); font-weight: 700; }
 
 /* 파트 */
-.parts ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.part { display: grid; grid-template-columns: 19px minmax(0, 1fr); gap: 8px; align-items: start; }
-.part-title { font-size: 14px; }
-.part.done .part-title { color: var(--muted); text-decoration: line-through; }
-.parts.compact { margin-top: 6px; padding: 8px; border-radius: 8px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
-.parts.compact .part-title { font-size: 13px; }
+/* 파트 목록: 한 줄 = 체크 · 이름 · (담당 · 상태) · 손잡이, 꾹 눌러 끌어서 순서 바꾸기 */
+.parts ul { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.part {
+  position: relative; display: grid; grid-template-columns: 19px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 10px 8px 10px 12px; background: var(--surface); border-top: 1px solid var(--line);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: pan-y;
+}
+.part:first-child { border-top: 0; }
+.parts.sorting .part { transition: transform .18s ease; }
+.parts.sorting .part.lifted { transition: none; z-index: 2; border-radius: 10px; box-shadow: 0 10px 24px hsl(var(--h) 30% 20% / .18), 0 0 0 1.5px color-mix(in srgb, var(--accent) 70%, var(--line)); }
+.part-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.part-title { font-size: 14.5px; font-weight: 600; line-height: 1.35; }
+.part.done .part-title { color: var(--muted); text-decoration: line-through; font-weight: 500; }
+.part-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.part-meta .person { gap: 4px; }
+.part-st { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.part-st.done { color: var(--done-ink, var(--ink)); }
+.part-st.doing { color: var(--doing-ink, var(--ink)); }
+.part-grip { display: grid; place-items: center; width: 28px; height: 32px; border-radius: 8px; color: color-mix(in srgb, var(--muted) 70%, transparent); cursor: grab; }
+@media (hover: hover) { .part-grip:hover { background: var(--surface-2); color: var(--ink); } }
+.parts.sorting, .parts.sorting * { cursor: grabbing; }
+.parts-hint { margin: 6px 2px 0; font-size: 12px; color: var(--muted); }
+@media (hover: hover) { .parts-hint { display: none; } } /* PC는 손잡이로 충분 */
+@media (prefers-reduced-motion: reduce) { .parts.sorting .part { transition: none; } }
 .parts-wrap { border-top: 1px dashed var(--line); }
 .goal-title { white-space: nowrap; }
 .goal .tags.mini { margin-top: 0; }

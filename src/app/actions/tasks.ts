@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db';
 import { AppError } from '@/lib/errors';
 import { addTaskComment, deleteTaskComment, editTaskComment, listTaskComments } from '@/lib/memos';
-import { getStatusHistory, getTaskOrigin, setPartStatus, setStatus, type TaskStatus } from '@/lib/tasks';
+import { getStatusHistory, getTaskOrigin, reorderParts, setPartStatus, setStatus, type TaskStatus } from '@/lib/tasks';
 import { formatDateLabel, kstDate } from '@/lib/time';
 import { STATUS_LABEL, STATUSES, formatWhen, toNoteView, type NoteView } from '@/lib/view';
 import { requireActionUser } from '@/server/session';
@@ -25,6 +25,15 @@ export async function setPartStatusAction(partId: number, occurrenceKey: string,
     if (!STATUSES.includes(status)) throw new AppError('invalid', '잘못된 상태입니다');
     await setPartStatus(await getDb(), user.id, partId, occurrenceKey, status, new Date());
     revalidatePath('/');
+  });
+}
+
+export async function reorderPartsAction(taskId: number, ids: number[]): Promise<ActionResult> {
+  return runAction(async () => {
+    await requireActionUser();
+    if (!Array.isArray(ids) || ids.some((x) => !Number.isInteger(x))) throw new AppError('invalid', '잘못된 순서입니다');
+    await reorderParts(await getDb(), taskId, ids);
+    revalidatePath('/', 'layout');
   });
 }
 

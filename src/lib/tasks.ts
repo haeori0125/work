@@ -356,3 +356,13 @@ export async function setPartStatus(
   await db.insert(partStatus).values({ partId, occurrenceKey, status, updatedBy: actorId, updatedAt: now })
     .onConflictDoUpdate({ target: [partStatus.partId, partStatus.occurrenceKey], set: { status, updatedBy: actorId, updatedAt: now } });
 }
+
+/** 파트 순서를 바꾼다. ids는 그 업무의 파트 전부를 원하는 순서로 */
+export async function reorderParts(db: Db, taskId: number, ids: number[]): Promise<void> {
+  const rows = await db.select({ id: taskParts.id }).from(taskParts).where(eq(taskParts.taskId, taskId));
+  const have = new Set(rows.map((r) => r.id));
+  if (ids.length !== have.size || new Set(ids).size !== ids.length || ids.some((id) => !have.has(id))) {
+    throw new AppError('invalid', '파트 목록이 바뀌었어요. 새로고침한 뒤 다시 해 주세요');
+  }
+  for (const [i, id] of ids.entries()) await db.update(taskParts).set({ sort: i }).where(eq(taskParts.id, id));
+}

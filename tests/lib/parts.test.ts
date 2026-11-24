@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createTask, getDayOccurrences, getOneOffStatuses, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
+  createTask, getDayOccurrences, getOneOffStatuses, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
   setPartStatus, setStatus, updateTask, type TaskInput,
 } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -116,5 +116,18 @@ describe('one-off statuses', () => {
     await setPartStatus(db, a, p1.id, '2026-11-23', 'done', at('2026-11-23T01:00:00Z'));
     const map = await getOneOffStatuses(db);
     expect([...map.entries()].sort()).toEqual([[once, 'done'], [parted, 'doing']].sort());
+  });
+});
+
+describe('reorder parts', () => {
+  it('saves the new order and rejects a stale list', async () => {
+    const id = await createTask(db, admin, input({ title: '교육청', parts: [{ title: 'A', assigneeId: a }, { title: 'B', assigneeId: b }, { title: 'C', assigneeId: null }] }));
+    const ids = (await listTaskDefinitions(db)).find((d) => d.id === id)!.parts.map((p) => p.id!);
+    await reorderParts(db, id, [ids[2], ids[0], ids[1]]);
+    expect((await listTaskDefinitions(db)).find((d) => d.id === id)!.parts.map((p) => p.title)).toEqual(['C', 'A', 'B']);
+    const [occ] = await getDayOccurrences(db, '2026-11-23');
+    expect(occ.parts.map((p) => p.title)).toEqual(['C', 'A', 'B']);
+    expect(await codeOf(reorderParts(db, id, [ids[0], ids[1]]))).toBe('invalid');
+    expect(await codeOf(reorderParts(db, id, [ids[0], ids[0], ids[1]]))).toBe('invalid');
   });
 });

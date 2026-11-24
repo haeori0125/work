@@ -66,7 +66,7 @@ export function TaskDialog({ occ, me, onClose }: Props) {
         {hasParts && (
           <section className="dlg-sec" aria-label="파트">
             <h3>파트 <span className="muted">{occ.partsLabel?.replace('파트 ', '')}</span></h3>
-            <PartList parts={occ.parts} occurrenceKey={occ.occurrenceKey} />
+            <PartList parts={occ.parts} taskId={occ.taskId} occurrenceKey={occ.occurrenceKey} />
           </section>
         )}
 
