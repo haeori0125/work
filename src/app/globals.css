@@ -977,13 +977,15 @@ input[type="radio"], input[type="checkbox"], input[type="range"] { accent-color:
 .os-cell.mine { background: color-mix(in srgb, var(--soft) 55%, var(--surface)); }
 .os-cell .mc-num { position: relative; }
 .os-dot { position: absolute; top: 2px; right: -6px; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
-.os-line { display: flex; align-items: center; gap: 5px; min-width: 0; }
-.os-k { flex: none; font-size: 11px; font-weight: 700; color: var(--pm); }
-.os-line.eve .os-k { color: var(--eve); }
+/* 달력 칸: 오후·저녁을 배경색 있는 네모 막대로 한 줄씩 */
+.os-line { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; padding: 3px 6px; border-radius: 6px; background: color-mix(in srgb, var(--pm) 16%, var(--surface)); }
+.os-line.eve { background: color-mix(in srgb, var(--eve) 15%, var(--surface)); }
+.os-k { flex: none; font-size: 11px; font-weight: 800; color: color-mix(in srgb, var(--pm) 80%, #000); }
+.os-line.eve .os-k { color: color-mix(in srgb, var(--eve) 85%, #000); }
+.os-line .os-faces { margin-left: auto; }
 .os-faces { display: inline-flex; align-items: center; min-width: 0; }
 .os-faces .os-added .mini-av { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 3px color-mix(in srgb, var(--accent) 80%, transparent); }
 .os-more { margin-left: 3px; font-size: 11px; font-weight: 700; color: var(--muted); }
-.os-dots { display: none; }
 .os-day { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
 .os-day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 16px; }
 .os-slot { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -1036,8 +1038,9 @@ button.os-base-cell:hover { background: var(--surface-2); }
   .os-body { padding: 4px 10px 14px; }
   .os-grid .os-cell { min-height: 58px; align-items: center; }
   .os-grid .os-cell .mc-num { align-self: center; }
-  .os-line { display: none; }
-  .os-dots { display: flex; gap: 3px; }
-  .os-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--pm); }
-  .os-dots i.eve { background: var(--eve); }
+  /* 폰: 사진은 빼고 오후·저녁 막대만 */
+  .os-grid .os-cell { align-items: stretch; padding: 4px 3px 6px; gap: 3px; }
+  .os-line { justify-content: center; padding: 2px 0; border-radius: 4px; }
+  .os-line .os-faces { display: none; }
+  .os-k { font-size: 10px; }
 }

@@ -115,7 +115,6 @@ function CalendarView(p: ViewProps) {
                 {d.slots.map((s) => s.staff.length > 0 && (
                   <span key={s.slot} className={`os-line ${s.slot}`}><span className="os-k">{SLOT[s.slot].label}</span><Faces people={s.staff} /></span>
                 ))}
-                <span className="os-dots" aria-hidden>{d.slots.map((s) => s.staff.length > 0 && <i key={s.slot} className={s.slot} />)}</span>
               </button>
             );
           })}
