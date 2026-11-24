@@ -60,5 +60,8 @@ describe('weekly filter', () => {
     expect((await getPrefs(db, uid)).weekFilter).toBeNull();
     expect((await errOf(savePrefs(db, uid, { weekFilter: 'x' as unknown as string[] }, NOW)))?.[0]).toBe('invalid');
     expect((await errOf(savePrefs(db, uid, { weekFilter: ['a'.repeat(40)] }, NOW)))?.[0]).toBe('invalid');
+    await savePrefs(db, uid, { attendanceFilter: ['철수', '철수'] }, NOW);
+    expect((await getPrefs(db, uid)).attendanceFilter).toEqual(['철수']);
+    expect((await getPrefs(db, uid)).weekFilter).toBeNull();
   });
 });

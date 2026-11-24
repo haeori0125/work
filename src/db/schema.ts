@@ -151,6 +151,8 @@ export const userPrefs = pgTable('user_prefs', {
   avatar: text('avatar'),
   /** 위클리 담당 필터 (이름 목록 JSON), 없으면 전체 */
   weekFilter: text('week_filter'),
+  /** 관리자 출퇴근 기록 멤버 필터 (이름 목록 JSON), 없으면 전체 */
+  attendanceFilter: text('attendance_filter'),
   updatedAt: ts('updated_at').notNull().defaultNow(),
 });
 

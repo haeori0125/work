@@ -1,12 +1,21 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { savePrefsAction } from '@/app/actions/prefs';
 import { Person } from '@/app/_ui/AvatarContext';
 import { FilterIcon } from '@/app/_ui/icons';
 
-/** 출퇴근 기록 멤버 필터(위클리 담당 필터와 같은 모양). 고른 이름은 주소(?who=)에 실린다 */
-export function MemberFilter({ members, selected }: { members: string[]; selected: string[] }) {
+const same = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+
+/**
+ * 출퇴근 기록 멤버 필터(위클리 담당 필터와 같은 모양). 고른 이름은 주소(?who=)에 실리고,
+ * '필터 저장'을 누르면 계정에 저장돼서 다음에 들어와도 그 필터로 시작한다.
+ */
+export function MemberFilter({ members, selected, saved: savedInit }: { members: string[]; selected: string[]; saved: string[] }) {
+  const [saved, setSaved] = useState(savedInit);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -25,7 +34,8 @@ export function MemberFilter({ members, selected }: { members: string[]; selecte
 
   const go = (names: string[]) => {
     const q = new URLSearchParams(sp);
-    if (names.length) q.set('who', names.join(',')); else q.delete('who');
+    q.set('who', names.join(',')); // 비어 있으면 '전체'(저장된 필터보다 우선)
+    setMsg(null);
     router.replace(q.size ? `${path}?${q}` : path, { scroll: false });
   };
   const toggle = (n: string) => go(selected.includes(n) ? selected.filter((x) => x !== n) : [...selected, n]);
@@ -47,6 +57,15 @@ export function MemberFilter({ members, selected }: { members: string[]; selecte
                 <Person name={n} size={18} />
               </button>
             ))}
+          </div>
+          <div className="wf-foot">
+            <span className="muted">{msg ?? (same(selected, saved) ? '저장된 필터예요' : '저장하면 다음에 들어와도 이 필터로 보여요')}</span>
+            <button type="button" className="btn primary small" disabled={pending || same(selected, saved)}
+              onClick={() => start(async () => {
+                const res = await savePrefsAction({ attendanceFilter: selected.length ? selected : null });
+                if (res?.error) { setMsg(res.error); return; }
+                setSaved(selected); setMsg('저장했습니다');
+              })}>필터 저장</button>
           </div>
         </div>
       )}

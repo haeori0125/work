@@ -78,6 +78,13 @@
       "when": 1795463888043,
       "tag": "0010_drop_due_weekday",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795497600741,
+      "tag": "0011_attendance_filter",
+      "breakpoints": true
     }
   ]
 }

@@ -33,7 +33,7 @@ export async function getPrefs(db: Db, userId: number): Promise<Prefs> {
   return {
     themeH: row.themeH, themeS: row.themeS, themeL: row.themeL, themeHex: row.themeHex,
     weekStart: row.weekStart, doingHex: row.doingHex, doneHex: row.doneHex, avatar: row.avatar,
-    weekFilter: parseFilter(row.weekFilter),
+    weekFilter: parseFilter(row.weekFilter), attendanceFilter: parseFilter(row.attendanceFilter),
   };
 }
 
@@ -52,18 +52,14 @@ export async function savePrefs(db: Db, userId: number, patch: Partial<Prefs>, n
     }
     next.avatar = a;
   }
-  if ('weekFilter' in patch) {
-    const f = patch.weekFilter;
-    if (f !== null && (!Array.isArray(f) || f.length > 100 || f.some((n) => typeof n !== 'string' || !n || n.length > 30))) {
-      throw new AppError('invalid', '필터를 저장하지 못했습니다');
-    }
-    next.weekFilter = f === null ? null : [...new Set(f)];
-  }
+  if ('weekFilter' in patch) next.weekFilter = cleanFilter(patch.weekFilter);
+  if ('attendanceFilter' in patch) next.attendanceFilter = cleanFilter(patch.attendanceFilter);
   if ('weekStart' in patch) {
     if (patch.weekStart !== 'mon' && patch.weekStart !== 'sun') throw new AppError('invalid', '시작 요일이 올바르지 않습니다');
     next.weekStart = patch.weekStart;
   }
-  const row = { ...next, weekFilter: next.weekFilter === null ? null : JSON.stringify(next.weekFilter) };
+  const json = (f: string[] | null) => (f === null ? null : JSON.stringify(f));
+  const row = { ...next, weekFilter: json(next.weekFilter), attendanceFilter: json(next.attendanceFilter) };
   await db.insert(userPrefs).values({ userId, ...row, updatedAt: now })
     .onConflictDoUpdate({ target: userPrefs.userId, set: { ...row, updatedAt: now } });
   return next;
@@ -74,6 +70,13 @@ export async function getAvatarMap(db: Db): Promise<Record<string, string>> {
   const rows = await db.select({ name: users.name, avatar: userPrefs.avatar })
     .from(userPrefs).innerJoin(users, eq(users.id, userPrefs.userId)).where(isNotNull(userPrefs.avatar));
   return Object.fromEntries(rows.map((r) => [r.name, r.avatar!]));
+}
+
+function cleanFilter(f: unknown): string[] | null {
+  if (f !== null && (!Array.isArray(f) || f.length > 100 || f.some((n) => typeof n !== 'string' || !n || n.length > 30))) {
+    throw new AppError('invalid', '필터를 저장하지 못했습니다');
+  }
+  return f === null ? null : [...new Set(f as string[])];
 }
 
 function parseFilter(raw: string | null): string[] | null {
