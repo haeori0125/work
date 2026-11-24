@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ClockIcon, HomeIcon, NoteIcon, ShieldIcon } from '@/app/_ui/icons';
+import { CalendarIcon, ClockIcon, HomeIcon, NoteIcon, ShieldIcon } from '@/app/_ui/icons';
 
 /** 다이어리 인덱스처럼 페이지 옆에 튀어나온 탭 (폰에서는 위쪽) */
 export function IndexTabs({ isAdmin, pendingRequests = 0 }: { isAdmin: boolean; pendingRequests?: number }) {
@@ -11,6 +11,7 @@ export function IndexTabs({ isAdmin, pendingRequests = 0 }: { isAdmin: boolean; 
     { href: '/', label: '홈', Icon: HomeIcon },
     { href: '/attendance', label: '내 기록', Icon: ClockIcon },
     { href: '/memo', label: '개인 메모', Icon: NoteIcon },
+    { href: '/onsite', label: '현장 수업', Icon: CalendarIcon },
     ...(isAdmin ? [{ href: '/admin/tasks', label: '관리', Icon: ShieldIcon, badge: pendingRequests }] : []),
   ];
   const active = (href: string) => (href === '/' ? path === '/' : path.startsWith(href.split('/').slice(0, 2).join('/')));
