@@ -55,7 +55,7 @@ export function TaskDialog({ occ, me, onClose }: Props) {
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
           <AssigneeTag names={occ.assignees} />
           {occ.partsLabel && <span className={`tag ${occ.status === 'todo' ? 'line' : occ.status}`}>{occ.partsLabel}</span>}
-          <StatusTag status={occ.status} by={occ.parts.length ? null : occ.lastBy} at={occ.lastAt} />
+          <StatusTag status={occ.status} by={occ.parts.length ? null : occ.lastBy} at={occ.lastAtFull} />
         </div>
         {details?.origin && (
           <p className="dlg-origin">요청 <Person name={details.origin.by} /> · {details.origin.date} 등록</p>

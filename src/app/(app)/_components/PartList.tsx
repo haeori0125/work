@@ -140,7 +140,7 @@ export function PartList({ parts, taskId, occurrenceKey }: { parts: PartView[]; 
                 <span className="part-meta">
                   {p.assignee ? <Person name={p.assignee} size={16} /> : <span className="muted">담당 없음</span>}
                   {p.status !== 'todo' && p.by && (
-                    <span className={`part-st ${p.status}`}><StatusMark status={p.status} />{p.by === p.assignee ? '' : `${p.by} `}{p.at}</span>
+                    <span className={`part-st ${p.status}`}><StatusMark status={p.status} />{p.by === p.assignee ? '' : `${p.by} `}{p.atFull}</span>
                   )}
                 </span>
               )}
