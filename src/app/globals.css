@@ -1209,8 +1209,11 @@ button.os-base-cell:hover { background: var(--surface-2); }
 }
 .rich-ed ul.todo > li[data-done]::before { background: var(--accent); border-color: var(--accent); }
 .rich-ed ul.todo > li[data-done]::after {
-  content: ''; position: absolute; left: -19px; top: calc(.32em + 2px); width: 4px; height: 8px;
-  border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); pointer-events: none;
+  /* 체크 표시: 네모 한가운데, 테마 버튼 글자색(진한 테마면 밝게) */
+  content: ''; position: absolute; left: -24px; top: .32em; width: 15px; height: 15px; pointer-events: none;
+  background: var(--on-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.3 6.6 11.3 12.5 4.8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.3 6.6 11.3 12.5 4.8' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px 12px no-repeat;
 }
 .rich-ed ul.todo > li[data-done] { color: var(--muted); text-decoration: line-through; }
 .rich-ed.readonly ul.todo > li::before { cursor: default; }
@@ -1218,7 +1221,7 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .rt-todo li { display: flex; align-items: baseline; gap: 6px; }
 .rt-todo li.done { color: var(--muted); text-decoration: line-through; }
 .rt-box { flex: none; width: 14px; height: 14px; border: 1.5px solid color-mix(in srgb, var(--ink) 45%, var(--line)); border-radius: 4px; display: inline-grid; place-items: center; font-size: 10px; line-height: 1; transform: translateY(2px); text-decoration: none; }
-.rt-todo li.done .rt-box { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+.rt-todo li.done .rt-box { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .rich-ed { padding-left: 28px; }
 .rich-ed.empty::before { left: 28px; }
 /* 메모가 길어도 화면 높이에 맞추고 안에서 스크롤(목록·편집 칸 따로) */
