@@ -49,7 +49,13 @@ export function TaskDialog({ occ, me, onClose }: Props) {
           <h2 id={`dlg-${occ.taskId}`} className={occ.status === 'done' ? 'done' : undefined}>{occ.title}</h2>
           <div className="dlg-tools">
             {/* 관리자는 여기서 바로 업무 수정 화면으로 */}
-            {me.role === 'admin' && <Link className="btn small" href={`/admin/tasks?edit=${occ.taskId}`}>수정</Link>}
+            {me.role === 'admin' && (
+              <Link className="dlg-close dlg-edit" href={`/admin/tasks?edit=${occ.taskId}`} aria-label="업무 수정" title="업무 수정">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+              </Link>
+            )}
             <button type="button" className="dlg-close" aria-label="닫기" onClick={() => ref.current?.close()}>✕</button>
           </div>
         </div>

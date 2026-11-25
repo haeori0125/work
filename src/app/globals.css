@@ -1268,3 +1268,4 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .task-row .meta.tags .who-tag .who-name { white-space: nowrap; }
 .parts-tag { display: inline-flex; align-items: center; gap: 4px; }
 .dlg-tools { display: flex; align-items: center; gap: 8px; }
+.dlg-edit { display: grid; place-items: center; text-decoration: none; }
