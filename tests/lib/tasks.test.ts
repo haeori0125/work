@@ -105,15 +105,30 @@ describe('weekly tasks and week view', () => {
 });
 
 describe('past tasks', () => {
-  it('lists unfinished one-off dated tasks until done, never recurring ones', async () => {
+  it('lists unfinished one-off dated tasks until done', async () => {
     const once = await createTask(db, admin, input({ title: '비품 주문', startDate: '2026-11-21' }));
-    await createTask(db, admin, input({ title: '청소', repeat: 'daily', startDate: '2026-11-20' }));
     await createTask(db, admin, input({ title: '오늘 것', startDate: '2026-11-23' }));
     let past = await getPastOccurrences(db, '2026-11-23');
     expect(past.map((o) => [o.title, o.occurrenceKey])).toEqual([['비품 주문', '2026-11-21']]);
     await setStatus(db, a, once, '2026-11-21', 'done', at('2026-11-23T01:00:00Z'));
     past = await getPastOccurrences(db, '2026-11-23');
     expect(past).toEqual([]);
+  });
+
+  it('includes missed days of repeating tasks from the last 7 days only', async () => {
+    const daily = await createTask(db, admin, input({ title: '청소', repeat: 'daily', startDate: '2026-11-01' }));
+    await createTask(db, admin, input({ title: 'QnA', repeat: 'weekly_days', weekdays: [1], startDate: '2026-11-01' })); // 화요일
+    await setStatus(db, a, daily, '2026-11-22', 'done', at('2026-11-22T10:00:00Z'));
+    const past = await getPastOccurrences(db, '2026-11-25');
+    expect(past.filter((o) => o.title === '청소').map((o) => o.occurrenceKey))
+      .toEqual(['2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-23', '2026-11-24']);
+    expect(past.filter((o) => o.title === 'QnA').map((o) => o.occurrenceKey)).toEqual(['2026-11-24']);
+  });
+
+  it('includes last week of a weekly repeating task if not done', async () => {
+    await createTask(db, admin, input({ title: '주간 보고', kind: 'weekly', repeat: 'weekly', startDate: '2026-11-02' }));
+    const past = await getPastOccurrences(db, '2026-11-25');
+    expect(past.map((o) => [o.title, o.occurrenceKey])).toEqual([['주간 보고', '2026-11-16']]);
   });
 
   it('includes one-off weekly tasks from earlier weeks, oldest first', async () => {

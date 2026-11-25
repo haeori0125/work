@@ -7,7 +7,7 @@ import { AppError } from './errors';
 import {
   occursInWeek, occursOn, validateRecurrence, type Kind, type RecurrenceSpec, type Repeat,
 } from './recurrence';
-import { weekDates, weekStartOf } from './time';
+import { addDays, weekDates, weekStartOf } from './time';
 
 export type TaskStatus = 'todo' | 'doing' | 'done';
 
@@ -286,19 +286,25 @@ export async function getWeekView(db: Db, weekStart: string): Promise<Record<str
     (o.dueHere ? o.dueDate === d : o.occurrenceKey === d && o.kind === 'dated')))]));
 }
 
+/** 반복 업무는 이 기간(일) 안에 못 한 것만 지난 업무로(오래된 것까지 쌓이지 않게) */
+export const PAST_REPEAT_DAYS = 7;
+
 export async function getPastOccurrences(db: Db, today: string): Promise<Occurrence[]> {
   const thisWeek = weekStartOf(today);
-  const rows = await db.select().from(tasks).where(and(
-    isNull(tasks.deletedAt),
-    eq(tasks.repeat, 'none'),
-    or(eq(tasks.kind, 'dated'), eq(tasks.kind, 'weekly')),
-  ));
+  const lastWeek = addDays(thisWeek, -7);
+  const recent = Array.from({ length: PAST_REPEAT_DAYS }, (_, i) => addDays(today, -(PAST_REPEAT_DAYS - i)));
+  const rows = await liveTasks(db);
   const items = rows.flatMap((task) => {
-    const key = task.kind === 'dated' ? task.startDate : weekStartOf(task.startDate);
-    // 날짜 업무는 그날이 지나면, 기간 업무는 마감일이 지나면(마감일이 없으면 그 주가 지나면) 지난 업무
-    const isPast = task.kind === 'dated' ? key < today
-      : task.dueDate ? task.dueDate < today : weekStartOf(task.startDate) < thisWeek;
-    return isPast ? [{ task, key }] : [];
+    if (task.repeat === 'none') {
+      const key = task.kind === 'dated' ? task.startDate : weekStartOf(task.startDate);
+      // 날짜 업무는 그날이 지나면, 기간 업무는 마감일이 지나면(마감일이 없으면 그 주가 지나면) 지난 업무
+      const isPast = task.kind === 'dated' ? key < today
+        : task.dueDate ? task.dueDate < today : weekStartOf(task.startDate) < thisWeek;
+      return isPast ? [{ task, key }] : [];
+    }
+    // 반복 업무: 날짜 업무는 최근 며칠 중 있던 날, 기간 업무(매주)는 지난주
+    if (task.kind === 'dated') return recent.filter((d) => occursOn(task, d)).map((d) => ({ task, key: d }));
+    return occursInWeek(task, lastWeek) ? [{ task, key: lastWeek }] : [];
   });
   const built = await buildOccurrences(db, items);
   return built
