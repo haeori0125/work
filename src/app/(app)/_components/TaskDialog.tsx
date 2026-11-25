@@ -1,6 +1,7 @@
 'use client';
 
 import { StatusMark } from '@/app/_ui/icons';
+import Link from 'next/link';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import {
   addCommentAction, deleteCommentAction, editCommentAction, loadTaskDetails, setStatusAction, type TaskDetails,
@@ -46,7 +47,11 @@ export function TaskDialog({ occ, me, onClose }: Props) {
             ? <span className={`check ${occ.status}`} aria-label={STATUS_LABEL[occ.status]} />
             : <CheckCircle status={occ.status} title={occ.title} onCycle={cycle} disabled={pending} />}
           <h2 id={`dlg-${occ.taskId}`} className={occ.status === 'done' ? 'done' : undefined}>{occ.title}</h2>
-          <button type="button" className="dlg-close" aria-label="닫기" onClick={() => ref.current?.close()}>✕</button>
+          <div className="dlg-tools">
+            {/* 관리자는 여기서 바로 업무 수정 화면으로 */}
+            {me.role === 'admin' && <Link className="btn small" href={`/admin/tasks?edit=${occ.taskId}`}>수정</Link>}
+            <button type="button" className="dlg-close" aria-label="닫기" onClick={() => ref.current?.close()}>✕</button>
+          </div>
         </div>
 
         <div className="tags">
