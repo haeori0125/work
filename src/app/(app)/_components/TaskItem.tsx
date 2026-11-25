@@ -28,8 +28,9 @@ export function TaskItem({ occ, me, showDate }: Props) {
         <button type="button" className="task-title as-link" onClick={() => setOpen(true)}>{occ.title}</button>
         {occ.description && <RichLine className="task-desc" text={occ.description} />}
         <div className="meta tags">
-          {showDate && <span className="tag date">{occ.dateLabel}</span>}
-          {occ.overdue && <span className="tag date">마감 지남</span>}
+          {/* 지난 업무: 날짜 업무는 그 날짜, 기간 업무는 마감일을 빨간 태그 하나로 */}
+          {showDate && <span className="tag date">{occ.dueLabel ?? occ.dateLabel}</span>}
+          {occ.overdue && !showDate && <span className="tag date">마감 지남</span>}
           <AssigneeTag names={occ.assignees} />
           {occ.dueLabel && !occ.overdue && <span className="tag line">{occ.dueLabel}</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}

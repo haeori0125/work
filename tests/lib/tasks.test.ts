@@ -125,6 +125,13 @@ describe('past tasks', () => {
       ['더 지난 업무', '2026-11-10'], ['지난주 점검', '2026-11-16'],
     ]);
   });
+
+  it('counts a period task as past the day after its due date, even mid-week', async () => {
+    await createTask(db, admin, input({ title: '어법파트 통일', kind: 'weekly', startDate: '2026-11-23', dueDate: '2026-11-24' }));
+    await createTask(db, admin, input({ title: '오늘 마감', kind: 'weekly', startDate: '2026-11-23', dueDate: '2026-11-25' }));
+    expect((await getPastOccurrences(db, '2026-11-24')).map((o) => o.title)).toEqual([]);
+    expect((await getPastOccurrences(db, '2026-11-25')).map((o) => o.title)).toEqual(['어법파트 통일']);
+  });
 });
 
 describe('update and delete', () => {

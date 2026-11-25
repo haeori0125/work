@@ -295,7 +295,9 @@ export async function getPastOccurrences(db: Db, today: string): Promise<Occurre
   ));
   const items = rows.flatMap((task) => {
     const key = task.kind === 'dated' ? task.startDate : weekStartOf(task.startDate);
-    const isPast = task.kind === 'dated' ? key < today : weekStartOf(task.dueDate ?? task.startDate) < thisWeek;
+    // 날짜 업무는 그날이 지나면, 기간 업무는 마감일이 지나면(마감일이 없으면 그 주가 지나면) 지난 업무
+    const isPast = task.kind === 'dated' ? key < today
+      : task.dueDate ? task.dueDate < today : weekStartOf(task.startDate) < thisWeek;
     return isPast ? [{ task, key }] : [];
   });
   const built = await buildOccurrences(db, items);
