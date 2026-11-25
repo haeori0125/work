@@ -6,12 +6,12 @@ import { getDb } from '@/db';
 import { deleteSegment, editSegment, getSegmentDate } from '@/lib/attendance';
 import { AppError } from '@/lib/errors';
 import {
-  approveMember, rejectMember, resetPassword, setDisabled, setRole,
+  approveMember, listActiveMembers, rejectMember, resetPassword, setDisabled, setRole,
 } from '@/lib/members';
 import { approveRequest, getPendingRequest } from '@/lib/requests';
-import { createTask, deleteTask, updateTask } from '@/lib/tasks';
+import { createTask, deleteTask, listTaskDefinitions, updateTask, type TaskDefinition } from '@/lib/tasks';
 import { parseTask } from './task-form';
-import { kstDateTime } from '@/lib/time';
+import { kstDate, kstDateTime } from '@/lib/time';
 import { requireActionAdmin } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
@@ -34,7 +34,24 @@ export async function saveTaskAction(_prev: ActionResult, form: FormData): Promi
     return id ? 'edit' : requestId ? 'approved' : 'new';
   });
   if (result?.error) return result;
+  // 업무 팝업에서 고칠 때는 그 자리에 머문다
+  if (str(form, 'stay')) return { ok: '저장되었습니다' };
   redirect(`/admin/tasks?saved=${result?.ok ?? 'new'}`);
+}
+
+/** 업무 팝업에서 바로 고치기: 그 업무의 내용과 고를 수 있는 사람들 */
+export async function loadTaskForEditAction(id: number): Promise<{ task: TaskDefinition; members: { id: number; name: string }[]; today: string } | { error: string }> {
+  try {
+    await requireActionAdmin();
+    const db = await getDb();
+    const [defs, members] = await Promise.all([listTaskDefinitions(db), listActiveMembers(db)]);
+    const task = defs.find((d) => d.id === id);
+    if (!task) return { error: '업무를 찾을 수 없습니다' };
+    return { task, members: members.map((m) => ({ id: m.id, name: m.name })), today: kstDate(new Date()) };
+  } catch (e) {
+    if (e instanceof AppError) return { error: e.message };
+    throw e;
+  }
 }
 
 export async function deleteTaskAction(id: number): Promise<ActionResult> {

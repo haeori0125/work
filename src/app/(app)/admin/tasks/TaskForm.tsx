@@ -23,9 +23,11 @@ type Props = {
   /** request: 멤버가 같은 폼으로 업무 추가를 요청한다 */
   mode?: 'admin' | 'request';
   onSent?: (message: string) => void;
+  /** 업무 팝업 안에서 고칠 때: 저장해도 페이지를 옮기지 않고, 취소 버튼을 보여 준다 */
+  inline?: { onCancel: () => void };
 };
 
-export function TaskForm({ task, members, today, fromRequest = null, mode = 'admin', onSent }: Props) {
+export function TaskForm({ task, members, today, fromRequest = null, mode = 'admin', onSent, inline }: Props) {
   const req = task ? null : fromRequest;
   const init: TaskInput | null = task ?? req?.spec ?? null;
   const [state, action, pending] = useActionState(async (prev: ActionResult, form: FormData) => {
@@ -47,6 +49,7 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
     <form action={action} className="tf" key={task?.id ?? 'new'}>
       <input type="hidden" name="id" value={task?.id ?? ''} />
       <input type="hidden" name="requestId" value={req?.id ?? ''} />
+      {inline && <input type="hidden" name="stay" value="1" />}
       {req && <p className="msg ok">{req.requesterName} 님의 요청이에요. 내용을 확인하고 저장하면 승인돼요.</p>}
       <div className="tf-grid">
           <section className="tf-sec tf-what" aria-label="무엇을">
@@ -149,7 +152,8 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
 
       {state?.error && <p className="msg error">{state.error}</p>}
       <div className="tf-actions">
-        {(task || req) && <Link className="btn" href="/admin/tasks">취소</Link>}
+        {inline ? <button type="button" className="btn" onClick={inline.onCancel}>취소</button>
+          : (task || req) && <Link className="btn" href="/admin/tasks">취소</Link>}
         <button className="btn primary" disabled={pending}>{pending ? (mode === 'request' ? '보내는 중…' : '저장 중…') : mode === 'request' ? '요청 보내기' : task ? '수정 저장' : req ? '승인하고 업무 추가' : '업무 추가'}</button>
       </div>
     </form>
