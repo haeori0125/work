@@ -6,7 +6,7 @@ import { requireAdmin } from '@/server/session';
 import { listActiveMembers } from '@/lib/members';
 import { getPrefs } from '@/lib/prefs';
 import { MemberFilter } from './MemberFilter';
-import { SegmentRow } from './SegmentRow';
+import { DayRows } from './DayRows';
 
 const isDate = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
@@ -42,20 +42,23 @@ export default async function AdminAttendancePage({ searchParams }: { searchPara
             <table className="seg-table">
               <thead><tr><th>날짜</th><th>이름</th><th>구간</th><th>출근</th><th>퇴근</th><th>하루 합계</th><th></th></tr></thead>
               <tbody>
-                {days.flatMap((d) => d.segments.map((s, i) => ({ s, i })).reverse().map(({ s, i }, row) => (
-                  <SegmentRow
-                    key={`${s.id}-${s.clockIn.getTime()}-${s.clockOut?.getTime() ?? 0}`}
-                    id={s.id} dateLabel={formatDateLabel(d.date)} name={d.userName} index={i} lead={row === 0} count={d.segments.length}
-                    clockIn={formatKstTime(s.clockIn)} clockOut={s.clockOut ? formatKstTime(s.clockOut) : ''}
-                    missing={d.state === 'missing'} working={d.state === 'working'} edited={s.edited}
-                    dayTotal={row === 0 ? (d.state === 'missing' ? '퇴근 미기록' : formatDuration(d.totalMs)) : null}
+                {days.map((d) => (
+                  <DayRows
+                    key={`${d.userName}-${d.date}`}
+                    dateLabel={formatDateLabel(d.date)} name={d.userName} count={d.segments.length}
+                    missing={d.state === 'missing'} working={d.state === 'working'}
+                    dayTotal={d.state === 'missing' ? '퇴근 미기록' : formatDuration(d.totalMs)}
+                    rows={d.segments.map((s, i) => ({
+                      key: `${s.id}-${s.clockIn.getTime()}-${s.clockOut?.getTime() ?? 0}`, id: s.id, index: i,
+                      clockIn: formatKstTime(s.clockIn), clockOut: s.clockOut ? formatKstTime(s.clockOut) : '', edited: s.edited,
+                    })).reverse()}
                   />
-                )))}
+                ))}
               </tbody>
             </table>
           </div>
         )}
-        <p className="muted">하루에 여러 번 출퇴근한 경우 구간별로 나옵니다. 퇴근 칸을 비우고 저장하면 퇴근 기록이 지워집니다. 수정하면 이전 값이 기록으로 남고, 삭제하면 그 구간과 수정 기록이 함께 지워집니다.</p>
+        <p className="muted">하루에 여러 번 출퇴근한 경우 최근 구간만 보이고, ‘구간 n개’를 누르면 나머지가 펼쳐집니다. 퇴근 칸을 비우고 저장하면 퇴근 기록이 지워집니다. 수정하면 이전 값이 기록으로 남고, 삭제하면 그 구간과 수정 기록이 함께 지워집니다.</p>
       </div>
     </section>
   );

@@ -11,6 +11,10 @@ type Props = {
   lead: boolean;
   clockIn: string; clockOut: string; missing: boolean; working: boolean; edited: boolean;
   dayTotal: string | null;
+  /** 펼쳤을 때 보이는 나머지 구간 줄 */
+  sub?: boolean;
+  /** 첫 줄: 나머지 구간 펼치기/접기 */
+  toggle?: { open: boolean; onToggle: () => void };
 };
 
 export function SegmentRow(p: Props) {
@@ -29,10 +33,17 @@ export function SegmentRow(p: Props) {
   const dirty = inT !== p.clockIn || outT !== p.clockOut;
   const label = `${p.name} ${p.dateLabel}${p.count > 1 ? ` ${p.index + 1}번째` : ''}`;
   return (
-    <tr className={p.lead ? 'seg-first' : undefined}>
+    <tr className={p.lead ? 'seg-first' : p.sub ? 'seg-sub' : undefined}>
       <td className="c-date">{p.lead ? p.dateLabel : ''}</td>
       <td className="c-name">{p.lead ? <Person name={p.name} size={20} /> : ''}</td>
-      <td className="c-seg muted">{p.count > 1 ? `${p.index + 1}/${p.count}` : ''}</td>
+      <td className="c-seg muted">
+        {p.toggle ? (
+          <button type="button" className="seg-toggle" aria-expanded={p.toggle.open} onClick={p.toggle.onToggle}
+            aria-label={`${p.name} ${p.dateLabel} 구간 ${p.count}개 ${p.toggle.open ? '접기' : '펼치기'}`}>
+            <span className="seg-chev" aria-hidden>›</span>구간 {p.count}개
+          </button>
+        ) : p.count > 1 ? `${p.index + 1}/${p.count}` : ''}
+      </td>
       <td className="c-in"><input type="time" value={inT} onChange={(e) => setIn(e.target.value)} aria-label={`${label} 출근`} /></td>
       <td className="c-out">
         <input type="time" value={outT} onChange={(e) => setOut(e.target.value)} aria-label={`${label} 퇴근`} />
