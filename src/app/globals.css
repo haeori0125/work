@@ -1251,3 +1251,18 @@ button.os-base-cell:hover { background: var(--surface-2); }
   .seg-table tr.seg-sub td { background: none; }
   .seg-table tr.seg-sub { background: color-mix(in srgb, var(--surface-2) 45%, transparent); border-radius: 10px; padding-left: 10px; padding-right: 10px; }
 }
+/* 업무 목록: 제목과 아래 정보가 구분되게, 설명은 첫 줄만 */
+.task-title, .task-title.as-link { font-size: 15px; font-weight: 700; line-height: 1.4; color: var(--text); }
+.task-row.done .task-title, .task-row.done .task-title.as-link { font-weight: 500; }
+.task-row > div > .task-desc { margin-top: 3px; }
+.task-row .meta.tags { margin-top: 7px; }
+.task-row .meta.tags .tag { font-size: 12px; }
+.task-row .meta.tags .tag.line { color: var(--muted); }
+.rt-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; color: var(--muted); }
+.rt-more { color: var(--muted); }
+.slack-inline { display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: 600; color: var(--ink); vertical-align: bottom; }
+.slack-inline svg { width: 14px; height: 14px; flex: none; }
+.slack-inline:hover { text-decoration: underline; }
+/* 담당자가 많으면 화면 밖으로 나가지 않게 알약 안에서 줄바꿈 */
+.task-row .meta.tags .who-tag { max-width: 100%; flex-wrap: wrap; white-space: normal; row-gap: 2px; border-radius: 12px; }
+.task-row .meta.tags .who-tag .who-name { white-space: nowrap; }

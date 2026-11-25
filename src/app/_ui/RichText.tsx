@@ -1,6 +1,6 @@
 // 글 보여 주기: 슬랙식 서식 + 링크는 눌러 열 수 있게, 슬랙 링크는 카드로
 import { describeSlackLink, splitLinks } from '@/lib/links';
-import { parseBlocks, type Inline } from '@/lib/mrkdwn';
+import { parseBlocks, parseInline, type Inline } from '@/lib/mrkdwn';
 
 function ChatIcon() {
   return (
@@ -19,12 +19,19 @@ function shortUrl(url: string): string {
   } catch { return url; }
 }
 
-function Links({ text }: { text: string }) {
+function Links({ text, compact }: { text: string; compact?: boolean }) {
   return (
     <>
       {splitLinks(text).map((s, i) => {
         if (s.type === 'text') return <span key={i}>{s.text}</span>;
         const slack = describeSlackLink(s.url);
+        if (slack && compact) {
+          // 목록에서는 카드 대신 한 줄 링크
+          return (
+            <a key={i} className="ext-link slack-inline" href={s.url} target="_blank" rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}><ChatIcon />Slack {slack.kind}</a>
+          );
+        }
         if (slack) {
           return (
             <a key={i} className="slack-card" href={s.url} target="_blank" rel="noopener noreferrer"
@@ -46,14 +53,14 @@ function Links({ text }: { text: string }) {
   );
 }
 
-function Inlines({ items }: { items: Inline[] }) {
+function Inlines({ items, compact }: { items: Inline[]; compact?: boolean }) {
   return (
     <>
       {items.map((x, i) => {
-        if (x.t === 'text') return <Links key={i} text={x.v} />;
+        if (x.t === 'text') return <Links key={i} text={x.v} compact={compact} />;
         if (x.t === 'code') return <code key={i} className="rt-code">{x.v}</code>;
         const Tag = x.t === 'b' ? 'strong' : x.t === 'i' ? 'em' : x.t === 'u' ? 'u' : 's';
-        return <Tag key={i}><Inlines items={x.c} /></Tag>;
+        return <Tag key={i}><Inlines items={x.c} compact={compact} /></Tag>;
       })}
     </>
   );
@@ -84,6 +91,18 @@ export function RichText({ text, className }: { text: string; className?: string
           );
         }
       })}
+    </div>
+  );
+}
+
+/** 목록용: 글의 첫 줄만 한 줄로(넘치면 …), 슬랙 링크는 작은 링크로 */
+export function RichLine({ text, className }: { text: string; className?: string }) {
+  const lines = text.split('\n').filter((l) => l.trim());
+  if (!lines.length) return null;
+  const first = lines[0].replace(/^\s*(?:[•◦▪*-]|\d+[.)]|>|\[[ xX]\])\s+/, '').replace(/^\s*```/, '');
+  return (
+    <div className={`rt-line${className ? ` ${className}` : ''}`}>
+      <Inlines items={parseInline(first)} compact />{lines.length > 1 && <span className="rt-more"> …</span>}
     </div>
   );
 }
