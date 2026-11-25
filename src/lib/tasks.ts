@@ -256,6 +256,17 @@ export async function getDayOccurrences(db: Db, date: string): Promise<Occurrenc
   return sortOpenFirst(await buildOccurrences(db, rows.map((task) => ({ task, key: date }))));
 }
 
+/** 오늘 할 일: 그날 업무 + 마감일이 그날인 기간 업무(위클리의 그날 칸과 같다) */
+export async function getTodayOccurrences(db: Db, date: string): Promise<Occurrence[]> {
+  const all = await liveTasks(db);
+  const items = [
+    ...all.filter((t) => occursOn(t, date)).map((task) => ({ task, key: date })),
+    ...all.filter((t) => t.kind === 'weekly' && t.repeat === 'none' && t.dueDate === date)
+      .map((task) => ({ task, key: weeklyKey(task, weekStartOf(date)), dueHere: true })),
+  ];
+  return sortOpenFirst(await buildOccurrences(db, items));
+}
+
 export async function getWeeklyOccurrences(db: Db, weekStart: string): Promise<Occurrence[]> {
   const rows = (await liveTasks(db)).filter((t) => weeklyActive(t, weekStart));
   return sortOpenFirst(await buildOccurrences(db, rows.map((task) => ({ task, key: weeklyKey(task, weekStart) }))));

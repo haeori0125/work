@@ -3,7 +3,7 @@ import { listBoardPosts } from '@/lib/memos';
 import { getPrefs } from '@/lib/prefs';
 import { listActiveMembers } from '@/lib/members';
 import { listMyRequests } from '@/lib/requests';
-import { getDayOccurrences, getPastOccurrences, getWeekView, getWeeklyOccurrences } from '@/lib/tasks';
+import { getPastOccurrences, getTodayOccurrences, getWeekView, getWeeklyOccurrences } from '@/lib/tasks';
 import { addDays, formatDateLabel, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
 import { toNoteView, toOccurrenceView } from '@/lib/view';
 import { requireUser } from '@/server/session';
@@ -42,7 +42,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const [onsite, past, day, weekly, week, posts, members, mine, ...monthWeeks] = await Promise.all([
     getOnsiteDays(db, gridStart, gridLast),
     getPastOccurrences(db, today),
-    getDayOccurrences(db, today),
+    getTodayOccurrences(db, today),
     getWeeklyOccurrences(db, goalsWeek),
     getWeekView(db, start),
     listBoardPosts(db, today),

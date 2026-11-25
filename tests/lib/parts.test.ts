@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createTask, getDayOccurrences, getOneOffStatuses, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
+  createTask, getDayOccurrences, getOneOffStatuses, getTodayOccurrences, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
   setPartStatus, setStatus, updateTask, type TaskInput,
 } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -31,6 +31,15 @@ describe('weekly deadline', () => {
     expect(Object.values(view).flat()).toEqual([]);
     const [goal] = await getWeeklyOccurrences(db, '2026-11-23');
     expect(goal.dueDate).toBeNull();
+  });
+});
+
+describe('today', () => {
+  it('lists period tasks on their due day, like the weekly view', async () => {
+    await createTask(db, admin, input({ title: '어법파트 통일', kind: 'weekly', startDate: '2026-11-22', dueDate: '2026-11-25' }));
+    await createTask(db, admin, input({ title: '온라인 QnA', startDate: '2026-11-25' }));
+    expect((await getTodayOccurrences(db, '2026-11-25')).map((o) => [o.title, !!o.dueHere])).toEqual([['어법파트 통일', true], ['온라인 QnA', false]]);
+    expect((await getTodayOccurrences(db, '2026-11-24')).map((o) => o.title)).toEqual([]);
   });
 });
 
