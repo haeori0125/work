@@ -1,13 +1,12 @@
 'use client';
 
-import { StatusMark } from '@/app/_ui/icons';
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
 import { matchesWeekFilter, type OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { TaskDialog } from './TaskDialog';
-import { AssigneeTag, StatusTag } from './TaskTags';
+import { AssigneeTag, PartsTag, StatusTag } from './TaskTags';
 import { WeekFilter } from './WeekFilter';
 
 export type WeekDay = {
@@ -31,7 +30,7 @@ function Tags({ o, showDue }: { o: OccurrenceView; showDue: boolean }) {
       {showDue && !o.dueHere && o.overdue && <span className="tag date">마감 지남</span>}
       {showDue && !o.dueHere && !o.overdue && o.dueLabel && <span className="tag line due">{o.dueLabel}</span>}
       <AssigneeTag names={o.assignees} compact />
-      {o.partsLabel && <span className={`tag parts-tag ${o.status === 'todo' ? 'line' : o.status}`}><StatusMark status={o.status} />{o.partsLabel}</span>}
+      <PartsTag status={o.status} label={o.partsLabel} doneBy={o.parts.map((x) => x.by)} compact />
       <StatusTag status={o.status} by={o.lastBy} compact />
     </span>
   );

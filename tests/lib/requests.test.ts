@@ -61,3 +61,20 @@ describe('task requests', () => {
     expect(await listMyRequests(db, a)).toEqual([]);
   });
 });
+
+describe('edit requests', () => {
+  it('stores which task to change and keeps part ids so existing parts get updated', async () => {
+    const taskId = await createTask(db, admin, spec({ title: '자료 정리', parts: [{ title: '1부', assigneeId: a }] }));
+    const r = await createRequest(db, a, spec({ title: '자료 정리(수정)', parts: [{ id: 5, title: '1부', assigneeId: b }] }), at('2026-11-25T00:00:00Z'), taskId);
+    const [p] = await listPendingRequests(db);
+    expect(p.id).toBe(r);
+    expect(p.editOf).toBe(taskId);
+    expect(p.spec?.parts?.[0]).toEqual({ id: 5, title: '1부', assigneeId: b });
+    // 새 업무 요청은 editOf 없음, 파트 id 버림
+    await createRequest(db, a, spec({ title: '새 일', parts: [{ id: 9, title: 'x', assigneeId: null }] }), at('2026-11-25T01:00:00Z'));
+    const fresh = (await listPendingRequests(db)).find((x) => x.title === '새 일')!;
+    expect(fresh.editOf).toBeNull();
+    expect(fresh.spec?.parts?.[0]).toEqual({ title: 'x', assigneeId: null });
+    expect(await codeOf(createRequest(db, a, spec({}), at('2026-11-25T02:00:00Z'), 9999))).toBe('not_found');
+  });
+});

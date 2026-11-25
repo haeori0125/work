@@ -1,0 +1,2 @@
+ALTER TABLE "task_requests" ADD COLUMN "edit_of" integer;--> statement-breakpoint
+ALTER TABLE "task_requests" ADD CONSTRAINT "task_requests_edit_of_tasks_id_fk" FOREIGN KEY ("edit_of") REFERENCES "public"."tasks"("id") ON DELETE cascade ON UPDATE no action;

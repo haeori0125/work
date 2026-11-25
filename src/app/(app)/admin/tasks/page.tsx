@@ -17,8 +17,11 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   const [defs, members, requests, statuses] = await Promise.all([
     listTaskDefinitions(db), listActiveMembers(db), listPendingRequests(db), getOneOffStatuses(db),
   ]);
-  const editing = sp.edit ? defs.find((d) => d.id === Number(sp.edit)) ?? null : null;
-  const from = editing ? null : requests.find((r) => r.id === Number(sp.from)) ?? null;
+  const from = sp.edit ? null : requests.find((r) => r.id === Number(sp.from)) ?? null;
+  // 수정 요청을 승인할 때는 그 업무를 요청 내용으로 채워서 고치는 폼으로
+  const target = from?.editOf ? defs.find((d) => d.id === from.editOf) ?? null : null;
+  const editing = sp.edit ? defs.find((d) => d.id === Number(sp.edit)) ?? null
+    : target && from?.spec ? { ...target, ...from.spec, id: target.id, dueDate: from.spec.dueDate ?? null, parts: (from.spec.parts ?? []) as typeof target.parts } : null;
   const fromRequest = from && {
     id: from.id, requesterName: from.requesterName,
     spec: from.spec ?? {
@@ -48,9 +51,9 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   return (
     <>
       <section className="panel admin-card">
-        <div className="panel-head"><h2>{editing ? '업무 수정' : from ? '요청 승인' : '업무 추가'}</h2></div>
+        <div className="panel-head"><h2>{from ? (editing ? '수정 요청 승인' : '요청 승인') : editing ? '업무 수정' : '업무 추가'}</h2></div>
         <FlashToast param="saved" value={sp.saved} messages={{ new: '등록되었습니다', edit: '저장되었습니다', approved: '승인되었습니다' }} />
-        <TaskForm key={editing ? `edit-${editing.id}` : from ? `req-${from.id}` : `new-${sp.saved ?? ''}-${defs.length}`} task={editing} fromRequest={fromRequest}
+        <TaskForm key={editing ? `edit-${editing.id}-${from?.id ?? ''}` : from ? `req-${from.id}` : `new-${sp.saved ?? ''}-${defs.length}`} task={editing} fromRequest={fromRequest}
           members={members} today={kstDate(new Date())} />
       </section>
       <section className="panel admin-card" aria-label="업무 승인">
@@ -58,7 +61,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
         {requests.length === 0 ? <p className="empty">멤버가 요청한 업무가 없습니다</p> : (
           <ul className="list-card">
             {requests.map((r) => (
-              <RequestRow key={r.id} id={r.id} title={r.title} description={r.description} requester={r.requesterName}
+              <RequestRow key={r.id} id={r.id} edit={!!r.editOf} title={r.title} description={r.description} requester={r.requesterName}
                 wantedLabel={r.wantedDate ? formatDateLabel(r.wantedDate) : null} selected={r.id === from?.id}
                 createdLabel={`${formatDateLabel(kstDate(r.createdAt))} ${formatKstTime(r.createdAt)}`} />
             ))}

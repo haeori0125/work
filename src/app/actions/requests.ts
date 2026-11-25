@@ -10,9 +10,10 @@ import { parseTask } from './task-form';
 export async function createRequestAction(_prev: ActionResult, form: FormData): Promise<ActionResult> {
   return runAction(async () => {
     const user = await requireActionUser();
-    await createRequest(await getDb(), user.id, parseTask(form), new Date());
+    const editOf = Number(String(form.get('editOf') ?? '')) || null;
+    await createRequest(await getDb(), user.id, parseTask(form), new Date(), editOf);
     revalidatePath('/', 'layout');
-    return '요청을 보냈어요. 관리자가 승인하면 업무에 추가돼요.';
+    return editOf ? '수정 요청을 보냈어요. 관리자가 승인하면 반영돼요.' : '요청을 보냈어요. 관리자가 승인하면 업무에 추가돼요.';
   });
 }
 

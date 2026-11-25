@@ -81,7 +81,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   return (
     <div className="home">
       <TodayPanel dateLabel={dateLabel} past={v(past)} today={v(day)} me={me} todayDate={today} members={members.map((m) => ({ id: m.id, name: m.name }))}
-        myRequests={mine.map((r) => ({ id: r.id, title: r.title, status: r.status, wantedLabel: r.wantedDate ? formatDateLabel(r.wantedDate) : null }))} />
+        myRequests={mine.map((r) => ({ id: r.id, title: r.editOf ? `[수정] ${r.title}` : r.title, status: r.status, wantedLabel: r.wantedDate ? formatDateLabel(r.wantedDate) : null }))} />
       <div className="home-right">
         <WeekPanel rangeLabel={rangeLabel} rangeShort={rangeShort} prevWeek={addDays(start, -7)} nextWeek={addDays(start, 7)} isThisWeek={start === thisStart} monthQuery={keepMonth ? `&month=${keepMonth}` : ''} days={days} goals={v(weekly)} me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
         <MemoPanel posts={posts.map((p) => toNoteView(p, today))} me={me} />

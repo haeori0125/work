@@ -192,6 +192,8 @@ export const taskRequests = pgTable('task_requests', {
   decidedBy: integer('decided_by').references(() => users.id, { onDelete: 'set null' }),
   decidedAt: ts('decided_at'),
   taskId: integer('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  /** 이미 있는 업무를 고쳐 달라는 요청이면 그 업무 */
+  editOf: integer('edit_of').references(() => tasks.id, { onDelete: 'cascade' }),
 }, (t) => [index('task_requests_status').on(t.status), index('task_requests_requester').on(t.requesterId)]);
 
 /**

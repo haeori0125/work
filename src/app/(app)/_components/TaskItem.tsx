@@ -1,13 +1,12 @@
 'use client';
 
-import { StatusMark } from '@/app/_ui/icons';
 import { useState, useTransition } from 'react';
 import { setStatusAction } from '@/app/actions/tasks';
 import { RichLine } from '@/app/_ui/RichText';
 import type { OccurrenceView } from '@/lib/view';
 import { CheckCircle, NEXT_STATUS } from './CheckCircle';
 import { TaskDialog } from './TaskDialog';
-import { AssigneeTag, StatusTag } from './TaskTags';
+import { AssigneeTag, PartsTag, StatusTag } from './TaskTags';
 
 type Props = { occ: OccurrenceView; me: { id: number; role: 'member' | 'admin' }; showDate?: boolean };
 
@@ -34,7 +33,7 @@ export function TaskItem({ occ, me, showDate }: Props) {
           <AssigneeTag names={occ.assignees} />
           {occ.dueLabel && !occ.overdue && <span className="tag line">{occ.dueLabel}</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
-          {occ.partsLabel && <span className={`tag parts-tag ${occ.status === 'todo' ? 'line' : occ.status}`}><StatusMark status={occ.status} />{occ.partsLabel}</span>}
+          <PartsTag status={occ.status} label={occ.partsLabel} doneBy={occ.parts.map((x) => x.by)} />
           <StatusTag status={occ.status} by={occ.lastBy} at={occ.lastAt} className="last-change" />
           {occ.commentCount > 0 && (
             <button type="button" className="tag line memo-n" onClick={() => setOpen(true)}>메모 {occ.commentCount}</button>

@@ -12,7 +12,7 @@ import { approveRequest, getPendingRequest } from '@/lib/requests';
 import { createTask, deleteTask, listTaskDefinitions, updateTask, type TaskDefinition } from '@/lib/tasks';
 import { parseTask } from './task-form';
 import { kstDate, kstDateTime } from '@/lib/time';
-import { requireActionAdmin } from '@/server/session';
+import { requireActionAdmin, requireActionUser } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '').trim();
@@ -24,25 +24,29 @@ export async function saveTaskAction(_prev: ActionResult, form: FormData): Promi
     const id = Number(str(form, 'id'));
     const input = parseTask(form);
     const requestId = Number(str(form, 'requestId'));
-    if (id) await updateTask(db, id, input);
-    else {
+    if (id) {
+      // 멤버의 수정 요청을 승인하면서 고치는 경우
+      if (requestId) await getPendingRequest(db, requestId);
+      await updateTask(db, id, input);
+      if (requestId) await approveRequest(db, requestId, admin.id, id, new Date());
+    } else {
       if (requestId) await getPendingRequest(db, requestId); // 이미 처리된 요청이면 업무를 만들지 않는다
       const taskId = await createTask(db, admin.id, input);
       if (requestId) await approveRequest(db, requestId, admin.id, taskId, new Date());
     }
     revalidatePath('/', 'layout');
-    return id ? 'edit' : requestId ? 'approved' : 'new';
+    return requestId ? 'approved' : id ? 'edit' : 'new';
   });
   if (result?.error) return result;
   // 업무 팝업에서 고칠 때는 그 자리에 머문다
-  if (str(form, 'stay')) return { ok: '저장되었습니다' };
+  if (str(form, 'stay')) return { ok: result?.ok === 'approved' ? '승인되었습니다' : '저장되었습니다' };
   redirect(`/admin/tasks?saved=${result?.ok ?? 'new'}`);
 }
 
-/** 업무 팝업에서 바로 고치기: 그 업무의 내용과 고를 수 있는 사람들 */
+/** 업무 팝업에서 바로 고치기: 그 업무의 내용과 고를 수 있는 사람들(멤버는 같은 폼으로 수정 요청) */
 export async function loadTaskForEditAction(id: number): Promise<{ task: TaskDefinition; members: { id: number; name: string }[]; today: string } | { error: string }> {
   try {
-    await requireActionAdmin();
+    await requireActionUser();
     const db = await getDb();
     const [defs, members] = await Promise.all([listTaskDefinitions(db), listActiveMembers(db)]);
     const task = defs.find((d) => d.id === id);

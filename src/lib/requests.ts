@@ -1,5 +1,5 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
-import { taskRequests, users } from '@/db/schema';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { taskRequests, tasks, users } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { AppError } from './errors';
 import { cleanTaskInput, type TaskInput } from './tasks';
@@ -16,6 +16,8 @@ export type TaskRequest = {
   createdAt: Date;
   /** 멤버가 정한 업무 설정 전체 */
   spec: TaskInput | null;
+  /** 고쳐 달라는 요청이면 그 업무 id */
+  editOf: number | null;
 };
 function parseSpec(raw: string | null): TaskInput | null {
   if (!raw) return null;
@@ -25,15 +27,24 @@ function parseSpec(raw: string | null): TaskInput | null {
 const columns = {
   id: taskRequests.id, requesterId: taskRequests.requesterId, requesterName: users.name, title: taskRequests.title,
   description: taskRequests.description, wantedDate: taskRequests.wantedDate, status: taskRequests.status, createdAt: taskRequests.createdAt, spec: taskRequests.spec,
+  editOf: taskRequests.editOf,
 };
 const withSpec = <T extends { spec: string | null }>(r: T) => ({ ...r, spec: parseSpec(r.spec) });
 
-/** 업무 추가와 같은 규칙으로 검사해서 요청으로 저장한다(파트 id는 새 업무라 버린다) */
-export async function createRequest(db: Db, userId: number, input: TaskInput, now: Date): Promise<number> {
-  const spec = cleanTaskInput({ ...input, parts: (input.parts ?? []).map(({ title, assigneeId }) => ({ title, assigneeId })) });
+/**
+ * 업무 추가와 같은 규칙으로 검사해서 요청으로 저장한다.
+ * editOf가 있으면 그 업무를 고쳐 달라는 요청(파트 id를 남겨 둬야 기존 파트가 고쳐진다), 없으면 새 업무라 파트 id는 버린다.
+ */
+export async function createRequest(db: Db, userId: number, input: TaskInput, now: Date, editOf: number | null = null): Promise<number> {
+  const parts = editOf ? (input.parts ?? []) : (input.parts ?? []).map(({ title, assigneeId }) => ({ title, assigneeId }));
+  const spec = cleanTaskInput({ ...input, parts });
+  if (editOf) {
+    const [t] = await db.select({ id: tasks.id }).from(tasks).where(and(eq(tasks.id, editOf), isNull(tasks.deletedAt)));
+    if (!t) throw new AppError('not_found', '업무를 찾을 수 없습니다');
+  }
   const [row] = await db.insert(taskRequests).values({
     requesterId: userId, title: spec.title, description: spec.description, wantedDate: spec.startDate,
-    spec: JSON.stringify(spec), createdAt: now,
+    spec: JSON.stringify(spec), createdAt: now, editOf,
   }).returning({ id: taskRequests.id });
   return row.id;
 }

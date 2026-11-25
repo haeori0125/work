@@ -45,3 +45,22 @@ export function StatusTag({ status, by, at, className = '', compact = false }: {
     </span>
   );
 }
+
+/**
+ * 파트 진행 태그. 파트를 다 끝내면 "파트 4/4" 대신 ✓ + 파트를 끝낸 사람 프로필(다른 업무의 완료 표시와 같게)
+ */
+export function PartsTag({ status, label, doneBy, compact = false }: {
+  status: TaskStatus; label: string | null; doneBy: (string | null)[]; compact?: boolean;
+}) {
+  if (!label) return null;
+  const who = [...new Set(doneBy.filter((x): x is string => !!x))];
+  if (status === 'done' && who.length) {
+    return (
+      <span className={`tag done who-tag${compact ? ' compact' : ''}`} title={`${label} 완료 · ${who.join(', ')}`} aria-label={`${label} 완료 · ${who.join(', ')}`}>
+        <StatusMark status="done" />
+        <span className="av-stack">{who.map((n) => <MiniAvatar key={n} name={n} size={compact ? 16 : 14} />)}</span>
+      </span>
+    );
+  }
+  return <span className={`tag parts-tag ${status === 'todo' ? 'line' : status}`}><StatusMark status={status} />{label}</span>;
+}

@@ -28,7 +28,8 @@ type Props = {
 };
 
 export function TaskForm({ task, members, today, fromRequest = null, mode = 'admin', onSent, inline }: Props) {
-  const req = task ? null : fromRequest;
+  // 요청 승인: 새 업무 요청이면 task 없이, 수정 요청이면 task(요청 내용으로 채운)와 같이 온다
+  const req = fromRequest;
   const init: TaskInput | null = task ?? req?.spec ?? null;
   const [state, action, pending] = useActionState(async (prev: ActionResult, form: FormData) => {
     const res = await (mode === 'request' ? createRequestAction : saveTaskAction)(prev, form);
@@ -49,8 +50,10 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
     <form action={action} className="tf" key={task?.id ?? 'new'}>
       <input type="hidden" name="id" value={task?.id ?? ''} />
       <input type="hidden" name="requestId" value={req?.id ?? ''} />
+      {mode === 'request' && task && <input type="hidden" name="editOf" value={task.id} />}
       {inline && <input type="hidden" name="stay" value="1" />}
-      {req && <p className="msg ok">{req.requesterName} 님의 요청이에요. 내용을 확인하고 저장하면 승인돼요.</p>}
+      {req && <p className="msg ok">{req.requesterName} 님의 {task ? '수정 요청이에요. 확인하고 저장하면 이 업무에 반영돼요.' : '요청이에요. 내용을 확인하고 저장하면 승인돼요.'}</p>}
+      {mode === 'request' && task && <p className="msg ok">고친 내용은 관리자가 승인하면 반영돼요.</p>}
       <div className="tf-grid">
           <section className="tf-sec tf-what" aria-label="무엇을">
             <h3>무엇을</h3>
@@ -154,7 +157,7 @@ export function TaskForm({ task, members, today, fromRequest = null, mode = 'adm
       <div className="tf-actions">
         {inline ? <button type="button" className="btn" onClick={inline.onCancel}>취소</button>
           : (task || req) && <Link className="btn" href="/admin/tasks">취소</Link>}
-        <button className="btn primary" disabled={pending}>{pending ? (mode === 'request' ? '보내는 중…' : '저장 중…') : mode === 'request' ? '요청 보내기' : task ? '수정 저장' : req ? '승인하고 업무 추가' : '업무 추가'}</button>
+        <button className="btn primary" disabled={pending}>{pending ? (mode === 'request' ? '보내는 중…' : '저장 중…') : mode === 'request' ? (task ? '수정 요청 보내기' : '요청 보내기') : req ? (task ? '승인하고 반영' : '승인하고 업무 추가') : task ? '수정 저장' : '업무 추가'}</button>
       </div>
     </form>
   );

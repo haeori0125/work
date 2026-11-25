@@ -63,8 +63,8 @@ export function TaskDialog({ occ, me, onClose }: Props) {
             : <CheckCircle status={occ.status} title={occ.title} onCycle={cycle} disabled={pending} />}
           <h2 id={`dlg-${occ.taskId}`} className={occ.status === 'done' ? 'done' : undefined}>{occ.title}</h2>
           <div className="dlg-tools">
-            {/* 관리자는 이 팝업 안에서 바로 업무를 고친다 */}
-            {me.role === 'admin' && !edit && (
+            {/* 이 팝업 안에서 고친다: 관리자는 바로 저장, 멤버는 수정 요청으로 */}
+            {!edit && (
               <button type="button" className="dlg-close dlg-edit" aria-label="업무 수정" title="업무 수정" onClick={openEdit} disabled={editLoading}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
@@ -77,7 +77,7 @@ export function TaskDialog({ occ, me, onClose }: Props) {
 
         {edit ? (
           <div className="dlg-editform">
-            <TaskForm task={edit.task} members={edit.members} today={edit.today}
+            <TaskForm task={edit.task} members={edit.members} today={edit.today} mode={me.role === 'admin' ? 'admin' : 'request'}
               inline={{ onCancel: () => setEdit(null) }}
               onSent={(msg) => { toast(msg); setEdit(null); reload(); }} />
           </div>
