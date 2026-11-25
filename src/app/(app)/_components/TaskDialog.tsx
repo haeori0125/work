@@ -1,5 +1,6 @@
 'use client';
 
+import { StatusMark } from '@/app/_ui/icons';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import {
   addCommentAction, deleteCommentAction, editCommentAction, loadTaskDetails, setStatusAction, type TaskDetails,
@@ -54,7 +55,7 @@ export function TaskDialog({ occ, me, onClose }: Props) {
           {occ.dueLabel && !occ.overdue && <span className="tag line due">{occ.dueLabel}까지</span>}
           {occ.repeatLabel && <span className="tag line">↻ {occ.repeatLabel}</span>}
           <AssigneeTag names={occ.assignees} />
-          {occ.partsLabel && <span className={`tag ${occ.status === 'todo' ? 'line' : occ.status}`}>{occ.partsLabel}</span>}
+          {occ.partsLabel && <span className={`tag parts-tag ${occ.status === 'todo' ? 'line' : occ.status}`}><StatusMark status={occ.status} />{occ.partsLabel}</span>}
           <StatusTag status={occ.status} by={occ.parts.length ? null : occ.lastBy} at={occ.lastAtFull} />
         </div>
         {details?.origin && (
