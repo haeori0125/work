@@ -256,6 +256,21 @@ export async function getDayOccurrences(db: Db, date: string): Promise<Occurrenc
   return sortOpenFirst(await buildOccurrences(db, rows.map((task) => ({ task, key: date }))));
 }
 
+/**
+ * 위클리 위쪽 '이번 주 업무': 보이는 7칸(start부터)에 걸친 월요일 기준 주의 기간 업무.
+ * 일요일부터 보면 칸이 월요일 주 두 개에 걸치므로, 앞 주에 속하지만 마감일이 보이는 칸 안인 업무도 넣는다.
+ */
+export async function getWeekGoals(db: Db, start: string): Promise<Occurrence[]> {
+  const mainWeek = weekStartOf(addDays(start, 6));
+  const main = await getWeeklyOccurrences(db, mainWeek);
+  const firstWeek = weekStartOf(start);
+  if (firstWeek === mainWeek) return main;
+  const end = addDays(start, 6);
+  const extra = (await getWeeklyOccurrences(db, firstWeek))
+    .filter((o) => o.dueDate && o.dueDate >= start && o.dueDate <= end && !main.some((m) => m.taskId === o.taskId));
+  return sortOpenFirst([...main, ...extra]);
+}
+
 /** 오늘 할 일: 그날 업무 + 마감일이 그날인 기간 업무(위클리의 그날 칸과 같다) */
 export async function getTodayOccurrences(db: Db, date: string): Promise<Occurrence[]> {
   const all = await liveTasks(db);

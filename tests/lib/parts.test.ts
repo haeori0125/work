@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createTask, getDayOccurrences, getOneOffStatuses, getTodayOccurrences, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
+  createTask, getDayOccurrences, getOneOffStatuses, getTodayOccurrences, getWeekGoals, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
   setPartStatus, setStatus, updateTask, type TaskInput,
 } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -40,6 +40,17 @@ describe('today', () => {
     await createTask(db, admin, input({ title: '온라인 QnA', startDate: '2026-11-25' }));
     expect((await getTodayOccurrences(db, '2026-11-25')).map((o) => [o.title, !!o.dueHere])).toEqual([['어법파트 통일', true], ['온라인 QnA', false]]);
     expect((await getTodayOccurrences(db, '2026-11-24')).map((o) => o.title)).toEqual([]);
+  });
+});
+
+describe('week goals', () => {
+  it('includes a period task due on the sunday shown first when the week starts on sunday', async () => {
+    await createTask(db, admin, input({ title: '홍보 게시물', kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-11-29' }));
+    await createTask(db, admin, input({ title: '나무위키', kind: 'weekly', startDate: '2026-11-30', dueDate: '2026-11-30' }));
+    await createTask(db, admin, input({ title: '지난 것', kind: 'weekly', startDate: '2026-11-23', dueDate: '2026-11-27' }));
+    expect((await getWeekGoals(db, '2026-11-29')).map((o) => o.title).sort()).toEqual(['나무위키', '홍보 게시물']);
+    // 월요일부터 보면 그 주만
+    expect((await getWeekGoals(db, '2026-11-30')).map((o) => o.title)).toEqual(['나무위키']);
   });
 });
 

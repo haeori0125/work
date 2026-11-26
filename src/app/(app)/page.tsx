@@ -3,7 +3,7 @@ import { listBoardPosts } from '@/lib/memos';
 import { getPrefs } from '@/lib/prefs';
 import { listActiveMembers } from '@/lib/members';
 import { listMyRequests } from '@/lib/requests';
-import { getPastOccurrences, getTodayOccurrences, getWeekView, getWeeklyOccurrences } from '@/lib/tasks';
+import { getPastOccurrences, getTodayOccurrences, getWeekGoals, getWeekView } from '@/lib/tasks';
 import { addDays, formatDateLabel, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
 import { toNoteView, toOccurrenceView } from '@/lib/view';
 import { requireUser } from '@/server/session';
@@ -29,8 +29,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const base = wanted && /^\d{4}-\d{2}-\d{2}$/.test(wanted) && !Number.isNaN(Date.parse(wanted)) ? wanted : today;
   const start = weekStartOf(base, prefs.weekStart);
   const thisStart = weekStartOf(today, prefs.weekStart);
-  // 이번 주 업무는 월요일 기준 주로 묶이므로, 보고 있는 칸들 안의 월요일 주를 쓴다
-  const goalsWeek = prefs.weekStart === 'sun' ? addDays(start, 1) : start;
   // 전체 업무 달력: ?month=YYYY-MM (틀리면 이번 달). 위클리와 같은 시작 요일로 줄을 나눈다
   const thisMonth = today.slice(0, 7);
   const month = sp.month && monthRange(sp.month) ? sp.month : thisMonth;
@@ -43,7 +41,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
     getOnsiteDays(db, gridStart, gridLast),
     getPastOccurrences(db, today),
     getTodayOccurrences(db, today),
-    getWeeklyOccurrences(db, goalsWeek),
+    getWeekGoals(db, start),
     getWeekView(db, start),
     listBoardPosts(db, today),
     listActiveMembers(db),
