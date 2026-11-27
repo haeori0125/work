@@ -36,7 +36,8 @@ test('clocking out logs out, and logging in again adds a second segment to the d
   await page.getByRole('button', { name: '퇴근하기' }).click();
   await page.getByRole('button', { name: '퇴근', exact: true }).click();
   await page.waitForURL(/\/login/);
-  await expect(page.getByRole('status')).toContainText('퇴근했습니다');
+  // 퇴근 안내는 잠깐 뜨는 알림(토스트)으로
+  await expect(page.getByText('퇴근했습니다')).toBeVisible();
   await login(page);
   await page.getByRole('link', { name: '내 기록' }).click();
   const today = page.locator('.rec').first();
