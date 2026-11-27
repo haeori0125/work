@@ -1290,8 +1290,9 @@ button.os-base-cell:hover { background: var(--surface-2); }
   background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--text);
   transition: filter .12s ease;
 }
-.mc-span.s-start { margin-left: 0; box-shadow: inset 3px 0 0 var(--accent); }
-.mc-span.s-end { margin-right: 0; }
+/* 시작·마감 날도 그 칸의 끝선까지 닿게(마감 칸은 오른쪽 선은 남긴다) */
+.mc-span.s-start { box-shadow: inset 3px 0 0 var(--accent); }
+.mc-span.s-end { margin-right: -6px; }
 .mc-span.s-label { z-index: 2; }
 .mc-span.doing { background: color-mix(in srgb, var(--doing) 18%, var(--surface)); }
 .mc-span.doing.s-start { box-shadow: inset 3px 0 0 var(--doing); }
