@@ -1294,10 +1294,8 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .mc-span.s-start { box-shadow: inset 3px 0 0 var(--accent); }
 .mc-span.s-end { margin-right: -6px; }
 .mc-span.s-label { z-index: 2; }
-.mc-span.doing { background: color-mix(in srgb, var(--doing) 18%, var(--surface)); }
-.mc-span.doing.s-start { box-shadow: inset 3px 0 0 var(--doing); }
-.mc-span.done { background: color-mix(in srgb, var(--done) 14%, var(--surface)); color: color-mix(in srgb, var(--text) 62%, var(--surface)); }
-.mc-span.done.s-start { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--done) 75%, var(--surface)); }
+/* 막대 색은 상태와 상관없이 테마색 하나. 상태는 제목 앞 ◐ / ✓ 와 완료 취소선으로 */
+.mc-span.done { color: color-mix(in srgb, var(--text) 62%, var(--surface)); }
 .mc-span.done .mc-span-t { text-decoration: line-through; }
 @media (hover: hover) { .mc-span:hover { filter: brightness(.96); } }
 .mc-span-t {
@@ -1308,10 +1306,6 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .mc-span-t svg { margin-right: 4px; vertical-align: -1px; }
 .mc-span .mc-who { margin-left: auto; flex: none; }
 .mc-dots i.span { width: 8px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 70%, var(--ink)); }
-.mc-dots i.span.doing { background: var(--doing); }
-.mc-dots i.span.done { background: var(--done); }
 .mc-span-item .mc-bar { flex: none; width: 4px; height: 16px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 80%, var(--ink)); }
-.mc-span-item.doing .mc-bar { background: var(--doing); }
-.mc-span-item.done .mc-bar { background: var(--done); }
 .mc-span-item.done .mc-t { color: var(--muted); text-decoration: line-through; }
 @media (max-width: 760px) { .mc-spans { display: none; } }
