@@ -10,7 +10,11 @@ async function login(page: Page, name: string, password: string, admin = false) 
 }
 
 async function logout(page: Page) {
-  await page.getByRole('button', { name: '로그아웃' }).click();
+  await page.getByRole('button', { name: '로그아웃', exact: true }).click();
+  // 근무 중이면 퇴근도 할지 묻는다 → 로그아웃만
+  const only = page.getByRole('button', { name: '로그아웃만' });
+  if (await only.isVisible().catch(() => false)) await only.click();
+  else if (await only.waitFor({ timeout: 1500 }).then(() => true, () => false)) await only.click();
   await page.waitForURL('**/login');
 }
 
