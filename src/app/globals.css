@@ -1277,3 +1277,7 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .logout-btns form { display: contents; }
 .logout-btns .btn { width: 100%; justify-content: center; padding: 10px 14px; }
 .logout-btns .ghost-btn { border-color: transparent; background: none; color: var(--muted); }
+/* 로그인 직후 지난 업무 알림 */
+.past-alert h2 { font-size: 18px; }
+.past-alert .past-list { padding: 0; max-height: 52vh; overflow-y: auto; }
+.past-alert .past-ok { width: 100%; justify-content: center; padding: 10px; }

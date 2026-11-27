@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/db';
 import { login, logout, signup } from '@/lib/auth';
-import { SESSION_COOKIE } from '@/server/session';
+import { PAST_ALERT_COOKIE, SESSION_COOKIE } from '@/server/session';
 import { runAction, type ActionResult } from './result';
 
 const str = (f: FormData, k: string) => String(f.get(k) ?? '');
@@ -19,6 +19,8 @@ export async function loginAction(_prev: ActionResult, form: FormData): Promise<
       httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production',
       path: '/', expires: res.expiresAt,
     });
+    // 로그인 직후 첫 화면에서 내 지난 업무를 한 번 보여 준다(화면이 띄운 뒤 지운다)
+    (await cookies()).set(PAST_ALERT_COOKIE, '1', { sameSite: 'lax', path: '/', maxAge: 600 });
   });
   if (result?.error) return result;
   redirect(asAdmin ? '/admin/tasks' : '/');

@@ -6,6 +6,8 @@ import { getSessionUser, type SessionUser } from '@/lib/auth';
 import { AppError } from '@/lib/errors';
 
 export const SESSION_COOKIE = 'todo_session';
+/** 로그인 직후 지난 업무 팝업을 한 번 띄우라는 표시(화면에서 지운다) */
+export const PAST_ALERT_COOKIE = 'past_alert';
 
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;

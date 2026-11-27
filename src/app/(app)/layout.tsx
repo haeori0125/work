@@ -4,7 +4,11 @@ import { listPendingRequests } from '@/lib/requests';
 import { getAvatarMap, getPrefs } from '@/lib/prefs';
 import { AvatarProvider } from '@/app/_ui/AvatarContext';
 import { formatKstTime, kstDate } from '@/lib/time';
-import { requireUser } from '@/server/session';
+import { cookies } from 'next/headers';
+import { getPastOccurrences } from '@/lib/tasks';
+import { toOccurrenceView } from '@/lib/view';
+import { PAST_ALERT_COOKIE, requireUser } from '@/server/session';
+import { PastAlert } from './_components/PastAlert';
 import { RefreshOnFocus } from './_components/RefreshOnFocus';
 import { ShiftBar } from './_components/ShiftBar';
 import { IndexTabs } from './_components/IndexTabs';
@@ -18,6 +22,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const now = new Date();
   const db = await getDb();
+  // 로그인 직후면 내가 맡은 지난 업무(담당이거나, 아직 안 끝난 파트를 맡은 것)
+  const justIn = (await cookies()).get(PAST_ALERT_COOKIE)?.value === '1';
+  const pastMine = justIn
+    ? (await getPastOccurrences(db, kstDate(now))).map((o) => toOccurrenceView(o, kstDate(now)))
+      .filter((o) => o.assignees.includes(user.name) || o.parts.some((p) => p.assignee === user.name && p.status !== 'done'))
+    : [];
   const [today, prefs, avatars, requests] = await Promise.all([
     getToday(db, user.id, now), getPrefs(db, user.id), getAvatarMap(db),
     user.role === 'admin' ? listPendingRequests(db) : Promise.resolve([]),
@@ -38,6 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           tabs={<IndexTabs isAdmin={user.role === 'admin'} pendingRequests={requests.length} />} />
         <div className="content">{children}</div>
       </div>
+      {justIn && <PastAlert items={pastMine} me={{ id: user.id, role: user.role }} />}
       <RefreshOnFocus />
       <RememberTheme value={encodeThemeCookie(prefs)} />
     </div>
