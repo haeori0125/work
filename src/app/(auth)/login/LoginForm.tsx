@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
 import { loginAction } from '@/app/actions/auth';
 import { useToast } from '@/app/_ui/Toast';
 
@@ -12,8 +12,10 @@ export function LoginForm({ notice, stamp }: Props) {
   const [state, action, pending] = useActionState(loginAction, null);
   const toast = useToast();
   // 퇴근 안내는 잠깐 떴다 사라지게. 새로고침해도 다시 안 뜨게 주소의 ?out=1 도 지운다
+  const shown = useRef(false);
   useEffect(() => {
-    if (!notice) return;
+    if (!notice || shown.current) return;
+    shown.current = true;
     toast(notice);
     const url = new URL(window.location.href);
     url.searchParams.delete('out');
