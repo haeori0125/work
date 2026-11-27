@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         working={today?.state === 'working'}
       />
       <div className="frame">
-        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar}
+        <TopBar name={user.name} isAdmin={user.role === 'admin'} avatar={prefs.avatar} working={today?.state === 'working'}
           tabs={<IndexTabs isAdmin={user.role === 'admin'} pendingRequests={requests.length} />} />
         <div className="content">{children}</div>
       </div>

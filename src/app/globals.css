@@ -1270,3 +1270,10 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .dlg-tools { display: flex; align-items: center; gap: 8px; }
 .dlg-edit { display: grid; place-items: center; text-decoration: none; }
 .req-kind { margin-right: 6px; font-size: 11px; padding: 1px 7px; vertical-align: 2px; }
+/* 근무 중 로그아웃: 퇴근도 할지 묻기 */
+.logout-ask { width: min(380px, calc(100vw - 24px)); }
+.logout-ask h2 { font-size: 18px; font-weight: 800; margin: 0; }
+.logout-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.logout-btns form { display: contents; }
+.logout-btns .btn { width: 100%; justify-content: center; padding: 10px 14px; }
+.logout-btns .ghost-btn { border-color: transparent; background: none; color: var(--muted); }
