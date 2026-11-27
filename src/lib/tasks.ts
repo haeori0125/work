@@ -256,6 +256,18 @@ export async function getDayOccurrences(db: Db, date: string): Promise<Occurrenc
   return sortOpenFirst(await buildOccurrences(db, rows.map((task) => ({ task, key: date }))));
 }
 
+/** 달력 막대용: 한 번짜리 기간 업무의 시작~마감(마감이 없으면 시작 주 일요일까지) */
+export type PeriodSpan = { start: string; end: string; occ: Occurrence };
+
+export async function getPeriodSpans(db: Db, from: string, to: string): Promise<PeriodSpan[]> {
+  const rows = (await liveTasks(db)).filter((t) => t.kind === 'weekly' && t.repeat === 'none');
+  const ranged = rows.map((task) => ({ task, start: task.startDate, end: task.dueDate ?? addDays(weekStartOf(task.startDate), 6) }))
+    .filter((r) => r.start <= to && r.end >= from);
+  const built = await buildOccurrences(db, ranged.map((r) => ({ task: r.task, key: weeklyKey(r.task, r.task.startDate) })));
+  return ranged.map((r, i) => ({ start: r.start, end: r.end, occ: built[i] }))
+    .sort((x, y) => x.start.localeCompare(y.start) || y.end.localeCompare(x.end) || x.occ.title.localeCompare(y.occ.title, 'ko'));
+}
+
 /**
  * 위클리 위쪽 '이번 주 업무': 보이는 7칸(start부터)에 걸친 월요일 기준 주의 기간 업무.
  * 일요일부터 보면 칸이 월요일 주 두 개에 걸치므로, 앞 주에 속하지만 마감일이 보이는 칸 안인 업무도 넣는다.

@@ -3,7 +3,7 @@ import { listBoardPosts } from '@/lib/memos';
 import { getPrefs } from '@/lib/prefs';
 import { listActiveMembers } from '@/lib/members';
 import { listMyRequests } from '@/lib/requests';
-import { getPastOccurrences, getTodayOccurrences, getWeekGoals, getWeekView } from '@/lib/tasks';
+import { getPastOccurrences, getPeriodSpans, getTodayOccurrences, getWeekGoals, getWeekView } from '@/lib/tasks';
 import { addDays, formatDateLabel, kstDate, kstWeekday, weekStartOf } from '@/lib/time';
 import { toNoteView, toOccurrenceView } from '@/lib/view';
 import { requireUser } from '@/server/session';
@@ -37,7 +37,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const gridWeeks: string[] = [];
   for (let w = gridStart; w <= range.to; w = addDays(w, 7)) gridWeeks.push(w);
   const gridLast = addDays(gridWeeks.at(-1)!, 6);
-  const [onsite, past, day, weekly, week, posts, members, mine, ...monthWeeks] = await Promise.all([
+  const [spans, onsite, past, day, weekly, week, posts, members, mine, ...monthWeeks] = await Promise.all([
+    getPeriodSpans(db, gridStart, gridLast),
     getOnsiteDays(db, gridStart, gridLast),
     getPastOccurrences(db, today),
     getTodayOccurrences(db, today),
@@ -69,7 +70,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
   const keepMonth = month === thisMonth ? null : month;
   const monthDays = monthWeeks.flatMap((wk) => Object.entries(wk)).map(([date, items]) => ({
     date, dayNum: Number(date.slice(8)), inMonth: date.slice(0, 7) === month, isToday: date === today,
-    isSun: kstWeekday(date) === 6, isSat: kstWeekday(date) === 5, items: v(items),
+    // 기간 업무는 막대로 따로 그리므로 마감일 칸의 '마감' 항목은 뺀다
+    isSun: kstWeekday(date) === 6, isSat: kstWeekday(date) === 5, items: v(items.filter((o) => !o.dueHere)),
     // 현장 강의 출근도 같은 달력에
     onsite: onsite.find((o) => o.date === date)?.lectures ?? [],
   }));
@@ -89,6 +91,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ w
         prevHref={q(keepWeek, shiftMonth(month, -1) === thisMonth ? null : shiftMonth(month, -1))}
         nextHref={q(keepWeek, shiftMonth(month, 1) === thisMonth ? null : shiftMonth(month, 1))}
         thisHref={keepMonth ? q(keepWeek, null) : null} weekdays={weekdayNames} days={monthDays}
+        spans={spans.map((x) => ({ start: x.start, end: x.end, endLabel: formatDateLabel(x.end), occ: toOccurrenceView(x.occ, today) }))}
         me={me} members={members.map((m) => m.name)} savedFilter={prefs.weekFilter} />
     </div>
   );

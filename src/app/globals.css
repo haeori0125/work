@@ -1281,3 +1281,36 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .past-alert h2 { font-size: 18px; }
 .past-alert .past-list { padding: 0; max-height: 52vh; overflow-y: auto; }
 .past-alert .past-ok { width: 100%; justify-content: center; padding: 10px; }
+/* 달력: 기간 업무 막대(시작~마감이 이어지게) */
+.mc-spans { display: flex; flex-direction: column; gap: 3px; }
+.mc-span-gap { height: 22px; }
+.mc-span {
+  position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px;
+  margin: 0 -7px 0 -6px; border: 0; border-radius: 0; font: inherit; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer;
+  background: color-mix(in srgb, var(--accent) 38%, var(--surface)); color: var(--ink);
+  transition: filter .12s ease;
+}
+.mc-span.s-start { margin-left: 0; border-top-left-radius: 7px; border-bottom-left-radius: 7px; box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 80%, var(--ink)); }
+.mc-span.s-end { margin-right: 0; border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+.mc-span.s-label { z-index: 2; }
+.mc-span.doing { background: color-mix(in srgb, var(--doing) 30%, var(--surface)); }
+.mc-span.doing.s-start { box-shadow: inset 3px 0 0 var(--doing); }
+.mc-span.done { background: color-mix(in srgb, var(--done) 22%, var(--surface)); color: var(--muted); }
+.mc-span.done.s-start { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--done) 70%, var(--surface)); }
+.mc-span.done .mc-span-t { text-decoration: line-through; }
+@media (hover: hover) { .mc-span:hover { filter: brightness(.96); } }
+.mc-span-t {
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* 제목은 그 주 안에서 막대가 이어지는 칸까지 넘쳐 보이게 */
+  max-width: calc(var(--len, 1) * 100% - 26px); flex: none;
+}
+.mc-span-t svg { margin-right: 4px; vertical-align: -1px; }
+.mc-span .mc-who { margin-left: auto; flex: none; }
+.mc-dots i.span { width: 8px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 70%, var(--ink)); }
+.mc-dots i.span.doing { background: var(--doing); }
+.mc-dots i.span.done { background: var(--done); }
+.mc-span-item .mc-bar { flex: none; width: 4px; height: 16px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 80%, var(--ink)); }
+.mc-span-item.doing .mc-bar { background: var(--doing); }
+.mc-span-item.done .mc-bar { background: var(--done); }
+.mc-span-item.done .mc-t { color: var(--muted); text-decoration: line-through; }
+@media (max-width: 760px) { .mc-spans { display: none; } }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@/db/types';
 import {
-  createTask, getDayOccurrences, getOneOffStatuses, getTodayOccurrences, getWeekGoals, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
+  createTask, getDayOccurrences, getOneOffStatuses, getTodayOccurrences, getWeekGoals, getPeriodSpans, reorderParts, getWeekView, getWeeklyOccurrences, listTaskDefinitions,
   setPartStatus, setStatus, updateTask, type TaskInput,
 } from '@/lib/tasks';
 import { createTestDb } from '../helpers/db';
@@ -51,6 +51,17 @@ describe('week goals', () => {
     expect((await getWeekGoals(db, '2026-11-29')).map((o) => o.title).sort()).toEqual(['나무위키', '홍보 게시물']);
     // 월요일부터 보면 그 주만
     expect((await getWeekGoals(db, '2026-11-30')).map((o) => o.title)).toEqual(['나무위키']);
+  });
+});
+
+describe('period spans', () => {
+  it('gives start~due for one-off period tasks that overlap the range', async () => {
+    await createTask(db, admin, input({ title: '홍보물', kind: 'weekly', startDate: '2026-11-25', dueDate: '2026-12-02' }));
+    await createTask(db, admin, input({ title: '마감 없음', kind: 'weekly', startDate: '2026-11-24' }));
+    await createTask(db, admin, input({ title: '지난달', kind: 'weekly', startDate: '2026-10-01', dueDate: '2026-10-05' }));
+    await createTask(db, admin, input({ title: '매주', kind: 'weekly', repeat: 'weekly', startDate: '2026-11-23' }));
+    const spans = await getPeriodSpans(db, '2026-11-01', '2026-11-30');
+    expect(spans.map((x) => [x.occ.title, x.start, x.end])).toEqual([['마감 없음', '2026-11-24', '2026-11-29'], ['홍보물', '2026-11-25', '2026-12-02']]);
   });
 });
 
