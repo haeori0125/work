@@ -1287,16 +1287,16 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .mc-span {
   position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 6px;
   margin: 0 -7px 0 -6px; border: 0; border-radius: 0; font: inherit; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer;
-  background: color-mix(in srgb, var(--accent) 38%, var(--surface)); color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--text);
   transition: filter .12s ease;
 }
-.mc-span.s-start { margin-left: 0; border-top-left-radius: 7px; border-bottom-left-radius: 7px; box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent) 80%, var(--ink)); }
-.mc-span.s-end { margin-right: 0; border-top-right-radius: 7px; border-bottom-right-radius: 7px; }
+.mc-span.s-start { margin-left: 0; box-shadow: inset 3px 0 0 var(--accent); }
+.mc-span.s-end { margin-right: 0; }
 .mc-span.s-label { z-index: 2; }
-.mc-span.doing { background: color-mix(in srgb, var(--doing) 30%, var(--surface)); }
+.mc-span.doing { background: color-mix(in srgb, var(--doing) 18%, var(--surface)); }
 .mc-span.doing.s-start { box-shadow: inset 3px 0 0 var(--doing); }
-.mc-span.done { background: color-mix(in srgb, var(--done) 22%, var(--surface)); color: var(--muted); }
-.mc-span.done.s-start { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--done) 70%, var(--surface)); }
+.mc-span.done { background: color-mix(in srgb, var(--done) 14%, var(--surface)); color: color-mix(in srgb, var(--text) 62%, var(--surface)); }
+.mc-span.done.s-start { box-shadow: inset 3px 0 0 color-mix(in srgb, var(--done) 75%, var(--surface)); }
 .mc-span.done .mc-span-t { text-decoration: line-through; }
 @media (hover: hover) { .mc-span:hover { filter: brightness(.96); } }
 .mc-span-t {
