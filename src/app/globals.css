@@ -1297,7 +1297,10 @@ button.os-base-cell:hover { background: var(--surface-2); }
 /* 막대 색은 상태와 상관없이 테마색 하나. 상태는 제목 앞 ◐ / ✓ 와 완료 취소선으로 */
 .mc-span.done { color: color-mix(in srgb, var(--text) 62%, var(--surface)); }
 .mc-span.done .mc-span-t { text-decoration: line-through; }
-@media (hover: hover) { .mc-span:hover { filter: brightness(.96); } }
+/* 막대 전체가 같이 반응(칸마다 끊겨 보이지 않게) */
+.mc-span:focus-visible { outline: none; }
+.mc-span.hot { background: color-mix(in srgb, var(--accent) 26%, var(--surface)); }
+.mc-span.pressed { background: color-mix(in srgb, var(--accent) 34%, var(--surface)); }
 .mc-span-t {
   min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   /* 제목은 그 주 안에서 막대가 이어지는 칸까지 넘쳐 보이게 */

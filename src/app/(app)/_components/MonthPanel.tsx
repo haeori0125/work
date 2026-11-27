@@ -36,6 +36,8 @@ export function MonthPanel({ spans: allSpans, title, titleShort, prevHref, nextH
     ...d, items: d.items.filter((o) => matchesWeekFilter(o.assignees, filter)),
     onsite: d.onsite.filter((l) => matchesWeekFilter(l.staff.map((x) => x.name), filter)),
   }));
+  const [hot, setHot] = useState<number | null>(null);
+  const [pressed, setPressed] = useState<number | null>(null);
   const spans = allSpans.filter((x) => matchesWeekFilter(x.occ.assignees, filter));
   // 주(7칸)마다 막대가 겹치지 않게 줄(lane)을 나눈다. 같은 막대는 그 주 안에서 같은 높이에 그려진다
   const weekLanes = Array.from({ length: Math.ceil(days.length / 7) }, (_, w) => {
@@ -78,9 +80,12 @@ export function MonthPanel({ spans: allSpans, title, titleShort, prevHref, nextH
     const wk = weekLanes[Math.floor(idx / 7)];
     if (!wk || !wk.count) return null;
     const col = idx % 7;
+    // 이 칸에 걸친 막대 중 가장 아래 줄까지만 자리를 잡는다(그 아래 빈자리엔 그날 업무가 올라온다)
+    const used = wk.placed.filter((p) => p.span.start <= d.date && p.span.end >= d.date).map((p) => p.lane);
+    if (!used.length) return null;
     return (
       <div className="mc-spans">
-        {Array.from({ length: wk.count }, (_, lane) => {
+        {Array.from({ length: Math.max(...used) + 1 }, (_, lane) => {
           const hit = wk.placed.find((p) => p.lane === lane && p.span.start <= d.date && p.span.end >= d.date);
           if (!hit) return <span key={lane} className="mc-span-gap" aria-hidden />;
           const x = hit.span, o = x.occ;
@@ -90,7 +95,10 @@ export function MonthPanel({ spans: allSpans, title, titleShort, prevHref, nextH
           const left = Math.min(7 - col, Math.round((Date.parse(x.end < wk.to ? x.end : wk.to) - Date.parse(d.date)) / 864e5) + 1);
           return (
             <button key={lane} type="button" onClick={() => setOpened(o)}
-              className={`mc-span ${o.status}${isStart ? ' s-start' : ''}${isEnd ? ' s-end' : ''}${label ? ' s-label' : ''}`}
+              // 칸마다 따로인 조각이지만, 올리거나 누르면 막대 전체가 같이 반응한다
+              onPointerEnter={() => setHot(o.taskId)} onPointerLeave={() => setHot(null)}
+              onPointerDown={() => setPressed(o.taskId)} onPointerUp={() => setPressed(null)} onPointerCancel={() => setPressed(null)}
+              className={`mc-span ${o.status}${isStart ? ' s-start' : ''}${isEnd ? ' s-end' : ''}${label ? ' s-label' : ''}${hot === o.taskId ? ' hot' : ''}${pressed === o.taskId ? ' pressed' : ''}`}
               title={`${o.title} · ${x.start === x.end ? x.endLabel : `~${x.endLabel}`}${o.assignees.length ? ` · ${o.assignees.join(', ')}` : ''}`}
               aria-label={label ? `${o.title}, ~${x.endLabel}` : undefined} aria-hidden={label ? undefined : true} tabIndex={label ? 0 : -1}>
               {label && <span className="mc-span-t" style={{ '--len': left } as React.CSSProperties}>{o.status !== 'todo' && <StatusMark status={o.status} />}{o.title}</span>}
