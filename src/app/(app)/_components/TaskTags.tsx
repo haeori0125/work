@@ -13,7 +13,9 @@ export function AssigneeTag({ names, compact = false }: { names: string[]; compa
     return (
       <span className="tag line who-tag compact" title={`담당 ${names.join(', ')}`} aria-label={`담당 ${names.join(', ')}`}>
         <ArrowIcon />
-        <span className="av-stack">{names.map((n) => <MiniAvatar key={n} name={n} size={16} />)}</span>
+        {/* 좁은 칸이라 사진은 2개까지, 나머지는 +n (달력과 같게) */}
+        <span className="av-stack">{names.slice(0, 2).map((n) => <MiniAvatar key={n} name={n} size={16} />)}</span>
+        {names.length > 2 && <span className="mc-extra">+{names.length - 2}</span>}
       </span>
     );
   }

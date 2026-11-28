@@ -1266,7 +1266,7 @@ button.os-base-cell:hover { background: var(--surface-2); }
 /* 담당자가 많으면 화면 밖으로 나가지 않게 알약 안에서 줄바꿈 */
 .task-row .meta.tags .who-tag { max-width: 100%; flex-wrap: wrap; white-space: normal; row-gap: 2px; border-radius: 12px; }
 .task-row .meta.tags .who-tag .who-name { white-space: nowrap; }
-.parts-tag { display: inline-flex; align-items: center; gap: 4px; }
+.parts-tag { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: none; }
 .dlg-tools { display: flex; align-items: center; gap: 8px; }
 .dlg-edit { display: grid; place-items: center; text-decoration: none; }
 .req-kind { margin-right: 6px; font-size: 11px; padding: 1px 7px; vertical-align: 2px; }
@@ -1312,3 +1312,5 @@ button.os-base-cell:hover { background: var(--surface-2); }
 .mc-span-item .mc-bar { flex: none; width: 4px; height: 16px; border-radius: 2px; background: color-mix(in srgb, var(--accent) 80%, var(--ink)); }
 .mc-span-item.done .mc-t { color: var(--muted); text-decoration: line-through; }
 @media (max-width: 760px) { .mc-spans { display: none; } }
+.tags.mini .parts-tag { white-space: nowrap; }
+.parts-tag svg { flex: none; }
